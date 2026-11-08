@@ -345,13 +345,12 @@ def b_vanity_furniture(a, ctx):
     box(x, x + w, leg_h, h, 0.5, D - 0.875, paint, 'carcass')
     if leg_h:
         for lx in (x, x + w - 2.25):
-            box(lx, lx + 2.25, 0.0, leg_h + 0.5, D - 2.25, D, paint, 'leg')
+            box(lx, lx + 2.25, 0.0, leg_h, D - 2.25, D, paint, 'leg')
             box(lx, lx + 2.25, 0.0, 0.4, D - 2.25, D + 0.02, material(R('metal', 'METAL-NICKEL')), 'sabot')
-            box(lx, lx + 2.25, leg_h, leg_h + 1.0, 2.0, D - 2.25, paint, 'apron_side')
     else:
         box(x + 2, x + w - 2, 0, 4, D - 3, D - 2.5, gap, 'toe')
     ff = 1.5                                          # face frame stiles and rails
-    box(x, x + ff, leg_h, h, D - 0.875, D, paint, 'ff'); box(x + w - ff, x + w, leg_h, h, D - 0.875, D, paint, 'ff')
+    box(x, x + ff, leg_h + 1.5, h - 1.5, D - 0.875, D, paint, 'ff'); box(x + w - ff, x + w, leg_h + 1.5, h - 1.5, D - 0.875, D, paint, 'ff')
     box(x, x + w, leg_h, leg_h + 1.5, D - 0.875, D, paint, 'ff_bottom'); box(x, x + w, h - 1.5, h, D - 0.875, D, paint, 'ff_top')
     sc = a['sink_center'] if a.get('sink_center') is not None else x + w / 2
     dw = 24 if w >= 48 else 18
@@ -418,15 +417,16 @@ def b_sconce(a, ctx):
     m = material(R('metal', 'METAL-NICKEL'))
     if a.get('style', 'cylinder') == 'cylinder':
         cyl(cx, cy, 0.3, 2.25, 0.6, 'd', m, 'plate'); cyl(cx, cy, 2.0, 0.3, 2.8, 'd', m, 'arm')
-        cyl(cx, cy, 4.0, 1.5, 9.0, 'y', material('LAMP'), 'shade').visible_shadow = False   # the lamp inside lights the room through it
+        sh_ = cyl(cx, cy, 4.0, 1.5, 9.0, 'y', material('LAMP'), 'shade'); sh_.visible_shadow = False   # the lamp inside lights the room through it
+        sh_.visible_diffuse = False   # the glowing shade is for the eye; the lamp inside does the lighting (a lit mesh at the exposure gain swamped the wall in orange)
         cyl(cx, cy + 4.65, 4.0, 1.58, 0.3, 'y', m, 'cap'); cyl(cx, cy - 4.65, 4.0, 1.58, 0.3, 'y', m, 'cap')
         lamp(cx, cy, 4.0)
     else:
         cyl(cx, cy, 0.3, 2.0, 0.6, 'd', m, 'plate'); cyl(cx, cy + 2.75, 2.5, 0.25, 1.5, 'y', m, 'stem')
-        cyl(cx, cy + 7.0, 3.0, 3.25, 7.0, 'y', material('LAMP'), 'shade').visible_shadow = False; lamp(cx, cy + 6.0, 3.0)
+        sh_ = cyl(cx, cy + 7.0, 3.0, 3.25, 7.0, 'y', material('LAMP'), 'shade'); sh_.visible_shadow = False; sh_.visible_diffuse = False; lamp(cx, cy + 6.0, 3.0)
 
 
-def lamp(cx, cy, cd, watts=0.6, radius=0.9):
+def lamp(cx, cy, cd, watts=0.25, radius=0.9):
     """A warm 3000 K point light inside a shade. 1.2 W radiant is about a 350 lm sconce lamp (Blender manual: 800 lm = 2.1 W)."""
     ld = bpy.data.lights.new('lamp', 'POINT'); ld.energy = watts; ld.shadow_soft_size = radius * IN
     ld.use_nodes = True; nt = ld.node_tree; bb = nt.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3000
@@ -804,7 +804,7 @@ def build_wall(vi, M, front_room_depth):
         po.location = ((x0 + x1) / 2 * IN, -d * IN, (y0 + y1) / 2 * IN); po.rotation_euler = (math.radians(-90), 0, 0)
         WINDOWS.append(((x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, M))
     for o in set(bpy.data.objects) - before:
-        o.matrix_world = M @ o.matrix_world
+        o.matrix_world = M @ o.matrix_world; o['wall_view'] = vi
 
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -845,22 +845,23 @@ else:
 # window openings; an afternoon sun through them; recessed 3000 K downlights 20 in. off each long wall wash the walls in
 # soft scallops, the sconces are on.
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True
-sky = w.node_tree.nodes.new('ShaderNodeTexSky'); sky.sky_type = 'NISHITA'; sky.sun_disc = False
-sky.sun_elevation = math.radians(48); sky.sun_rotation = math.radians(200); sky.air_density = 1.0; sky.dust_density = 2.0
-w.node_tree.links.new(sky.outputs['Color'], w.node_tree.nodes['Background'].inputs['Color'])
-w.node_tree.nodes['Background'].inputs['Strength'].default_value = 6.0
+# outside the windows: a neutral daylight environment (a white studio HDRI). A Nishita sky was tried: its saturated blue
+# through one window lit the wall in cyan patches beside the warm downlights, and no white balance fixes two colors at once
+env = w.node_tree.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(os.path.join(ASSETS, 'white_home_studio_2k.hdr'))
+w.node_tree.links.new(env.outputs['Color'], w.node_tree.nodes['Background'].inputs['Color'])
+w.node_tree.nodes['Background'].inputs['Strength'].default_value = 12.0
 if WINDOWS:
-    sun_d = bpy.data.lights.new('sun', 'SUN'); sun_d.energy = 40.0; sun_d.angle = math.radians(0.6); sun_d.color = (1.0, 0.96, 0.9)
+    sun_d = bpy.data.lights.new('sun', 'SUN'); sun_d.energy = 10.0; sun_d.angle = math.radians(0.6); sun_d.color = (1.0, 0.96, 0.9)
     sun_o = bpy.data.objects.new('sun', sun_d); bpy.context.collection.objects.link(sun_o)
     sun_o.rotation_euler = (math.radians(90 - 48), 0, math.radians(-25))   # afternoon sun from the south-west, heading north-east
 else:
     # no window on this room's walls: the soft key of a window behind the viewer
     pass
 DOWN = []
-def downlight(X, Y, watts=4.0, cone=70):
+def downlight(X, Y, watts=1.5, cone=70):
     ld = bpy.data.lights.new('downlight', 'SPOT'); ld.energy = watts; ld.spot_size = math.radians(cone); ld.spot_blend = 0.55
     ld.shadow_soft_size = 1.25 * IN; ld.use_nodes = True
-    bb = ld.node_tree.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3000
+    bb = ld.node_tree.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3500
     ld.node_tree.links.new(bb.outputs['Color'], ld.node_tree.nodes['Emission'].inputs['Color'])
     o = bpy.data.objects.new('downlight', ld); bpy.context.collection.objects.link(o); o.location = (X * IN, Y * IN, (H - 0.5) * IN)
     o.visible_glossy = False; DOWN.append(o)
@@ -901,6 +902,10 @@ cam_d.clip_start = max(0.01, (depth_here - 4 - 36) * IN); cam_d.clip_end = (dept
 cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
 cam.matrix_world = M_cam @ (Matrix.Translation((L / 2 * IN, -(depth_here - 4) * IN, H / 2 * IN)) @ Matrix.Rotation(math.radians(90), 4, 'X'))
 sc.camera = cam
+if ROOM_MODE:
+    # the side walls' crown, base and trim would show end-on at the frame edges as dark profiles: hidden from the camera only
+    for o in bpy.data.objects:
+        if o.type == 'MESH' and o.get('wall_view') is not None and o['wall_view'] != idx: o.visible_camera = False
 
 sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'
 sc.cycles.use_adaptive_sampling = True; sc.cycles.adaptive_threshold = 0.01
@@ -950,7 +955,7 @@ def measure_wall(path):
     return tuple(sorted(v[c] for v in vals)[len(vals) // 2] for c in range(3))
 
 
-WALL_EXPOSURE = 0.85   # the median bare wall is set to 85 % of its paint value: a lit wall photographs a little under its chip,
+WALL_EXPOSURE = 0.74   # the median bare wall is set to 74 % of its paint value: a lit wall photographs a little under its chip,
                        # which leaves trim whites and lit shades their highlight range instead of clipping
 
 # exposure and white balance, the way a photographer uses a grey card: a quick pass, then the bare wall under the crown
