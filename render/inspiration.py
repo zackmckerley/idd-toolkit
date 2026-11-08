@@ -39,28 +39,29 @@ def lab_to_hex(lab):
 
 
 def load_paints():
-    out = []
+    """Paint colors, best source first: the makers' official palette downloads (render/paint/official: Sherwin-Williams
+    ColorSnap ASE, 1,526 colors; the Emerald Designer Edition sheet, 200 colors with LRV, including the SW 9xxx series; Benjamin Moore's nine collection ASEs, about 4,000 colors with full names), then the
+    colornerd 2.4.11 data for anything the official files lack, then supplement.json (maker-checked colors such as the SW
+    9000 series, which the SW download does not yet include) overriding all of them."""
+    out = {}
+    def add(rec):
+        rec = dict(rec); rec['lab'] = srgb_to_lab(hex_to_rgb01(rec['hex'])); rec.setdefault('lrv', None); out[(rec['brand'], rec['label'])] = rec
     for fn, brand in (('sherwin-williams.json', 'SW'), ('benjamin-moore.json', 'BM')):
         for c in json.load(open(os.path.join(HERE, 'paint', fn))):
-            lab = srgb_to_lab(hex_to_rgb01(c['hex']))
             label = ('SW %04d' % c['label']) if brand == 'SW' and isinstance(c['label'], int) else str(c['label'])
             if brand == 'BM': label = 'BM ' + label
-            out.append({'brand': brand, 'label': label, 'name': c['name'], 'hex': c['hex'].strip().upper(), 'lab': lab, 'lrv': None, 'source': 'colornerd 2.4.11 (2022)' + ('; BM names in this dataset are cut to one word: confirm the full name' if brand == 'BM' else '')})
-    seen = set(); uniq = []
-    for p in out:
-        if (p['brand'], p['label']) not in seen: seen.add((p['brand'], p['label'])); uniq.append(p)
-    out = uniq
-    sup = json.load(open(os.path.join(HERE, 'paint', 'supplement.json')))['colors']
-    keys = {(p['brand'], p['label']) for p in out}
-    for c in sup:
-        rec = dict(c)
-        if c['brand'] == 'BM' and not c['label'].startswith('BM '): rec['label'] = c['label'] = 'BM ' + c['label']
-        rec['lab'] = srgb_to_lab(hex_to_rgb01(c['hex']))
-        if (c['brand'], c['label']) in keys:
-            for p in out:
-                if (p['brand'], p['label']) == (c['brand'], c['label']): p.update({k: v for k, v in rec.items() if v is not None})
-        else: out.append(rec)
-    return out
+            add({'brand': brand, 'label': label, 'name': c['name'], 'hex': c['hex'].strip().upper(),
+                 'source': 'colornerd 2.4.11 (2022)' + ('; BM names in this dataset are cut to one word: confirm the full name' if brand == 'BM' else '')})
+    for fn in ('sw_official.json', 'sw_ede_official.json', 'bm_official.json'):
+        p = os.path.join(HERE, 'paint', 'official', fn)
+        if os.path.exists(p):
+            for c in json.load(open(p)): add(c)
+    for c in json.load(open(os.path.join(HERE, 'paint', 'supplement.json')))['colors']:
+        c = dict(c)
+        if c['brand'] == 'BM' and not c['label'].startswith('BM '): c['label'] = 'BM ' + c['label']
+        prev = out.get((c['brand'], c['label']), {})
+        add({**prev, **{k: v for k, v in c.items() if v is not None}})
+    return list(out.values())
 
 
 def est_lrv(hexv):

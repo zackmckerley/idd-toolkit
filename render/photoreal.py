@@ -77,6 +77,28 @@ def _img(nt, path, colorspace, size_m, coord):
     return t
 
 
+_LIB = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'material_library.json'))) if os.path.exists(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'material_library.json')) else {}
+_ACG = {'Diffuse.jpg': 'Color', 'nor_gl.jpg': 'NormalGL', 'Rough.jpg': 'Roughness'}
+
+
+def _map(folder, name):
+    """A texture map path. Poly Haven folders hold Diffuse/nor_gl/Rough.jpg; ambientCG folders ('acg/<id>') hold
+    <id>_2K-JPG_Color/NormalGL/Roughness.jpg."""
+    if folder.startswith('acg/'):
+        aid = folder[4:]; return os.path.join(ASSETS, 'acg', aid, '%s_2K-JPG_%s.jpg' % (aid, _ACG[name]))
+    return os.path.join(ASSETS, folder, name)
+
+
+def _tex_size(spec, folder, default):
+    """Real-world width of one repeat of the map, in metres: the code's size_in, then ambientCG's stated width, then the default."""
+    if spec.get('size_in'): return spec['size_in'] * IN
+    if folder.startswith('acg/'):
+        aid = folder[4:]; cat = next((k for k, v in _LIB.items() if not k.startswith('_') and aid in v), '')
+        return _LIB.get('_size_cm', {}).get(aid, {'tile': 100, 'soft': 50, 'metal': 100}.get(cat, 200)) / 100.0
+    return default
+
+
 def _bevel_normal(nt, b, radius_in, normal_from=None):
     bv = nt.nodes.new('ShaderNodeBevel'); bv.samples = 8; bv.inputs['Radius'].default_value = radius_in * IN
     if normal_from is not None: nt.links.new(normal_from, bv.inputs['Normal'])
@@ -109,8 +131,8 @@ def material(code, variant=''):
         return m
     if kind == 'fabric':
         # terry or linen: the colour from the spec, the weave from a scan's normal and roughness, a soft sheen at the edges
-        folder = spec.get('texture', 'terry_cloth'); size = {'terry_cloth': 0.367, 'rough_linen': 0.5}.get(folder, 0.4)
-        n = _img(nt, os.path.join(ASSETS, folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
+        folder = spec.get('texture', 'terry_cloth'); size = _tex_size(spec, folder, {'terry_cloth': 0.367, 'rough_linen': 0.5}.get(folder, 0.4))
+        n = _img(nt, _map(folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
         nmap = nt.nodes.new('ShaderNodeNormalMap'); nmap.inputs['Strength'].default_value = 0.8; nt.links.new(n.outputs['Color'], nmap.inputs['Color'])
         nt.links.new(nmap.outputs['Normal'], b.inputs['Normal'])
         b.inputs['Roughness'].default_value = 0.95; b.inputs['Sheen Weight'].default_value = 0.6; b.inputs['Sheen Roughness'].default_value = 0.5
@@ -150,8 +172,8 @@ def material(code, variant=''):
         return m
     if kind in ('wood', 'stone'):
         folder = spec.get('texture') or ('wood_floor' if kind == 'wood' else 'marble_01')
-        size = {'wood_floor': 1.7, 'marble_01': 1.5, 'oak_veneer_01': 1.0, 'plank_flooring_02': 1.98, 'laminate_floor_02': 1.7, 'terry_cloth': 0.367}.get(folder, 1.5)
-        d = _img(nt, os.path.join(ASSETS, folder, 'Diffuse.jpg'), 'sRGB', size, obj)
+        size = _tex_size(spec, folder, {'wood_floor': 1.7, 'marble_01': 1.5, 'oak_veneer_01': 1.0, 'plank_flooring_02': 1.98, 'laminate_floor_02': 1.7, 'terry_cloth': 0.367}.get(folder, 1.5))
+        d = _img(nt, _map(folder, 'Diffuse.jpg'), 'sRGB', size, obj)
         if spec.get('tint'):
             # pull the scan toward the specified colour without losing its grain: multiply by tint / mean
             mx = nt.nodes.new('ShaderNodeMix'); mx.data_type = 'RGBA'; mx.blend_type = 'MULTIPLY'; mx.inputs['Factor'].default_value = 1.0
@@ -159,11 +181,11 @@ def material(code, variant=''):
             nt.links.new(mx.outputs[2], b.inputs['Base Color'])
         else:
             nt.links.new(d.outputs['Color'], b.inputs['Base Color'])
-        r = _img(nt, os.path.join(ASSETS, folder, 'Rough.jpg'), 'Non-Color', size, obj)
+        r = _img(nt, _map(folder, 'Rough.jpg'), 'Non-Color', size, obj)
         mr = nt.nodes.new('ShaderNodeMapRange'); base_r = spec.get('rough', 0.4)
         mr.inputs['To Min'].default_value = max(0.02, base_r - 0.15); mr.inputs['To Max'].default_value = base_r + 0.15
         nt.links.new(r.outputs['Color'], mr.inputs['Value']); nt.links.new(mr.outputs['Result'], b.inputs['Roughness'])
-        n = _img(nt, os.path.join(ASSETS, folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
+        n = _img(nt, _map(folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
         nmap = nt.nodes.new('ShaderNodeNormalMap'); nmap.inputs['Strength'].default_value = 0.5
         nt.links.new(n.outputs['Color'], nmap.inputs['Color'])
         _bevel_normal(nt, b, 0.12 if kind == 'stone' else 0.04, nmap.outputs['Normal'])

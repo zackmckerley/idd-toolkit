@@ -1,0 +1,86 @@
+{
+ "_about": "Curated ambientCG PBR set (CC0, ambientcg.com), 2K JPG, picked 11.08.26 from contact sheets of the most popular assets. Maps kept: Color, NormalGL, Roughness, Metalness when present, Displacement. Use a code's 'texture' field in materials.json to point at assets/acg/<id>; tile size in inches is the real-world module the photo covers (verify on the first render). '_size_cm' is ambientCG's stated real-world width of the map; where it is missing the renderer uses 200 cm (VERIFY on the first render, or set 'size_in' on the code).",
+ "wood_floor": {
+  "WoodFloor014": "herringbone, mid oak",
+  "WoodFloor015": "herringbone, light oak",
+  "WoodFloor016": "herringbone, dark walnut",
+  "WoodFloor052": "chevron, natural oak",
+  "WoodFloor070": "basketweave parquet",
+  "WoodFloor051": "plank, light oak",
+  "WoodFloor062": "wide plank, white oak",
+  "WoodFloor064": "plank, warm mid oak"
+ },
+ "stone": {
+  "Marble021": "white, faint veining (honed Thassos look)",
+  "Marble019": "white with grey veins (Carrara look)",
+  "Marble012": "grey-veined white (Statuary look)",
+  "Marble014": "cream (Crema Marfil look)",
+  "Marble020": "beige veined",
+  "Marble024": "greige polished",
+  "Marble016": "black with white veins (Nero Marquina look)",
+  "Travertine009": "light vein-cut travertine",
+  "Travertine004": "classic travertine",
+  "Travertine001": "warm vein-cut travertine",
+  "Terrazzo005": "white with black chips",
+  "Terrazzo013": "white with multicolor chips",
+  "Terrazzo011": "warm white with terracotta chips"
+ },
+ "tile": {
+  "Tiles107": "white square, light grout",
+  "Tiles105": "white large format",
+  "Tiles036": "white small square",
+  "Tiles002": "white large, thin joint",
+  "Tiles133A": "white mosaic",
+  "Tiles052": "black with white grout",
+  "Tiles129B": "black glossy hex",
+  "PavingStones130": "small matte hex",
+  "Tiles032": "green glazed handmade (zellige look)",
+  "Tiles074": "marble checker black and cream"
+ },
+ "wall": {
+  "Plaster001": "smooth lime plaster, warm",
+  "Plaster002": "smooth lime plaster, neutral",
+  "Plaster003": "troweled plaster",
+  "Concrete034": "smooth microcement",
+  "PaintedPlaster017": "painted plaster, light texture"
+ },
+ "soft": {
+  "Fabric086": "white boucle",
+  "Fabric062": "cream linen weave",
+  "Fabric061": "grey basket weave",
+  "Fabric066": "sage linen",
+  "Fabric036": "taupe linen",
+  "Fabric030": "charcoal wool",
+  "Fabric063": "dark velvet",
+  "Carpet016": "natural wool rug",
+  "Leather030": "brown leather",
+  "Leather026": "black leather",
+  "Leather027": "cream leather",
+  "Wicker013": "rattan cane",
+  "Wicker008A": "natural woven rattan",
+  "Wicker010A": "dark woven rattan"
+ },
+ "metal": {
+  "Metal009": "brushed steel",
+  "Metal011": "brushed steel, fine"
+ },
+ "_size_cm": {
+  "WoodFloor052": 180,
+  "WoodFloor051": 180,
+  "Travertine009": 120,
+  "Travertine004": 120,
+  "Travertine001": 120,
+  "Tiles107": 100,
+  "Tiles105": 100,
+  "PavingStones130": 230,
+  "Tiles074": 210,
+  "Concrete034": 110,
+  "Fabric062": 40,
+  "Fabric061": 40,
+  "Fabric066": 40,
+  "Fabric063": 40,
+  "Carpet016": 170,
+  "Leather030": 45,
+  "Wicker013": 50
+ }
+}

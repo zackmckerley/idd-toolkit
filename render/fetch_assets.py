@@ -1,8 +1,10 @@
 """Download the CC0 render assets (Poly Haven) into render/assets: textures at 2k (Diffuse, nor_gl, Rough) and the HDRIs.
     python3 render/fetch_assets.py
 Poly Haven blocks Python's default user agent, so curl does the fetching."""
-import json, os, subprocess
-HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets'); os.makedirs(HERE, exist_ok=True)
+import json, os, subprocess, sys, zipfile, tempfile
+from concurrent.futures import ThreadPoolExecutor
+ROOT = os.path.dirname(os.path.abspath(__file__))
+HERE = sys.argv[sys.argv.index('--dest') + 1] if '--dest' in sys.argv else os.path.join(ROOT, 'assets'); os.makedirs(HERE, exist_ok=True)
 def get(u, out=None):
     r = subprocess.run(['curl', '-sSfL', '--max-time', '180', '-A', 'IDD-render/1.0'] + (['-o', out] if out else []) + [u], capture_output=True, check=True)
     return r.stdout
@@ -24,4 +26,19 @@ for m in MODELS:
     get(g['url'], os.path.join(dest, m + '.gltf'))
     for rel, inc in g.get('include', {}).items():
         p_ = os.path.join(dest, rel); os.makedirs(os.path.dirname(p_), exist_ok=True); get(inc['url'], p_)
+# ambientCG curated library (render/material_library.json), 2K JPG, about 20 MB a material before trimming
+KEEP = ('_Color.jpg', '_NormalGL.jpg', '_Roughness.jpg', '_Metalness.jpg', '_Displacement.jpg')
+def acg(aid):
+    dest = os.path.join(HERE, 'acg', aid)
+    if os.path.exists(os.path.join(dest, aid + '_2K-JPG_Color.jpg')): return aid, 'have'
+    os.makedirs(dest, exist_ok=True)
+    with tempfile.TemporaryDirectory() as t:
+        z = os.path.join(t, aid + '.zip'); get('https://ambientcg.com/get?file=%s_2K-JPG.zip' % aid, z)
+        with zipfile.ZipFile(z) as zf:
+            for n in zf.namelist():
+                if n.endswith(KEEP): zf.extract(n, dest)
+    return aid, 'got'
+lib = json.load(open(os.path.join(ROOT, 'material_library.json')))
+ids = [a for k, v in lib.items() if not k.startswith('_') for a in v]
+for aid, st in ThreadPoolExecutor(4).map(acg, ids): print(aid, st)
 print('assets in', HERE)

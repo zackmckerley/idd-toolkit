@@ -1,0 +1,1602 @@
+[
+{
+"brand": "SW",
+"label": "SW 9501",
+"name": "Oat Milk",
+"hex": "#DEDACD",
+"lrv": 70.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9502",
+"name": "Arrowroote",
+"hex": "#E4DECF",
+"lrv": 73.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9503",
+"name": "Cheviot",
+"hex": "#F6F2E8",
+"lrv": 88.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9504",
+"name": "Cold Foam",
+"hex": "#EFECE3",
+"lrv": 84.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9505",
+"name": "Frost Bite",
+"hex": "#F6F0E5",
+"lrv": 87.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9506",
+"name": "Warm Winter",
+"hex": "#E1D9C6",
+"lrv": 69.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9507",
+"name": "Cream and Sugar",
+"hex": "#DDCFB9",
+"lrv": 63.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9508",
+"name": "Natural Wool",
+"hex": "#D7C9AE",
+"lrv": 59.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9509",
+"name": "Steamed Chai",
+"hex": "#E0D4BD",
+"lrv": 66.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9510",
+"name": "Peace of Mind",
+"hex": "#C4B9A3",
+"lrv": 49.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9511",
+"name": "Warm Oats",
+"hex": "#D8CFBA",
+"lrv": 62.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9512",
+"name": "Threaded Loom",
+"hex": "#CEC2AA",
+"lrv": 54.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9513",
+"name": "Sleepy Owlet",
+"hex": "#B5A78D",
+"lrv": 39.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9514",
+"name": "Zinc Luster",
+"hex": "#8C8373",
+"lrv": 23.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9515",
+"name": "Tungsten",
+"hex": "#584E41",
+"lrv": 7.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9516",
+"name": "Accolade",
+"hex": "#D5CEBF",
+"lrv": 62.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9517",
+"name": "Outrigger",
+"hex": "#BBB2A0",
+"lrv": 45.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9518",
+"name": "Featherstone",
+"hex": "#99917C",
+"lrv": 28.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9519",
+"name": "Country Tweed",
+"hex": "#837B68",
+"lrv": 20.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9520",
+"name": "Nocturne",
+"hex": "#544E42",
+"lrv": 7.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9521",
+"name": "Simple Stone",
+"hex": "#CDC7B7",
+"lrv": 57.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9522",
+"name": "Meander",
+"hex": "#B6AE99",
+"lrv": 42.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9523",
+"name": "Canal Street",
+"hex": "#969281",
+"lrv": 28.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9524",
+"name": "Crooked River",
+"hex": "#797869",
+"lrv": 18.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9525",
+"name": "Hidden Trail",
+"hex": "#5F5B4D",
+"lrv": 10.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9526",
+"name": "Woolen Mittens",
+"hex": "#BFB397",
+"lrv": 45.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9527",
+"name": "Worn Khaki",
+"hex": "#A69C81",
+"lrv": 33.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9528",
+"name": "Vintage",
+"hex": "#908468",
+"lrv": 23.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9529",
+"name": "Twig Basket",
+"hex": "#7D6E52",
+"lrv": 16.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9530",
+"name": "Momentum",
+"hex": "#5C4E2E",
+"lrv": 8.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9531",
+"name": "Stone Guardians",
+"hex": "#CABA97",
+"lrv": 50.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9532",
+"name": "Earthy Ochre",
+"hex": "#BEAE88",
+"lrv": 43.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9533",
+"name": "Rattan Palm",
+"hex": "#9E8E6C",
+"lrv": 27.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9534",
+"name": "River Reed",
+"hex": "#94876E",
+"lrv": 24.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9535",
+"name": "Nettle",
+"hex": "#665B44",
+"lrv": 10.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9536",
+"name": "Lamb's Wool",
+"hex": "#CAB598",
+"lrv": 47.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9537",
+"name": "Sugared Almond",
+"hex": "#B49D7B",
+"lrv": 35.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9538",
+"name": "Tangled Twine",
+"hex": "#A18A67",
+"lrv": 26.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9539",
+"name": "Shaker Peg",
+"hex": "#8D7553",
+"lrv": 19.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9540",
+"name": "Timber Beam",
+"hex": "#796040",
+"lrv": 12.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9541",
+"name": "White Snow",
+"hex": "#F5F4EE",
+"lrv": 90.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9542",
+"name": "Natural White",
+"hex": "#ECEBE8",
+"lrv": 83.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9543",
+"name": "Gypsum",
+"hex": "#EAEBE7",
+"lrv": 82.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9544",
+"name": "Dashing",
+"hex": "#EAEBE8",
+"lrv": 82.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9545",
+"name": "Ghosted",
+"hex": "#E2E0DC",
+"lrv": 74.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9546",
+"name": "Lunar Lite",
+"hex": "#E0DDD8",
+"lrv": 72.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9547",
+"name": "Vessel",
+"hex": "#CDC8BF",
+"lrv": 57.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9548",
+"name": "Sweater Weather",
+"hex": "#CCCCC5",
+"lrv": 59.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9549",
+"name": "Touch of Grey",
+"hex": "#D1CFCA",
+"lrv": 62.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9550",
+"name": "Mercurial",
+"hex": "#D1CCC6",
+"lrv": 61.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9551",
+"name": "Skipping Rocks",
+"hex": "#D1D0C9",
+"lrv": 62.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9552",
+"name": "Antimony",
+"hex": "#C7C8C1",
+"lrv": 57.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9553",
+"name": "Allegory",
+"hex": "#B4B2A9",
+"lrv": 44.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9554",
+"name": "Going Grey",
+"hex": "#83807A",
+"lrv": 21.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9555",
+"name": "Storm Warning",
+"hex": "#696863",
+"lrv": 13.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9556",
+"name": "Intrepid Grey",
+"hex": "#E0E2E0",
+"lrv": 75.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9557",
+"name": "Autonomous",
+"hex": "#C6C7C5",
+"lrv": 56.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9558",
+"name": "Castlegate",
+"hex": "#A0A5A5",
+"lrv": 37.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9559",
+"name": "Scattered Showers",
+"hex": "#7B8285",
+"lrv": 21.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9560",
+"name": "Night Out",
+"hex": "#656A6E",
+"lrv": 14.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9561",
+"name": "Guild Grey",
+"hex": "#D2D1CB",
+"lrv": 63.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9562",
+"name": "Fortitude",
+"hex": "#C6C5C1",
+"lrv": 56.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9563",
+"name": "Bedrock",
+"hex": "#9E9D99",
+"lrv": 33.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9564",
+"name": "Before the Storm",
+"hex": "#74777A",
+"lrv": 18.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9565",
+"name": "Forged Steel",
+"hex": "#5B5B59",
+"lrv": 10.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9566",
+"name": "Grey Heron",
+"hex": "#D6D2CA",
+"lrv": 64.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9567",
+"name": "Viaduct",
+"hex": "#C1BBB0",
+"lrv": 50.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9568",
+"name": "Smooth Stone",
+"hex": "#A8A298",
+"lrv": 36.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9569",
+"name": "Alloy",
+"hex": "#8E8A81",
+"lrv": 25.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9570",
+"name": "Ironclad",
+"hex": "#615C55",
+"lrv": 10.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9571",
+"name": "Solstice",
+"hex": "#DBD9D2",
+"lrv": 69.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9572",
+"name": "Warm Pewter",
+"hex": "#B4ADA6",
+"lrv": 42.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9573",
+"name": "Hibernate",
+"hex": "#ACA69F",
+"lrv": 38.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9574",
+"name": "Hulett Ore",
+"hex": "#726F6C",
+"lrv": 16.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9575",
+"name": "Metropolis",
+"hex": "#59504F",
+"lrv": 8.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9576",
+"name": "Whirlwind",
+"hex": "#D8CFC6",
+"lrv": 63.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9577",
+"name": "Soft Suede",
+"hex": "#D0C6B8",
+"lrv": 57.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9578",
+"name": "Restoration",
+"hex": "#AFA499",
+"lrv": 37.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9579",
+"name": "Timeless Taupe",
+"hex": "#908379",
+"lrv": 23.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9580",
+"name": "Cracked Pepper",
+"hex": "#483C37",
+"lrv": 4.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9581",
+"name": "Cotton ",
+"hex": "#EEEBE1",
+"lrv": 83.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9582",
+"name": "White Sand",
+"hex": "#EDECE7",
+"lrv": 84.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9583",
+"name": "Sanctuary",
+"hex": "#E6E2D9",
+"lrv": 76.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9584",
+"name": "Mortar",
+"hex": "#E3DFD5",
+"lrv": 73.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9585",
+"name": "Sunbleached",
+"hex": "#E5E0D7",
+"lrv": 74.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9586",
+"name": "White Sesame",
+"hex": "#E3DBCD",
+"lrv": 71.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9587",
+"name": "Mushroom",
+"hex": "#D0C7B7",
+"lrv": 57.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9588",
+"name": "High Sierra",
+"hex": "#C8C0B3",
+"lrv": 53.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9589",
+"name": "Limewash",
+"hex": "#DBD5CB",
+"lrv": 66.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9590",
+"name": "Taupe of the Morning",
+"hex": "#DAD2C6",
+"lrv": 65.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9591",
+"name": "Whisper",
+"hex": "#BBB2A3",
+"lrv": 45.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9592",
+"name": "Illusion",
+"hex": "#B0A899",
+"lrv": 39.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9593",
+"name": "Lauriston Stone",
+"hex": "#868172",
+"lrv": 22.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9594",
+"name": "Settlement",
+"hex": "#7E7970",
+"lrv": 19.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9595",
+"name": "Braintree",
+"hex": "#65635B",
+"lrv": 12.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9596",
+"name": "Pachyderm",
+"hex": "#BAB3A6",
+"lrv": 45.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9597",
+"name": "Western Reserve",
+"hex": "#A8A294",
+"lrv": 36.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9598",
+"name": "Solitary Slate",
+"hex": "#80796D",
+"lrv": 19.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9599",
+"name": "Limestone",
+"hex": "#6A655C",
+"lrv": 13.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9600",
+"name": "Armory",
+"hex": "#413D3C",
+"lrv": 4.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9601",
+"name": "Symmetry",
+"hex": "#D5CBBE",
+"lrv": 60.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9602",
+"name": "Studio Beige",
+"hex": "#C1B2A1",
+"lrv": 45.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9603",
+"name": "Quarry Stone",
+"hex": "#978E7F",
+"lrv": 27.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9604",
+"name": "Tea Leaf",
+"hex": "#625346",
+"lrv": 9.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9605",
+"name": "Clove",
+"hex": "#453E39",
+"lrv": 5.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9606",
+"name": "Slumber Sloth",
+"hex": "#CEC5B6",
+"lrv": 56.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9607",
+"name": "Tanglewood",
+"hex": "#9B8F7E",
+"lrv": 28.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9608",
+"name": "Habitat",
+"hex": "#897D6D",
+"lrv": 21.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9609",
+"name": "Landmark",
+"hex": "#766859",
+"lrv": 14.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9610",
+"name": "Stony Creek",
+"hex": "#57534E",
+"lrv": 8.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9611",
+"name": "Minimalist",
+"hex": "#CABEAD",
+"lrv": 52.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9612",
+"name": "Perfect Khaki",
+"hex": "#B2A492",
+"lrv": 38.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9613",
+"name": "Terrain",
+"hex": "#8C8475",
+"lrv": 23.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9614",
+"name": "Carriage Stone",
+"hex": "#7C7466",
+"lrv": 17.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9615",
+"name": "Prospect",
+"hex": "#62584B",
+"lrv": 10.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9616",
+"name": "Dumpling",
+"hex": "#D8D0C1",
+"lrv": 63.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9617",
+"name": "Beachcomber",
+"hex": "#D0C1AC",
+"lrv": 54.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9618",
+"name": "Woodbridge",
+"hex": "#9F8E7A",
+"lrv": 28.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9619",
+"name": "Teakwood",
+"hex": "#8D7E6D",
+"lrv": 21.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9620",
+"name": "Prelude",
+"hex": "#5B564F",
+"lrv": 9.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9621",
+"name": "Clean Slate",
+"hex": "#E0E3E2",
+"lrv": 76.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9622",
+"name": "White Sail",
+"hex": "#EBEBE7",
+"lrv": 82.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9623",
+"name": "Snowbelt",
+"hex": "#EEF1EC",
+"lrv": 87.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9624",
+"name": "Winsome Grey",
+"hex": "#E7E9E7",
+"lrv": 81.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9625",
+"name": "Grey Mist",
+"hex": "#E4E1D6",
+"lrv": 75.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9626",
+"name": "Glacier Bay",
+"hex": "#E1E1DB",
+"lrv": 75.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9627",
+"name": "Pacific Fog",
+"hex": "#DCDCD5",
+"lrv": 71.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9628",
+"name": "Winter Walk",
+"hex": "#D8D5CC",
+"lrv": 66.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9629",
+"name": "Constellation",
+"hex": "#CDCCC3",
+"lrv": 60.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9630",
+"name": "Moorstone",
+"hex": "#CFD1CA",
+"lrv": 63.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9631",
+"name": "Mantra",
+"hex": "#DCE2DF",
+"lrv": 75.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9632",
+"name": "Serenely",
+"hex": "#CED7D5",
+"lrv": 66.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9633",
+"name": "Silver Lake",
+"hex": "#B6C3C4",
+"lrv": 52.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9634",
+"name": "Morning at Sea",
+"hex": "#82979B",
+"lrv": 29.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9635",
+"name": "Stargazer",
+"hex": "#60757A",
+"lrv": 16.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9636",
+"name": "Windchill",
+"hex": "#D5D8D7",
+"lrv": 68.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9637",
+"name": "Mineral",
+"hex": "#B0B7B7",
+"lrv": 46.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9638",
+"name": "Breakwater",
+"hex": "#A2A8A6",
+"lrv": 38.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9639",
+"name": "Rain Cloud",
+"hex": "#536168",
+"lrv": 11.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9640",
+"name": "Sea Mariner",
+"hex": "#434A54",
+"lrv": 6.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9641",
+"name": "Dew Drop",
+"hex": "#D4DCDC",
+"lrv": 70.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9642",
+"name": "Silver Tipped Sage",
+"hex": "#BFC2BF",
+"lrv": 53.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9643",
+"name": "Eventide",
+"hex": "#A3AFAC",
+"lrv": 41.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9644",
+"name": "Portsmouth",
+"hex": "#768482",
+"lrv": 21.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9645",
+"name": "Big Dipper",
+"hex": "#41494B",
+"lrv": 6.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9646",
+"name": "Create",
+"hex": "#C9CABF",
+"lrv": 58.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9647",
+"name": "Soft Sage",
+"hex": "#BCBCAE",
+"lrv": 49.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9648",
+"name": "Frosted Fern",
+"hex": "#A7A796",
+"lrv": 38.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9649",
+"name": "Willowleaf",
+"hex": "#85877B",
+"lrv": 23.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9650",
+"name": "Succulent",
+"hex": "#616C64",
+"lrv": 14.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9651",
+"name": "Sea Spray",
+"hex": "#C8CEC6",
+"lrv": 60.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9652",
+"name": "Hazel Gaze",
+"hex": "#B8BFB1",
+"lrv": 50.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9653",
+"name": "Forever Green",
+"hex": "#AAB4A7",
+"lrv": 44.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9654",
+"name": "Taiga",
+"hex": "#768078",
+"lrv": 20.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9655",
+"name": "Mountain Pass",
+"hex": "#5C6A6A",
+"lrv": 13.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9656",
+"name": "Pine Frost",
+"hex": "#D0D5CB",
+"lrv": 65.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9657",
+"name": "Piedmont",
+"hex": "#C2CEC5",
+"lrv": 59.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9658",
+"name": "Fresh Eucalyptus",
+"hex": "#ADBCB4",
+"lrv": 48.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9659",
+"name": "Marine",
+"hex": "#94A69D",
+"lrv": 36.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9660",
+"name": "Tarragon",
+"hex": "#424E53",
+"lrv": 7.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9661",
+"name": "Radiant Dawn",
+"hex": "#EBE0CE",
+"lrv": 75.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9662",
+"name": "Fresh Zest",
+"hex": "#F5E9CF",
+"lrv": 82.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9663",
+"name": "Honeypot",
+"hex": "#F6DEB3",
+"lrv": 74.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9664",
+"name": "Sun Salutation",
+"hex": "#F5CF92",
+"lrv": 66.2,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9665",
+"name": "Sunny Side Up",
+"hex": "#F7CE65",
+"lrv": 64.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9666",
+"name": "Barely Pear",
+"hex": "#EDEBDB",
+"lrv": 82.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9667",
+"name": "Carambola",
+"hex": "#EFEBD1",
+"lrv": 82.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9668",
+"name": "Wild Lime",
+"hex": "#E3DEB3",
+"lrv": 71.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9669",
+"name": "Glade Green",
+"hex": "#A4A571",
+"lrv": 36.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9670",
+"name": "Olivetone",
+"hex": "#4E6342",
+"lrv": 10.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9671",
+"name": "Serendipity",
+"hex": "#E9EDE7",
+"lrv": 83.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9672",
+"name": "Wavecrest",
+"hex": "#D3DCCD",
+"lrv": 69.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9673",
+"name": "Valleyview",
+"hex": "#C2CCAC",
+"lrv": 57.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9674",
+"name": "Leaflet",
+"hex": "#8B987B",
+"lrv": 29.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9675",
+"name": "Westhaven",
+"hex": "#2A4442",
+"lrv": 5.1,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9676",
+"name": "Green Glimpse",
+"hex": "#E7EAE3",
+"lrv": 81.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9677",
+"name": "Kingston",
+"hex": "#D4DCD3",
+"lrv": 70.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9678",
+"name": "Holly Glen",
+"hex": "#BDCBBB",
+"lrv": 57.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9679",
+"name": "Juniper",
+"hex": "#658375",
+"lrv": 20.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9680",
+"name": "Night Watch",
+"hex": "#303636",
+"lrv": 3.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9681",
+"name": "Rainsong",
+"hex": "#DDE6E5",
+"lrv": 77.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9682",
+"name": "Silent Ripple",
+"hex": "#D7E1E5",
+"lrv": 73.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9683",
+"name": "Lakeside",
+"hex": "#ADB8C0",
+"lrv": 46.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9684",
+"name": "Azure Tide",
+"hex": "#436585",
+"lrv": 12.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9685",
+"name": "After the Storm",
+"hex": "#2A3037",
+"lrv": 2.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9686",
+"name": "Opalescent",
+"hex": "#DFE0E3",
+"lrv": 74.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9687",
+"name": "Blue Iris",
+"hex": "#DCDEE0",
+"lrv": 73.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9688",
+"name": "Modern Lavender",
+"hex": "#A8AAB3",
+"lrv": 40.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9689",
+"name": "Ripe Berry",
+"hex": "#5C5666",
+"lrv": 9.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9690",
+"name": "Mountain Fig",
+"hex": "#383C49",
+"lrv": 4.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9691",
+"name": "Crystalline",
+"hex": "#E9E3DE",
+"lrv": 77.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9692",
+"name": "Cotton Candy",
+"hex": "#F2E0DF",
+"lrv": 77.4,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9693",
+"name": "Rose Pink",
+"hex": "#EECACD",
+"lrv": 64.9,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9694",
+"name": "Wild Poppy",
+"hex": "#B85B57",
+"lrv": 18.3,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9695",
+"name": "Beetroot",
+"hex": "#833337",
+"lrv": 7.5,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9696",
+"name": "Pale Pink",
+"hex": "#EEE6DE",
+"lrv": 79.8,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9697",
+"name": "Lotus Petal",
+"hex": "#F3DFD6",
+"lrv": 76.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9698",
+"name": "Corallite",
+"hex": "#F0DFCD",
+"lrv": 75.7,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9699",
+"name": "Stone Fruit",
+"hex": "#F2A28C",
+"lrv": 46.6,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+},
+{
+"brand": "SW",
+"label": "SW 9700",
+"name": "Full Bloom",
+"hex": "#D16F65",
+"lrv": 26.0,
+"source": "sherwin-williams.com Emerald Designer Edition data (official download)"
+}
+]
