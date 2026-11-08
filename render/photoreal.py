@@ -28,6 +28,18 @@ args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
 views_path, idx, out = args[0], int(args[1]), args[2]
 SAMPLES = int(args[args.index('--samples') + 1]) if '--samples' in args else 256
 PREVIEW = '--preview' in args
+# perspective: --persp X,Y,Z,TX,TY,TZ in room plan inches (X east from the west wall face, Y north from the south wall face,
+# Z up from the floor), --lens mm, --res W,H, --clip inches (hide what is nearer than this, e.g. a wall behind the camera),
+# --stage bath|none (dress the room for the picture)
+PERSP = [float(v) for v in args[args.index('--persp') + 1].split(',')] if '--persp' in args else None
+LENS = float(args[args.index('--lens') + 1]) if '--lens' in args else 24.0
+RES = [int(v) for v in args[args.index('--res') + 1].split(',')] if '--res' in args else [1600, 1200]
+CLIP = float(args[args.index('--clip') + 1]) if '--clip' in args else 2.0
+STAGE = args[args.index('--stage') + 1] if '--stage' in args else 'none'
+# components left out of this picture: an elevation flattens an alcove onto its wall plane (the tub drawn on the south
+# wall stands in the tub alcove, not in the room), so a perspective inside the room leaves those pieces out
+SKIP = set(args[args.index('--skip') + 1].split(',')) if '--skip' in args else set()
+LIGHTS_ON = '--lights' in args
 V = json.load(open(views_path))[idx]
 _ppi = args[args.index('--ppi') + 1] if '--ppi' in args else 'auto'
 PPI = float(V['k']) * 17.0 / 1892.0 * 300.0 if _ppi == 'auto' else float(_ppi)
@@ -95,9 +107,50 @@ def material(code, variant=''):
         nt.links.new(rr.outputs['Color'], mr.inputs['Value']); nt.links.new(mr.outputs['Result'], b.inputs['Roughness'])
         _bevel_normal(nt, b, 0.06 if variant else 0.02, nmap.outputs['Normal'])
         return m
+    if kind == 'fabric':
+        # terry or linen: the colour from the spec, the weave from a scan's normal and roughness, a soft sheen at the edges
+        folder = spec.get('texture', 'terry_cloth'); size = {'terry_cloth': 0.367, 'rough_linen': 0.5}.get(folder, 0.4)
+        n = _img(nt, os.path.join(ASSETS, folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
+        nmap = nt.nodes.new('ShaderNodeNormalMap'); nmap.inputs['Strength'].default_value = 0.8; nt.links.new(n.outputs['Color'], nmap.inputs['Color'])
+        nt.links.new(nmap.outputs['Normal'], b.inputs['Normal'])
+        b.inputs['Roughness'].default_value = 0.95; b.inputs['Sheen Weight'].default_value = 0.6; b.inputs['Sheen Roughness'].default_value = 0.5
+        return m
+    if kind == 'checker':
+        # a checkered floor: two colours on the module the spec gives, laid square to the room
+        ck = nt.nodes.new('ShaderNodeTexChecker'); mp = nt.nodes.new('ShaderNodeMapping')
+        s_ = 1.0 / (2 * spec.get('module', 12.0) * IN); mp.inputs['Scale'].default_value = (s_, s_, s_)
+        nt.links.new(obj, mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], ck.inputs['Vector']); ck.inputs['Scale'].default_value = 1.0
+        ck.inputs['Color1'].default_value = (*rgb, 1); ck.inputs['Color2'].default_value = (*hex_lin(spec.get('hex2', '#333333')), 1)
+        nt.links.new(ck.outputs['Color'], b.inputs['Base Color']); _bevel_normal(nt, b, 0.02)
+        return m
+    if kind == 'marble':
+        # polished or honed white marble, procedural: soft grey veins that wander and branch (calacatta / carrara look);
+        # spec 'veins' sets how strong. Scanned marble at Poly Haven is beige rock, not a quarried white slab.
+        base = rgb; vein = hex_lin(spec.get('vein', '#8E8E8C')); strength = spec.get('veins', 0.85)
+        mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.6, 1.6, 1.6); nt.links.new(obj, mp.inputs['Vector'])
+        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.4; nz.inputs['Detail'].default_value = 6.0; nz.inputs['Distortion'].default_value = 0.4
+        nt.links.new(mp.outputs['Vector'], nz.inputs['Vector'])
+        wv = nt.nodes.new('ShaderNodeTexWave'); wv.wave_type = 'BANDS'; wv.bands_direction = 'DIAGONAL'; wv.inputs['Scale'].default_value = 0.9
+        wv.inputs['Distortion'].default_value = 9.0; wv.inputs['Detail'].default_value = 8.0; wv.inputs['Detail Scale'].default_value = 1.5
+        nt.links.new(mp.outputs['Vector'], wv.inputs['Vector'])
+        mx0 = nt.nodes.new('ShaderNodeMix'); mx0.data_type = 'FLOAT'; mx0.inputs[0].default_value = 0.35
+        nt.links.new(wv.outputs['Fac'], mx0.inputs[2]); nt.links.new(nz.outputs['Fac'], mx0.inputs[3])
+        cr = nt.nodes.new('ShaderNodeValToRGB'); e = cr.color_ramp.elements
+        # thin cores, soft halos: a vein is a grey line with a haze either side, never a crack
+        core = tuple(b_ * (1 - 0.75 * strength) + v_ * 0.75 * strength for b_, v_ in zip(base, vein))
+        halo = tuple(b_ * (1 - 0.22 * strength) + v_ * 0.22 * strength for b_, v_ in zip(base, vein))
+        e[0].position = 0.0; e[0].color = (*core, 1); e[1].position = 0.07; e[1].color = (*base, 1)
+        e2 = cr.color_ramp.elements.new(0.008); e2.color = (*halo, 1)
+        # fold the field so veins appear where it crosses mid-grey
+        ab = nt.nodes.new('ShaderNodeMath'); ab.operation = 'SUBTRACT'; ab.inputs[1].default_value = 0.5; nt.links.new(mx0.outputs[0], ab.inputs[0])
+        ab2 = nt.nodes.new('ShaderNodeMath'); ab2.operation = 'ABSOLUTE'; nt.links.new(ab.outputs[0], ab2.inputs[0])
+        nt.links.new(ab2.outputs[0], cr.inputs['Fac']); nt.links.new(cr.outputs['Color'], b.inputs['Base Color'])
+        b.inputs['Coat Weight'].default_value = 0.0 if spec.get('honed') else 0.25; b.inputs['Coat Roughness'].default_value = 0.05
+        _bevel_normal(nt, b, 0.12)
+        return m
     if kind in ('wood', 'stone'):
         folder = spec.get('texture') or ('wood_floor' if kind == 'wood' else 'marble_01')
-        size = {'wood_floor': 1.7, 'marble_01': 1.5, 'oak_veneer_01': 1.0}.get(folder, 1.5)
+        size = {'wood_floor': 1.7, 'marble_01': 1.5, 'oak_veneer_01': 1.0, 'plank_flooring_02': 1.98, 'laminate_floor_02': 1.7, 'terry_cloth': 0.367}.get(folder, 1.5)
         d = _img(nt, os.path.join(ASSETS, folder, 'Diffuse.jpg'), 'sRGB', size, obj)
         if spec.get('tint'):
             # pull the scan toward the specified colour without losing its grain: multiply by tint / mean
@@ -139,7 +192,7 @@ def material(code, variant=''):
         bb = nt.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3000
         nt.links.new(bb.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = spec.get('emit', 2.5)
         bevel_r = 0.05
-    elif kind == 'ceramic':
+    elif kind in ('ceramic', 'tile'):
         b.inputs['Coat Weight'].default_value = 0.6; b.inputs['Coat Roughness'].default_value = 0.03
     elif kind == 'gap':
         b.inputs['Base Color'].default_value = (0.012, 0.011, 0.010, 1); b.inputs['Roughness'].default_value = 0.9; bevel_r = 0.0
@@ -309,10 +362,10 @@ def b_door_leaf(a, ctx, face_d=-0.25):
         box(x0 + st, x1 - st, split - mid / 2, split + mid / 2, back, face_d, m, 'rail')
         _panel(x0 + st, rb, x1 - st, split - mid / 2, face_d, m); _panel(x0 + st, split + mid / 2, x1 - st, head - rt, face_d, m)
     elif panels == 'glass':
-        box(x0 + st, x1 - st, rb, head - rt, back + 0.6, back + 0.85, material('GLASS-DARK'), 'glass')
+        box(x0 + st, x1 - st, rb, head - rt, back + 0.6, back + 0.85, material('GLASS-CLEAR'), 'glass')
     else:
         _panel(x0 + st, rb, x1 - st, head - rt, face_d, m)
-    box(x, x + w, 0.0, head, back - 0.05, back, material('GAP'), 'doorback')
+    if panels != 'glass': box(x, x + w, 0.0, head, back - 0.05, back, material('GAP'), 'doorback')   # a glass door must let light through
     if a.get('swing') is None:
         px = x + w - 3.5 if a.get('pull', 'R') == 'R' else x + 2.3
         box(px, px + 1.2, 36, 40, face_d - 0.2, face_d + 0.01, material('GAP'), 'flushpull'); return
@@ -784,13 +837,19 @@ def build_wall(vi, M, front_room_depth):
     hs = [(o['x0'], o['x1'], o['y0'], o['y1']) for o in V['openings'] if 'x0' in o and o.get('ctx', [''])[0] == o['kind']]
     for i, r in enumerate(subtract((-6.0, Lw + 6.0, 0.0, H), hs)):
         box(r[0], r[1], r[2], r[3], -6.0, 0.0, wall_mat(), 'wall')
+    PORTALS.clear()
+    glass_doors = [c['args'] for c in V.get('calls', []) if c['comp'] == 'door_leaf' and c.get('args', {}).get('panels') == 'glass']
     for o in V['openings']:
         if 'x0' in o and o.get('ctx', [''])[0] == o['kind'] and o['kind'] not in ('niche', 'window'):
+            ext = any(g['x'] - 1 <= o['x0'] and o['x1'] <= g['x'] + g['w'] + 1 for g in glass_doors)
+            if ext:   # a full-lite door is a terrace door (the generators draw interior doors paneled): outside is beyond it
+                PORTALS.append((o['x0'] + 2, o['x1'] - 2, 9.0, o['y1'] - 5, -3.0))
+                continue
             box(o['x0'] - 24, o['x1'] + 24, 0, H, -60, -59, wall_mat(), 'beyond')
             box(o['x0'] - 24, o['x1'] + 24, -2, 0, -60, 0, material(R('floor', 'WD-01')), 'beyond_floor')
-    PORTALS.clear()
     for c in V.get('calls', []):
         fn = BUILDERS.get(c['comp'], 'missing')
+        if c['comp'] in SKIP: continue
         if fn == 'missing':
             if c['depth'] == 0: MISSING.add(c['comp'])
             continue
@@ -894,18 +953,104 @@ if ONLY:
     for m_ in bpy.data.materials:
         if m_.name == 'LAMP' and ONLY != 'lamp': m_.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 0.0
 
-# ------------------------------------------------------------------ camera: orthographic on this wall, framed exactly
-cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'ORTHO'; cam_d.sensor_fit = 'HORIZONTAL'; cam_d.ortho_scale = L * IN
-# the camera sees only the 36 in. in front of this wall (deeper than anything mounted on it); the rest of the room is
-# clipped from view but still lights, shades and shows in the mirrors
-cam_d.clip_start = max(0.01, (depth_here - 4 - 36) * IN); cam_d.clip_end = (depth_here + 12) * IN
-cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
-cam.matrix_world = M_cam @ (Matrix.Translation((L / 2 * IN, -(depth_here - 4) * IN, H / 2 * IN)) @ Matrix.Rotation(math.radians(90), 4, 'X'))
-sc.camera = cam
-if ROOM_MODE:
-    # the side walls' crown, base and trim would show end-on at the frame edges as dark profiles: hidden from the camera only
+# ------------------------------------------------------------------ staging: what makes a room look lived in for the picture
+def import_model(name, height_in, X, Y, Z, rot_deg=0.0):
+    """A CC0 Poly Haven model (render/assets/models), scaled to a height in inches, its base centred on (X, Y, Z) plan inches."""
+    try: bpy.ops.preferences.addon_enable(module='io_scene_gltf2')
+    except Exception: pass
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(ASSETS, 'models', name, name + '.gltf'))
+    new = [o for o in set(bpy.data.objects) - before]
+    meshes = [o for o in new if o.type == 'MESH']
+    if not meshes: return
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
+    zmin, zmax = min(p.z for p in pts), max(p.z for p in pts)
+    cx_, cy_ = (min(p.x for p in pts) + max(p.x for p in pts)) / 2, (min(p.y for p in pts) + max(p.y for p in pts)) / 2
+    k = height_in * IN / max(zmax - zmin, 1e-6)
+    roots = [o for o in new if o.parent is None]
+    for o in roots:
+        o.matrix_world = (Matrix.Translation((X * IN, Y * IN, Z * IN)) @ Matrix.Rotation(math.radians(rot_deg), 4, 'Z') @ Matrix.Scale(k, 4)
+                          @ Matrix.Translation((-cx_, -cy_, -zmin)) @ o.matrix_world)
+    STAGED.append(name)
+
+
+def soft_box(x0, x1, y0, y1, z0, z1, mat, radius_in, name):
+    """A soft-edged object (a folded towel, a cushion) in plan inches: a box with a real rounded bevel."""
+    o = world_box(x0, x1, y0, y1, z0, z1, mat, name)
+    bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = radius_in * IN; bv.segments = 4; bv.limit_method = 'NONE'
+    for pg in o.data.polygons: pg.use_smooth = True
+    return o
+
+
+STAGED = []
+def stage_bath():
+    """Master bath dressing (placeholder styling, captioned as such): folded towels and a vase on the vanity tops, hand
+    towels on the vanity bars, a small plant. Positions come from the north wall's own vanity and towel bar calls."""
+    vn = ALL[WALLS['NORTH']]
+    vans = [c['args'] for c in vn['calls'] if c['comp'] == 'vanity_furniture' and c['depth'] == 0]
+    bars = [c['args'] for c in vn['calls'] if c['comp'] == 'towel_bar' and c['depth'] == 0]
+    tw = material('TOWEL')
+    for i, a in enumerate(vans):
+        top = a['h'] + a['counter']; Yf = DEP - 21.0          # the vanity front, plan Y
+        if i == 0:
+            x0 = a['x'] + 3
+            for k in range(3):
+                soft_box(x0, x0 + 11, Yf - 1 - 8, Yf - 1, top + k * 1.5, top + (k + 1) * 1.5 - 0.1, tw, 0.45, 'towel_stack')
+            import_model('ceramic_vase_01', 9.0, a['x'] + a['w'] - 7, DEP - 6, top, 20)
+        else:
+            import_model('potted_plant_04', 11.0, a['x'] + a['w'] - 7, DEP - 7, top, 0)
+            import_model('wooden_bowl_01', 2.2, a['x'] + 9, DEP - 8, top, 0)
+    for a in bars:
+        cx_, y_, w_ = a['cx'], a.get('y', 30), a.get('w', 24)
+        Yb = DEP - 21.0 - 2.6                                    # bar centre, in front of the vanity face
+        hw = min(16.0, w_ - 4)
+        cyl_w = bpy.data.objects
+        soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb - 0.45, y_ - 15, y_ + 0.6, tw, 0.2, 'hand_towel_front')
+        soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb + 0.45, Yb + 1.0, y_ - 9, y_ + 0.6, tw, 0.2, 'hand_towel_back')
+        soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb + 1.0, y_ + 0.2, y_ + 1.1, tw, 0.45, 'hand_towel_fold')
+
+
+if PERSP:
+    if STAGE == 'bath' and ROOM_MODE: stage_bath()
+    cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'PERSP'; cam_d.lens = LENS; cam_d.sensor_width = 36.0; cam_d.sensor_fit = 'HORIZONTAL'
+    cam_d.clip_start = max(0.01, CLIP * IN); cam_d.clip_end = 60.0
+    cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
+    loc = Vector((PERSP[0] * IN, PERSP[1] * IN, PERSP[2] * IN)); tgt_ = Vector((PERSP[3] * IN, PERSP[4] * IN, PERSP[5] * IN))
+    # verticals stay vertical: the camera is levelled and the target height is reached with lens shift, never by tilting
+    d_ = tgt_ - loc; flat = Vector((d_.x, d_.y, 0.0))
+    cam.rotation_euler = flat.normalized().to_track_quat('-Z', 'Y').to_euler()
+    W_r, H_r = RES; hfov = 2 * math.atan(18.0 / LENS)
+    rise = d_.z / max(flat.length, 1e-6)                       # tangent of the angle to the target above the horizon
+    cam_d.shift_y = rise / (2 * math.tan(hfov / 2)) * 1.0
+    cam.location = loc; sc.camera = cam
+    sc.render.resolution_x, sc.render.resolution_y = W_r, H_r
+    # the garden outside the windows: an outdoor HDRI in place of the studio one, so the glass shows planting and sky
+    env.image = bpy.data.images.load(os.path.join(ASSETS, 'green_sanctuary_2k.hdr'))
+    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 7.0
+    # late-afternoon sun, low from the west-southwest, through the windows and glass doors: long patches on the floor and
+    # the lower walls, the contrast every interior photograph is built on
+    if not LIGHTS_ON:   # a daytime photograph: downlights off, sconces on low
+        for o in DOWN: o.hide_render = True
     for o in bpy.data.objects:
-        if o.type == 'MESH' and o.get('wall_view') is not None and o['wall_view'] != idx: o.visible_camera = False
+        if o.type == 'LIGHT' and o.data.type == 'SUN':
+            o.data.energy = 22.0; o.data.angle = math.radians(1.2)
+            o.rotation_euler = (math.radians(90 - 32), 0, math.radians(-70))
+    for o in bpy.data.objects:                                   # walls for the exposure mask
+        if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1
+else:
+    cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'ORTHO'; cam_d.sensor_fit = 'HORIZONTAL'; cam_d.ortho_scale = L * IN
+    # the camera sees only the 36 in. in front of this wall (deeper than anything mounted on it); the rest of the room is
+    # clipped from view but still lights, shades and shows in the mirrors
+    cam_d.clip_start = max(0.01, (depth_here - 4 - 36) * IN); cam_d.clip_end = (depth_here + 12) * IN
+    cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
+    cam.matrix_world = M_cam @ (Matrix.Translation((L / 2 * IN, -(depth_here - 4) * IN, H / 2 * IN)) @ Matrix.Rotation(math.radians(90), 4, 'X'))
+    sc.camera = cam
+    if ROOM_MODE:
+        # the side walls' crown, base and trim would show end-on at the frame edges as dark profiles: hidden from the camera only
+        for o in bpy.data.objects:
+            if o.type == 'MESH' and o.get('wall_view') is not None and o['wall_view'] != idx: o.visible_camera = False
+
 
 sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'
 sc.cycles.use_adaptive_sampling = True; sc.cycles.adaptive_threshold = 0.01
@@ -916,7 +1061,15 @@ sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'; sc.cycles.denoising_pref
 sc.cycles.max_bounces = 8; sc.cycles.diffuse_bounces = 4; sc.cycles.glossy_bounces = 4; sc.cycles.sample_clamp_indirect = 8.0
 sc.cycles.caustics_reflective = False; sc.cycles.caustics_refractive = False; sc.cycles.blur_glossy = 1.0
 sc.view_settings.view_transform = 'Khronos PBR Neutral'; sc.view_settings.look = 'None'
-sc.render.resolution_x, sc.render.resolution_y = int(round(L * PPI)), int(round(H * PPI)); sc.render.resolution_percentage = 100
+if PERSP:
+    # a photograph, not a chip: AgX rolls the sun patches and the window off like film; the grey card still sets the wall
+    sc.view_settings.view_transform = 'AgX'
+    try: sc.view_settings.look = 'AgX - Medium High Contrast'
+    except Exception: pass
+    sc.view_layers[0].use_pass_object_index = True
+else:
+    sc.render.resolution_x, sc.render.resolution_y = int(round(L * PPI)), int(round(H * PPI))
+sc.render.resolution_percentage = 100
 sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_depth = '8'
 
 
@@ -942,9 +1095,15 @@ def wall_mask(W_, H_):
 
 
 def measure_wall(path):
-    """Median linear RGB of the bare-wall pixels."""
+    """Median linear RGB of the bare-wall pixels (ortho: the mask from the captured primitives; perspective: the walls'
+    object index pass written beside the calibration render)."""
     img = bpy.data.images.load(path); px = list(img.pixels); W_, H_ = img.size
-    mask = wall_mask(W_, H_); vals = []
+    if PERSP:
+        mi = bpy.data.images.load(MASK_PATH, check_existing=False); mp_ = list(mi.pixels)
+        mask = [[mp_[((H_ - 1 - yy) * W_ + xx) * 4] > 0.5 for xx in range(W_)] for yy in range(H_)]
+    else:
+        mask = wall_mask(W_, H_)
+    vals = []
     for yy in range(H_):
         row = H_ - 1 - yy
         for xx in range(0, W_, 2):
@@ -968,6 +1127,15 @@ for nd in list(ntc.nodes): ntc.nodes.remove(nd)
 rl = ntc.nodes.new('CompositorNodeRLayers'); cb = ntc.nodes.new('CompositorNodeColorBalance'); co = ntc.nodes.new('CompositorNodeComposite')
 cb.correction_method = 'OFFSET_POWER_SLOPE'; cb.slope = (1.0, 1.0, 1.0)
 ntc.links.new(rl.outputs['Image'], cb.inputs['Image']); ntc.links.new(cb.outputs['Image'], co.inputs['Image'])
+MASK_PATH = None
+if PERSP:
+    idm = ntc.nodes.new('CompositorNodeIDMask'); idm.index = 1; idm.use_antialiasing = False
+    fo = ntc.nodes.new('CompositorNodeOutputFile'); fo.base_path = out + '_mask'; fo.file_slots[0].path = 'mask'
+    fo.format.file_format = 'PNG'; fo.format.color_mode = 'RGB'
+    ntc.links.new(rl.outputs['IndexOB'], idm.inputs['ID value']); ntc.links.new(idm.outputs['Alpha'], fo.inputs[0])
+    MASK_PATH = os.path.join(out + '_mask', 'mask%04d.png' % sc.frame_current)
+    WALL_EXPOSURE = 0.82     # a bright interior photograph; the sun patches roll off in AgX
+    tgt = [WALL_EXPOSURE * v for v in (MATS.get(R('wall', 'PT-02'), {}).get('lin') or hex_lin(MATS.get(R('wall', 'PT-02'), {}).get('hex', '#BCBCBC')))]
 sc.render.resolution_percentage = 25; sc.cycles.samples = 24; sc.render.filepath = out + '.cal.png'
 gain = [1.0, 1.0, 1.0]
 for it in range(4):   # measured after the view transform, so iterate: highlight roll-off makes one step undershoot
@@ -978,15 +1146,19 @@ for it in range(4):   # measured after the view transform, so iterate: highlight
     if err < 0.015: break
     gain = [gain[c] * tgt[c] / max(got[c], 1e-4) for c in range(3)]
     g_mid = sorted(gain)[1]
-    if max(gain) / min(gain) > 2.2:      # more than a strong white-balance correction: the light is wrong, not the camera
+    lim = 1.6 if PERSP else 2.2          # a perspective keeps some of the light's own warmth, as a photograph does
+    if max(gain) / min(gain) > lim:      # more than a strong white-balance correction: the light is wrong, not the camera
         print('WARNING white balance outside a plausible range', [round(g, 3) for g in gain], '- clamped')
-        gain = [min(max(g, g_mid / 1.48), g_mid * 1.48) for g in gain]
+        gain = [min(max(g, g_mid / lim ** 0.5), g_mid * lim ** 0.5) for g in gain]
     cb.slope = gain
 print('gain', [round(v, 3) for v in gain])
+if PERSP and MASK_PATH:
+    for nd in list(ntc.nodes):
+        if nd.bl_idname in ('CompositorNodeOutputFile', 'CompositorNodeIDMask'): ntc.nodes.remove(nd)
 if not PREVIEW:
     sc.render.resolution_percentage = 100; sc.cycles.samples = SAMPLES
 else:
     sc.render.resolution_percentage = 50; sc.cycles.samples = 48
 sc.render.filepath = out
 bpy.ops.render.render(write_still=True)
-print('rendered', out, sc.render.resolution_x * sc.render.resolution_percentage // 100, 'built', sorted(BUILT), 'MISSING', sorted(MISSING))
+print('rendered', out, sc.render.resolution_x * sc.render.resolution_percentage // 100, 'built', sorted(BUILT), 'MISSING', sorted(MISSING), 'staged', STAGED)

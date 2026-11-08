@@ -6,8 +6,9 @@ HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets'); os.ma
 def get(u, out=None):
     r = subprocess.run(['curl', '-sSfL', '--max-time', '180', '-A', 'IDD-render/1.0'] + (['-o', out] if out else []) + [u], capture_output=True, check=True)
     return r.stdout
-TEX = ['oak_veneer_01', 'wood_floor', 'marble_01', 'painted_plaster_wall', 'rough_linen']
-HDRI = ['white_home_studio', 'modern_bathroom']
+TEX = ['oak_veneer_01', 'wood_floor', 'marble_01', 'painted_plaster_wall', 'rough_linen', 'laminate_floor_02', 'plank_flooring_02', 'terry_cloth']
+HDRI = ['white_home_studio', 'modern_bathroom', 'green_sanctuary', 'garden_nook']
+MODELS = ['potted_plant_01', 'potted_plant_04', 'ceramic_vase_01', 'ceramic_vase_03', 'wooden_bowl_01', 'wicker_basket_02', 'wooden_stool_02']
 for a in TEX:
     d = json.loads(get('https://api.polyhaven.com/files/' + a)); os.makedirs(os.path.join(HERE, a), exist_ok=True)
     for m in ('Diffuse', 'nor_gl', 'Rough'):
@@ -16,4 +17,11 @@ for a in TEX:
 for h in HDRI:
     out = os.path.join(HERE, h + '_2k.hdr')
     if not os.path.exists(out): get(json.loads(get('https://api.polyhaven.com/files/' + h))['hdri']['2k']['hdr']['url'], out)
+for m in MODELS:
+    dest = os.path.join(HERE, 'models', m)
+    if os.path.exists(os.path.join(dest, m + '.gltf')): continue
+    g = json.loads(get('https://api.polyhaven.com/files/' + m))['gltf']['1k']['gltf']; os.makedirs(dest, exist_ok=True)
+    get(g['url'], os.path.join(dest, m + '.gltf'))
+    for rel, inc in g.get('include', {}).items():
+        p_ = os.path.join(dest, rel); os.makedirs(os.path.dirname(p_), exist_ok=True); get(inc['url'], p_)
 print('assets in', HERE)

@@ -50,19 +50,24 @@
  },
  "STONE-TOP": {
   "name": "VANITY STONE TOP (PICK OPEN)",
-  "hex": "#E8E6E1",
-  "rough": 0.25,
-  "kind": "stone",
+  "hex": "#F1EFEA",
+  "rough": 0.12,
+  "kind": "marble",
   "status": "PLACEHOLDER",
-  "source": "owner pick open"
+  "source": "owner pick open",
+  "vein": "#8C8C8A",
+  "veins": 0.85
  },
  "WT-02": {
   "name": "PORCELAIN SLAB 48x96, HONED",
-  "hex": "#E6E3DD",
-  "rough": 0.4,
-  "kind": "stone",
+  "hex": "#ECEAE5",
+  "rough": 0.35,
+  "kind": "marble",
   "status": "PLACEHOLDER",
-  "source": "product open"
+  "source": "product open",
+  "honed": true,
+  "vein": "#A3A29F",
+  "veins": 0.5
  },
  "WT-01": {
   "name": "WALL TILE, SECONDARY BATHS",
@@ -155,10 +160,11 @@
  "WD-01": {
   "name": "WOOD FLOOR (PICK OPEN)",
   "hex": "#9C7A57",
-  "rough": 0.45,
+  "rough": 0.35,
   "kind": "wood",
   "status": "PLACEHOLDER",
-  "source": "species and stain open"
+  "source": "species and stain open",
+  "texture": "laminate_floor_02"
  },
  "BLACK": {
   "name": "TV SCREEN, DARK",
@@ -175,5 +181,169 @@
   "kind": "paint",
   "status": "VERIFIED",
   "source": "render/calibrate.py"
+ },
+ "TOWEL": {
+  "name": "TOWELS (STAGING)",
+  "hex": "#F2EFE8",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "terry_cloth",
+  "status": "STAGING",
+  "source": "Poly Haven terry_cloth, CC0"
+ },
+ "CM-01": {
+  "name": "CROWN MOLDING, 8\" BUILT UP (PT-01 SATIN, PER 11.01.26: PT-02 LOWER, PT-01 UPPER CROWN)",
+  "hex": "#EDECE6",
+  "rough": 0.4,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "follows PT-01 SW 7005; two-tone crown split not modeled"
+ },
+ "CM-02": {
+  "name": "CROWN MOLDING, 12\" BUILT UP, LIVING ROOM",
+  "hex": "#EDECE6",
+  "rough": 0.4,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "follows PT-01 SW 7005"
+ },
+ "FR-01": {
+  "name": "FRP PANELS, UTILITY (DOG ROOM)",
+  "hex": "#F1F0EB",
+  "rough": 0.5,
+  "kind": "plastic",
+  "status": "PLACEHOLDER",
+  "source": "product open; white pebbled FRP assumed"
+ },
+ "SL-01": {
+  "name": "SCHLUTER BORDER STRIP, BRASS",
+  "lin": [
+   0.91,
+   0.778,
+   0.423
+  ],
+  "f82": [
+   0.952,
+   0.979,
+   1.021
+  ],
+  "rough": 0.3,
+  "kind": "metal",
+  "status": "PLACEHOLDER",
+  "source": "brass per 11.01.26 decision; finish open"
+ },
+ "ST-01": {
+  "name": "MARBLE, STAIR LANDING AND HEARTH, HONED",
+  "hex": "#E9E6DF",
+  "rough": 0.35,
+  "kind": "marble",
+  "honed": true,
+  "vein": "#9C9A95",
+  "veins": 0.6,
+  "status": "PLACEHOLDER",
+  "source": "stone open; honed white marble assumed"
+ },
+ "ST-02": {
+  "name": "MARBLE, POWDER ROOM",
+  "hex": "#ECE9E3",
+  "rough": 0.15,
+  "kind": "marble",
+  "vein": "#7F7E7A",
+  "veins": 0.9,
+  "status": "PLACEHOLDER",
+  "source": "stone open"
+ },
+ "ST-03": {
+  "name": "STONE: COUNTERS, SPLASH, SHELVES, HONED, SLAB T.B.C.",
+  "hex": "#F0EEE9",
+  "rough": 0.3,
+  "kind": "marble",
+  "honed": true,
+  "vein": "#8A8A88",
+  "veins": 0.9,
+  "status": "PLACEHOLDER",
+  "source": "slab to be chosen; calacatta-look assumed"
+ },
+ "TL-01": {
+  "name": "PORCELAIN TILE, ENTRY AND PANTRY, CHECKERED",
+  "hex": "#ECEAE4",
+  "hex2": "#3A3A38",
+  "module": 12.0,
+  "rough": 0.35,
+  "kind": "checker",
+  "status": "PLACEHOLDER",
+  "source": "checkered per 11.01.26; colors and size open"
+ },
+ "TL-02": {
+  "name": "PORCELAIN TILE, GUEST BATH, BATHS 2 AND 3",
+  "hex": "#E4E1DB",
+  "rough": 0.4,
+  "kind": "tile",
+  "status": "PLACEHOLDER",
+  "source": "product open"
+ },
+ "TL-03": {
+  "name": "PORCELAIN TILE, MASTER BATH",
+  "hex": "#E8E5DF",
+  "rough": 0.4,
+  "kind": "tile",
+  "status": "PLACEHOLDER",
+  "source": "product open"
+ },
+ "TL-04": {
+  "name": "PORCELAIN TILE 24x24, LAUNDRY, BACK HALL, UTILITY, STORAGE",
+  "hex": "#CFCBC4",
+  "rough": 0.45,
+  "kind": "tile",
+  "status": "PLACEHOLDER",
+  "source": "product open"
+ },
+ "WC-01": {
+  "name": "WALLCOVERING, BEDROOMS",
+  "hex": "#E3DED3",
+  "rough": 0.7,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "pattern open; plain grasscloth-tone stand-in"
+ },
+ "WC-02": {
+  "name": "WALLCOVERING, POWDER ROOM, DARK BOTANICAL",
+  "hex": "#2F3B33",
+  "rough": 0.6,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "pattern to approve; dark ground stand-in, no pattern"
+ },
+ "WD-02": {
+  "name": "WOOD FLOORS, BORDER",
+  "hex": "#7A5A3E",
+  "rough": 0.4,
+  "kind": "wood",
+  "texture": "laminate_floor_02",
+  "tint": [
+   0.72,
+   0.62,
+   0.55
+  ],
+  "status": "PLACEHOLDER",
+  "source": "species and stain open; darker than the field"
+ },
+ "WP-01": {
+  "name": "PAINTED PANELING, SATIN",
+  "hex": "#EDECE6",
+  "rough": 0.4,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "PT-01 satin per the paint schedule"
+ },
+ "WS-01": {
+  "name": "STONE, LIVING ROOM FIREPLACE",
+  "hex": "#EEECE8",
+  "rough": 0.12,
+  "kind": "marble",
+  "vein": "#7E7E7C",
+  "veins": 1.0,
+  "status": "PLACEHOLDER",
+  "source": "slab open"
  }
 }
