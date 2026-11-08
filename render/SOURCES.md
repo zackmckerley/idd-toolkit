@@ -1,0 +1,1 @@
+Poly Haven (polyhaven.com), CC0. Downloaded 11.07.26 at 2k: textures oak_veneer_01, wood_floor, marble_01, painted_plaster_wall, rough_linen (Diffuse, nor_gl, Rough); HDRIs white_home_studio, modern_bathroom.

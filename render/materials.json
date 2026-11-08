@@ -1,0 +1,179 @@
+{
+ "_note": "Finish code to render material. hex is sRGB as published by the maker, converted to linear in the renderer; 'lin' (metals) is measured linear reflectance from physicallybased.info used as is, 'f82' the edge tint. status: VERIFIED (maker data, source given), THIRD-PARTY (published by a paint database, confirm on the maker's page), PLACEHOLDER (no pick yet). Roughness by sheen is an estimate (no published gloss-unit to roughness map): flat 0.7, eggshell 0.55, satin 0.4, semi-gloss 0.25, high gloss 0.08.",
+ "PT-01": {
+  "name": "SW 7005 PURE WHITE",
+  "hex": "#EDECE6",
+  "rough": 0.55,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "RGB 237,236,230 in sherwin-williams.com page data (11.07.26); LRV not published on the page, about 84 by luminance"
+ },
+ "PT-01-SATIN": {
+  "name": "SW 7005 PURE WHITE, SATIN",
+  "hex": "#EDECE6",
+  "rough": 0.4,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "follows PT-01, satin"
+ },
+ "PT-02": {
+  "name": "SW 9571 SOLSTICE (OPTION 1)",
+  "hex": "#DBD9D2",
+  "rough": 0.55,
+  "kind": "paint",
+  "status": "THIRD-PARTY",
+  "source": "paintdb.com and pontata.com, LRV 69.3 (11.07.26). The finish plans read SW 5971, which does not exist: confirm SW 9571 with the owner. Option 2 SW 9583 Sanctuary #E6E2D9, LRV 76.4"
+ },
+ "PT-03": {
+  "name": "BM 2041-10 HUNTER GREEN, HIGH GLOSS",
+  "hex": "#2A453D",
+  "rough": 0.08,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "benjaminmoore.com 2041-10 Hunter Green, LRV 6.39 (11.07.26)"
+ },
+ "WP-02": {
+  "name": "PAINTED PANELING, PT-02 SATIN",
+  "hex": "#DBD9D2",
+  "rough": 0.4,
+  "kind": "paint",
+  "status": "THIRD-PARTY",
+  "source": "follows PT-02, satin"
+ },
+ "VAN-01": {
+  "name": "VANITY PAINT (PICK OPEN)",
+  "hex": "#E9E5DC",
+  "rough": 0.35,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "owner pick open"
+ },
+ "STONE-TOP": {
+  "name": "VANITY STONE TOP (PICK OPEN)",
+  "hex": "#E8E6E1",
+  "rough": 0.25,
+  "kind": "stone",
+  "status": "PLACEHOLDER",
+  "source": "owner pick open"
+ },
+ "WT-02": {
+  "name": "PORCELAIN SLAB 48x96, HONED",
+  "hex": "#E6E3DD",
+  "rough": 0.4,
+  "kind": "stone",
+  "status": "PLACEHOLDER",
+  "source": "product open"
+ },
+ "WT-01": {
+  "name": "WALL TILE, SECONDARY BATHS",
+  "hex": "#EFEEEA",
+  "rough": 0.2,
+  "kind": "tile",
+  "status": "PLACEHOLDER",
+  "source": "product open"
+ },
+ "METAL-NICKEL": {
+  "name": "POLISHED NICKEL",
+  "hex": "#C9C3B8",
+  "rough": 0.08,
+  "metal": 1.0,
+  "kind": "metal",
+  "status": "VERIFIED",
+  "source": "physicallybased.info nickel; polished",
+  "lin": [
+   0.697,
+   0.641,
+   0.563
+  ],
+  "f82": [
+   0.815,
+   0.834,
+   0.871
+  ]
+ },
+ "METAL-BRASS": {
+  "name": "UNLACQUERED BRASS, BRUSHED",
+  "hex": "#C9A866",
+  "rough": 0.3,
+  "metal": 1.0,
+  "kind": "metal",
+  "status": "VERIFIED",
+  "source": "physicallybased.info brass; brushed roughness is an estimate",
+  "lin": [
+   0.91,
+   0.778,
+   0.423
+  ],
+  "f82": [
+   0.952,
+   0.979,
+   1.021
+  ]
+ },
+ "MIRROR": {
+  "name": "MIRROR",
+  "hex": "#C9D3D7",
+  "rough": 0.03,
+  "metal": 1.0,
+  "kind": "mirror",
+  "status": "VERIFIED",
+  "source": "elevation convention: pale glass with diagonal streaks (an orthographic mirror has nothing to reflect)"
+ },
+ "GLASS-DARK": {
+  "name": "WINDOW GLASS SEEN FROM INSIDE, DAYLIGHT BEYOND",
+  "hex": "#9FB3BD",
+  "rough": 0.05,
+  "kind": "glass",
+  "status": "VERIFIED",
+  "source": "generic"
+ },
+ "PORCELAIN": {
+  "name": "VITREOUS CHINA",
+  "hex": "#E0E0DD",
+  "rough": 0.05,
+  "kind": "ceramic",
+  "status": "VERIFIED",
+  "source": "physicallybased.info glazed porcelain, linear 0.745/0.745/0.723"
+ },
+ "SHADE": {
+  "name": "SCONCE SHADE, WHITE GLASS OR LINEN",
+  "hex": "#F2EEE6",
+  "rough": 0.5,
+  "emit": 0.0,
+  "kind": "fabric",
+  "status": "PLACEHOLDER",
+  "source": "fixture open"
+ },
+ "PLATE": {
+  "name": "DEVICE PLATE, WHITE",
+  "hex": "#F3F3F1",
+  "rough": 0.3,
+  "kind": "plastic",
+  "status": "VERIFIED",
+  "source": "generic"
+ },
+ "WD-01": {
+  "name": "WOOD FLOOR (PICK OPEN)",
+  "hex": "#9C7A57",
+  "rough": 0.45,
+  "kind": "wood",
+  "status": "PLACEHOLDER",
+  "source": "species and stain open"
+ },
+ "BLACK": {
+  "name": "TV SCREEN, DARK",
+  "hex": "#1C1C1C",
+  "rough": 0.1,
+  "kind": "plastic",
+  "status": "VERIFIED",
+  "source": "generic"
+ },
+ "CAL-GRAY": {
+  "name": "CALIBRATION GREY, LINEAR 0.5",
+  "hex": "#BCBCBC",
+  "rough": 0.9,
+  "kind": "paint",
+  "status": "VERIFIED",
+  "source": "render/calibrate.py"
+ }
+}

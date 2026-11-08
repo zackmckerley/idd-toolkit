@@ -1,0 +1,8 @@
+*.pdf
+!brand/*.pdf
+*.png
+*.xlsx
+*.zip
+render/assets/
+__pycache__/
+*.prev*.pdf

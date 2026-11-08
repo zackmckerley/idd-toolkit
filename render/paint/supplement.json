@@ -1,0 +1,109 @@
+{
+ "_note": "Colors missing from or wrong in the colornerd 2.4.11 data (2022: it lacks SW 9xxx and every BM OC color, and cuts BM names to one word). Supplement entries override the dataset. Maker-sourced entries are marked (maker); third-party ones must be confirmed on the maker's page before a spec. Add a color here each time one is specified.",
+ "colors": [
+  {
+   "brand": "SW",
+   "label": "SW 9571",
+   "name": "Solstice",
+   "hex": "#DBD9D2",
+   "lrv": 69.3,
+   "source": "paintdb.com / pontata.com, 11.07.26 (third party)"
+  },
+  {
+   "brand": "SW",
+   "label": "SW 9583",
+   "name": "Sanctuary",
+   "hex": "#E6E2D9",
+   "lrv": 76.4,
+   "source": "paintdb.com / plan-home.com, 11.07.26 (third party)"
+  },
+  {
+   "brand": "SW",
+   "label": "SW 7005",
+   "name": "Pure White",
+   "hex": "#EDECE6",
+   "lrv": null,
+   "source": "colornerd 2.4.11; RGB 237,236,230 confirmed in sherwin-williams.com page data (research 11.07.26); LRV not on the page"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-17",
+   "name": "White Dove",
+   "hex": "#EFEEE5",
+   "lrv": 83.16,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-17/white-dove, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-117",
+   "name": "Simply White",
+   "hex": "#F6F6ED",
+   "lrv": 89.52,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-117/simply-white, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-65",
+   "name": "Chantilly Lace",
+   "hex": "#F4F6F1",
+   "lrv": 90.04,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-65/chantilly-lace, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-20",
+   "name": "Pale Oak",
+   "hex": "#DDD9CE",
+   "lrv": 68.64,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-20/pale-oak, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "HC-172",
+   "name": "Revere Pewter",
+   "hex": "#CBC6B8",
+   "lrv": 55.05,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/hc-172/revere-pewter, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-23",
+   "name": "Classic Gray",
+   "hex": "#E3E0D7",
+   "lrv": 73.67,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-23/classic-gray, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-52",
+   "name": "Gray Owl",
+   "hex": "#D3D4CC",
+   "lrv": 64.51,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-52/gray-owl, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-130",
+   "name": "Cloud White",
+   "hex": "#F2F1E6",
+   "lrv": 85.05,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-130/cloud-white, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "OC-45",
+   "name": "Swiss Coffee",
+   "hex": "#EEECE1",
+   "lrv": 81.91,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/oc-45/swiss-coffee, 11.07.26 (maker)"
+  },
+  {
+   "brand": "BM",
+   "label": "2041-10",
+   "name": "Hunter Green",
+   "hex": "#2A453D",
+   "lrv": 6.39,
+   "source": "benjaminmoore.com/en-us/paint-colors/color/2041-10/hunter-green, 11.07.26 (maker)"
+  }
+ ]
+}

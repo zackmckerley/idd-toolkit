@@ -1,0 +1,27 @@
+{
+ "_note": "Which finish code each role takes, per room, with per-view overrides (fnmatch on the view title). Roles: wall, trim, door, crown, panel, vanity, counter, cabinet, mirror_frame, metal, shade, tile, floor. Change a pick here (or from an inspiration read) and every render that uses it changes.",
+ "MASTER BATH": {
+  "roles": {
+   "wall": "PT-02",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-02",
+   "panel": "WP-02",
+   "vanity": "VAN-01",
+   "counter": "STONE-TOP",
+   "mirror_frame": "METAL-NICKEL",
+   "metal": "METAL-NICKEL",
+   "shade": "SHADE",
+   "tile": "WT-02",
+   "floor": "WD-01"
+  },
+  "views": {
+   "SHOWER*": {
+    "wall": "WT-02"
+   },
+   "TUB ALCOVE*": {
+    "wall": "WT-02"
+   }
+  }
+ }
+}
