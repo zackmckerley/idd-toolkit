@@ -344,9 +344,9 @@ def south_wall(v):
         else: undercounter(v, cx, w_, kind)
         cx += w_
     K.counter(v, m0, m1)
-    K._rect(v, m0, K.COUNTER, m1, UP_T, K.MED)                                          # slab, no veins (review 11.09.26: they read as stray lines)
+    C.tile_grid(v, m0, m1, K.COUNTER, UP_T, module=(3.0, 12.0), grout=0.0625, setout='center')   # owner 11.10.26: TL-05 at the bar too, as the range wall
     for y in MSHELF:
-        K.floating_shelf(v, m0, m1 - m0, y, B.SHELF_T); C._line(v, (m0 + 2, y - 0.4), (m1 - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
+        K.floating_shelf(v, m0, m1 - m0, y, B.SHELF_T, finish='wood'); C._line(v, (m0 + 2, y - 0.4), (m1 - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
     hw = (m1 - m0) / 2                                                                   # owner 11.09.26 (C30): glass in the middle uppers, two pairs
     K.door_pair_cab(v, m0, hw, UP_T, TOP, glass=True, depth=25.0); K.door_pair_cab(v, m0 + hw, hw, UP_T, TOP, glass=True, depth=25.0)   # flush with the talls
     glass_inside(v, m0, hw, UP_T, TOP, 2, (13.0,)); glass_inside(v, m0 + hw, hw, UP_T, TOP, 2, (13.0,))
@@ -496,7 +496,7 @@ def shelving(v, x0, x1, y0, y1, shelves):
     C._rect(v, x0, y0, x1, y1, C.OUTLINE)
     C._rect(v, x0 + 0.75, y0 + 0.75, x1 - 0.75, y1 - 0.75, C.FINE, MID)
     for y in shelves:
-        K.floating_shelf(v, x0 + 0.75, x1 - x0 - 1.5, y, 1.25)
+        K.floating_shelf(v, x0 + 0.75, x1 - x0 - 1.5, y, 1.25, finish='paint')
         C._line(v, (x0 + 2, y - 0.4), (x1 - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
 
 def glass_inside(v, x, w, y0, y1, n, shelves=(10.0, 20.0)):
@@ -717,7 +717,7 @@ def west_wall(v):
     sh_s = (s0 + B.SHELF_GAP, bx - B.SHELF_GAP); sh_n = (bx1 + B.SHELF_GAP, tall_x - B.SHELF_GAP)
     for y in B.SHELF_Y:
         for a, b in (sh_s, sh_n):
-            K.floating_shelf(v, a, b - a, y, B.SHELF_T)
+            K.floating_shelf(v, a, b - a, y, B.SHELF_T, finish='wood')
             C._line(v, (a + 2, y - 0.4), (b - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
     K.pot_filler(v, RC, 58); tag(v, RC + 21, 67, 'A8', 5.0, INK, box=True); C._line(v, (RC + 20, 65.4), (RC + 16.4, 59.6), C.FINE, MID)   # leader to the spout
     for ox in W_OUTLETS: K.outlet_splash(v, ox)
@@ -737,7 +737,7 @@ def west_wall(v):
             f'{ft(bx - s0)} OF OPEN STONE WALL EACH SIDE OF THE BREAST. FOR DRAWS A 26" RANGE AND A 32" HOOD: THE 48" RANGE AND THE BREAST ARE THE OWNER\'S AND ARE '
             'LISTED FOR FOR ON ID-741. 54" HOOD LINER A2 IN A RECTANGULAR BREAST 60" WIDE AND 27" DEEP, STRAIGHT SIDES, NO TAPER, WRAPPED ON THE FACE, BOTH SIDES AND '
             'THE UNDERSIDE IN ST-03 (CALACATTA MONET, THE COUNTER STONE), BOOK-MATCHED FACE, MITERED CORNERS (OWNER 11.09.26 PM; VERIFY AGAINST THE LINER\'S '
-            'ENCLOSURE DRAWING), 6\'-0" TO THE CROWN. TL-05 3x12 CREAM GLOSS TILE IN A VERTICAL STACK, COUNTER TO SCRIBE LINE, WRAPPED ONTO THE COLUMN RETURNS. TWO 2" ST-03 FLOATING SHELVES EACH SIDE ON STEEL RODS, '
+            'ENCLOSURE DRAWING), 6\'-0" TO THE CROWN. TL-05 3x12 CREAM GLOSS TILE IN A VERTICAL STACK, COUNTER TO SCRIBE LINE, WRAPPED ONTO THE COLUMN RETURNS. TWO 2" WHITE OAK FLOATING SHELVES STAINED TO MATCH WD-01 EACH SIDE ON STEEL RODS, '
             f'{ft(sh_l)} LONG, UNDERSIDES AT 6\'-0" (FLUSH WITH THE HOOD BOTTOM) AND 7\'-6" (OWNER 11.09.26, RAISED FROM 4\'-6" AND 6\'-0"), 4" CLEAR OF THE COLUMNS AND THE BREAST, EACH WITH A MILLED LED CHANNEL AT THE '
             'BACK EDGE (2700K, 90 CRI, FROSTED DIFFUSER, DIMMED WITH THE HOOD LIGHTS), FED THROUGH ONE HOLLOW ROD AND A 3/4" HOLE IN THE SLAB TO DRIVERS IN THE END '
             'BASE CABINETS (BEHIND THE BOTTOM DRAWERS, ACCESS PANEL). NO UPPER CABINETS, NO SCONCES, NO WINDOWS: FOR REV 1 STILL SHOWS TWO WEST WINDOWS, BOTH '
@@ -847,11 +847,11 @@ def island_end(v, which='N'):
 from idd_sheet import ps as _ps
 PN = 6.0; PN_LH = _ps(PN) + 2.4                      # note size and line height as printed
 VIEW_NOTES = {
-    1: '48" RANGE A1, 54" HOOD LINER A2 IN A 60" x 27" BREAST CLAD IN ST-03 (THE COUNTER STONE). TL-05 TILE COUNTER TO 9\'-7", COLUMN TO COLUMN. 1,200 CFM REMOTE BLOWER: '
-       'DUCT TO EXTERIOR AND MAKE-UP AIR BY FOR / MECHANICAL. 2" ST-03 SHELVES AT 6\'-0" AND 7\'-6", LED. POT FILLER A8 CL 4\'-10". GFCI CL 3\'-6". CEILING 10\'-4" (FOR).',
+    1: '48" RANGE A1, 54" HOOD LINER A2 IN A 60" x 27" BREAST CLAD IN ST-03. TL-05 TILE COUNTER TO 9\'-7", COLUMN TO COLUMN. 1,200 CFM REMOTE BLOWER: '
+       'DUCT TO EXTERIOR AND MAKE-UP AIR BY FOR / MECHANICAL. 2" OAK SHELVES (WD-01 STAIN) AT 6\'-0" AND 7\'-6", LED. POT FILLER A8 CL 4\'-10". GFCI CL 3\'-6". CEILING 10\'-4" (FOR).',
     2: 'PAINTED SLIM SHAKER, INSET. A3 AND A4, 36" EACH. END PANTRIES: GLASS DOORS TO 7\'-0", LIT GLASS SHELVES, WOOD DOORS ABOVE. WOOD DOORS OVER A3 AND A4. '
        'DOOR 05 3\'-0" x 8\'-0", DIVIDED LITES, 5" CASING. 9" SOFFIT, CROWN ACROSS, SEE 1/ID-501.',
-    3: 'TALL CABINETS AND SWING DOORS EACH 3\'-3", ONE LARGE PANEL TO 7\'-0". MIDDLE: A13, A14, DOOR CABINETS EACH SIDE, ST-03 SLAB TO 7\'-0", 2" ST-03 SHELVES WITH LED, '
+    3: 'TALL CABINETS AND SWING DOORS EACH 3\'-3", ONE LARGE PANEL TO 7\'-0". MIDDLE: A13, A14, DOOR CABINETS EACH SIDE, TL-05 TILE TO 7\'-0", 2" OAK SHELVES TO MATCH WD-01 WITH LED, '
        'GLASS UPPERS. PANTRY SWING DOORS ON HARMON HINGES (CONCEALED POCKET PIVOT). ARCHED CASING. 9" SOFFIT, CROWN ACROSS, SEE 1/ID-501.',
     4: 'SLIDER 04 BY FOR, 15\'-9" x 9\'-9" HEAD (A-600), DIVIDED LITES. 4" x 4" DRAPERY POCKET IN THE CEILING, 8" OFF THE WALL, 14" PAST EACH JAMB. '
        'CM-01 CROWN STOPS AT THE SLIDER RETURNS (HEAD 7" BELOW THE 10\'-4" CEILING). PT-02, 8-1/2" BASE.',

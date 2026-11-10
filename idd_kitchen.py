@@ -187,7 +187,8 @@ def counter_stool(v, cx, seat=26.0, w=17.0):
     for lx in (cx - w / 2 + 1.0, cx + w / 2 - 1.0): _line(v, (lx, 0), (lx, seat - 2.0), FINE, LIGHT, '[2 1.5] 0')
     _line(v, (cx - w / 2 + 1.0, 9.0), (cx + w / 2 - 1.0, 9.0), FINE, LIGHT, '[2 1.5] 0')
 
-def floating_shelf(v, x, w, y, thick=2.0):
+def floating_shelf(v, x, w, y, thick=2.0, finish='stone'):
+    """finish: 'stone' (the counter stone), 'wood' (white oak stained to the floor, owner 11.10.26) or 'paint' (a niche shelf); recorded for the render."""
     _rect(v, x, y, x + w, y + thick, OUTLINE, fill=(1, 1, 1)); shadow(v, x, x + w, y)
 
 def splash_slab(v, x0, x1, y0, y1, seams=()):

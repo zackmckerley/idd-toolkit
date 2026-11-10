@@ -42,3 +42,14 @@ lib = json.load(open(os.path.join(ROOT, 'material_library.json')))
 ids = [a for k, v in lib.items() if not k.startswith('_') for a in v]
 for aid, st in ThreadPoolExecutor(4).map(acg, ids): print(aid, st)
 print('assets in', HERE)
+# 4K photo scans used as vein structure by make_network_slab.py (assets/scans/<id>/<id>_4K-JPG_*.jpg)
+for aid in ('Marble023',):
+    dest = os.path.join(HERE, 'scans', aid)
+    if os.path.exists(os.path.join(dest, aid + '_4K-JPG_Color.jpg')): print(aid, 'have'); continue
+    os.makedirs(dest, exist_ok=True)
+    with tempfile.TemporaryDirectory() as t:
+        z = os.path.join(t, aid + '.zip'); get('https://ambientcg.com/get?file=%s_4K-JPG.zip' % aid, z)
+        with zipfile.ZipFile(z) as zf:
+            for n in zf.namelist():
+                if n.endswith(('_Color.jpg', '_NormalGL.jpg', '_Roughness.jpg')): zf.extract(n, dest)
+    print(aid, 'got')

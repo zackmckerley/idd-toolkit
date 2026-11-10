@@ -160,7 +160,9 @@ def b_splash_slab(a, ctx):
 
 
 def b_floating_shelf(a, ctx):
-    box(a['x'], a['x'] + a['w'], a['y'], a['y'] + a.get('thick', 2.0), 0.0, 10.0, stone_mat(), 'shelf')
+    fin = a.get('finish', 'stone')   # the drawing records it: stone, white oak to the floor (owner 11.10.26), or paint
+    sm = stone_mat() if fin == 'stone' else (material(R('shelf', 'WD-SHELF')) if fin == 'wood' else cab_mat())
+    box(a['x'], a['x'] + a['w'], a['y'], a['y'] + a.get('thick', 2.0), 0.0, 10.0, sm, 'shelf')
     box(a['x'] + 1, a['x'] + a['w'] - 1, a['y'] - 0.05, a['y'], 1.0, 2.0, material('LED-STRIP'), 'shelf_led')
 
 

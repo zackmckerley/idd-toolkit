@@ -159,17 +159,20 @@
  },
  "WD-01": {
   "name": "WOOD FLOOR, HONEY WHITE OAK (OWNER INSPIRATION 11.10.26)",
-  "hex": "#A97F55",
+  "hex": "#9C7046",
   "rough": 0.35,
-  "kind": "wood",
+  "kind": "planks",
   "status": "PLACEHOLDER",
-  "source": "owner 11.10.26: the floor color of his dining-room inspiration image, Floor 1 throughout including the kitchen, color only (plank layout as drawn); scan WoodFloor062 tinted to #A97F55",
-  "texture": "acg/WoodFloor062",
+  "source": "owner 11.10.26: the floor color of his dining-room inspiration image (honey oak), Floor 1 throughout, color only. Boards 6 in. wide north-south with butt joints near 4 ft, staggered, as build_finish_rev1.planks draws them (owner 11.10.26: the scan read as one blob). Grain: Poly Haven oak_veneer_01 tinted to #A97F55.",
+  "texture": "oak_veneer_01",
   "tint": [
-   1.15,
-   1.28,
-   1.44
-  ]
+   0.927,
+   0.771,
+   0.629
+  ],
+  "board_in": 6.0,
+  "length_in": 48.0,
+  "groove_in": 0.11
  },
  "BLACK": {
   "name": "TV SCREEN, DARK",
@@ -945,5 +948,19 @@
   "hex": "#DDD3C3",
   "rough": 0.85,
   "kind": "plastic"
+ },
+ "WD-SHELF": {
+  "name": "KITCHEN SHELVES, WHITE OAK STAINED TO MATCH WD-01",
+  "hex": "#9C7046",
+  "rough": 0.4,
+  "kind": "wood",
+  "texture": "oak_veneer_01",
+  "tint": [
+   0.927,
+   0.771,
+   0.629
+  ],
+  "status": "OWNER INSPIRATION",
+  "source": "owner 11.10.26: the wood shelving the same color as the floors"
  }
 }

@@ -51,6 +51,12 @@ OPEN = set(_FULL.get(k, k) for k in args[args.index('--open') + 1].split(',')) i
 # the lighting plan (render/export_lights.py): recessed downlights and pendants at their drawn positions, room inches; --dusk: an
 # evening photograph, daylight down, every fixture of the plan on (the way the lighting design reads)
 LIGHTPLAN = json.load(open(args[args.index('--lightplan') + 1])) if '--lightplan' in args else None
+# a room with an exported lighting plan is never rendered without it (owner 11.10.26: a re-render dropped every downlight because
+# the camera was rebuilt by hand and --lightplan was left off). Re-shoot a view from its OUT.cmd.txt, not from memory.
+_STG = args[args.index('--stage') + 1] if '--stage' in args else None
+_LP = os.path.join(os.path.dirname(os.path.abspath(__file__)), '%s_lights.json' % _STG) if _STG else None
+if _LP and os.path.exists(_LP) and LIGHTPLAN is None and '--no-lightplan' not in args:
+    sys.exit('REFUSED: %s exists; render with --lightplan %s (or --no-lightplan to drop the fixtures on purpose)' % (_LP, _LP))
 DUSK = '--dusk' in args
 # --sun ELEV,AZ: the sun's altitude and its azimuth in plan degrees (clockwise from plan north), from the site's true north,
 # latitude, date and hour. Default 32, 250: a late-afternoon sun from the plan west-southwest.
@@ -205,6 +211,57 @@ def material(code, variant=''):
             nt.links.new(mxc.outputs[2], b.inputs['Base Color'])
         b.inputs['Coat Weight'].default_value = 0.0 if spec.get('honed') else 0.25; b.inputs['Coat Roughness'].default_value = 0.05
         _bevel_normal(nt, b, 0.12)
+        return m
+    if kind == 'planks':
+        # a board floor at the drawing's width (owner 11.10.26: "you need to do the same width that the drawings show"): boards
+        # `board_in` wide along world Y (plan north-south, build_finish_rev1.planks), butt joints staggered strip to strip at
+        # about `length_in`, each board its own cut of the grain scan and its own tone, eased V-grooves at the long edges and ends
+        Wb = spec.get('board_in', 6.0) * IN; Lb = spec.get('length_in', 48.0) * IN; gv = spec.get('groove_in', 0.06) * IN
+        N_ = nt.nodes; L_ = nt.links
+        def mth(op, a_, b_=None, v1=None):
+            n_ = N_.new('ShaderNodeMath'); n_.operation = op
+            (L_.new(a_, n_.inputs[0]) if not isinstance(a_, (int, float)) else n_.inputs[0].__setattr__('default_value', a_))
+            if b_ is not None: (L_.new(b_, n_.inputs[1]) if not isinstance(b_, (int, float)) else n_.inputs[1].__setattr__('default_value', b_))
+            return n_.outputs[0]
+        sep = N_.new('ShaderNodeSeparateXYZ'); L_.new(obj, sep.inputs[0])
+        xi = mth('FLOOR', mth('DIVIDE', sep.outputs['X'], Wb))
+        wn1 = N_.new('ShaderNodeTexWhiteNoise'); wn1.noise_dimensions = '1D'; L_.new(xi, wn1.inputs['W'])
+        v_ = mth('ADD', sep.outputs['Y'], mth('MULTIPLY', wn1.outputs['Value'], Lb))
+        vj = mth('FLOOR', mth('DIVIDE', v_, Lb))
+        cmb = N_.new('ShaderNodeCombineXYZ'); L_.new(xi, cmb.inputs['X']); L_.new(vj, cmb.inputs['Y'])
+        wn3 = N_.new('ShaderNodeTexWhiteNoise'); wn3.noise_dimensions = '3D'; L_.new(cmb.outputs[0], wn3.inputs['Vector'])
+        rc = N_.new('ShaderNodeSeparateColor'); L_.new(wn3.outputs['Color'], rc.inputs[0])
+        fu = mth('FRACT', mth('DIVIDE', sep.outputs['X'], Wb)); fv = mth('FRACT', mth('DIVIDE', v_, Lb))
+        # each board a different cut of the scan: offset the lookup by a random amount per board
+        tsz = _tex_size(spec, spec.get('texture', 'oak_veneer_01'), 1.0)
+        tu = mth('DIVIDE', mth('ADD', mth('MULTIPLY', fu, Wb), mth('MULTIPLY', rc.outputs['Red'], tsz)), tsz)
+        tv = mth('DIVIDE', mth('ADD', v_, mth('MULTIPLY', rc.outputs['Green'], 3 * tsz)), tsz)
+        tvec = N_.new('ShaderNodeCombineXYZ'); L_.new(tu, tvec.inputs['X']); L_.new(tv, tvec.inputs['Y'])
+        im_ = N_.new('ShaderNodeTexImage'); im_.image = bpy.data.images.load(_map(spec.get('texture', 'oak_veneer_01'), 'Diffuse.jpg'), check_existing=True)
+        L_.new(tvec.outputs[0], im_.inputs['Vector'])
+        tint_ = spec.get('tint', [1, 1, 1])
+        mx1 = N_.new('ShaderNodeMix'); mx1.data_type = 'RGBA'; mx1.blend_type = 'MULTIPLY'; mx1.inputs['Factor'].default_value = 1.0
+        L_.new(im_.outputs['Color'], mx1.inputs[6]); mx1.inputs[7].default_value = (*tint_, 1)
+        # board-to-board tone: plus or minus 10 percent, a touch warmer or cooler
+        tone = mth('ADD', mth('MULTIPLY', rc.outputs['Blue'], 0.36), 0.82)   # +-18 percent board to board: boards read by tone first (owner 11.10.26)
+        mx2 = N_.new('ShaderNodeMix'); mx2.data_type = 'RGBA'; mx2.blend_type = 'MULTIPLY'; mx2.inputs['Factor'].default_value = 1.0
+        L_.new(mx1.outputs[2], mx2.inputs[6]); gg = N_.new('ShaderNodeCombineColor'); L_.new(tone, gg.inputs[0]); L_.new(tone, gg.inputs[1]); L_.new(mth('MULTIPLY', tone, 0.97), gg.inputs[2])
+        L_.new(gg.outputs[0], mx2.inputs[7])
+        # grooves: distance to the board's long edges and ends, in metres
+        de = mth('MINIMUM', mth('MULTIPLY', mth('SUBTRACT', 0.5, mth('ABSOLUTE', mth('SUBTRACT', fu, 0.5))), Wb),
+                 mth('MULTIPLY', mth('SUBTRACT', 0.5, mth('ABSOLUTE', mth('SUBTRACT', fv, 0.5))), Lb))
+        gr = N_.new('ShaderNodeMapRange'); L_.new(de, gr.inputs['Value']); gr.inputs['From Min'].default_value = 0.0; gr.inputs['From Max'].default_value = gv
+        mx3 = N_.new('ShaderNodeMix'); mx3.data_type = 'RGBA'; L_.new(gr.outputs['Result'], mx3.inputs['Factor'])
+        dk = N_.new('ShaderNodeMix'); dk.data_type = 'RGBA'; dk.blend_type = 'MULTIPLY'; dk.inputs['Factor'].default_value = 1.0
+        L_.new(mx2.outputs[2], dk.inputs[6]); dk.inputs[7].default_value = (0.22, 0.20, 0.19, 1)
+        L_.new(dk.outputs[2], mx3.inputs[6]); L_.new(mx2.outputs[2], mx3.inputs[7]); L_.new(mx3.outputs[2], b.inputs['Base Color'])
+        rr_ = N_.new('ShaderNodeMapRange'); L_.new(gr.outputs['Result'], rr_.inputs['Value']); rr_.inputs['To Min'].default_value = 0.7; rr_.inputs['To Max'].default_value = spec.get('rough', 0.35)
+        L_.new(rr_.outputs['Result'], b.inputs['Roughness'])
+        bp = N_.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 1.0; bp.inputs['Distance'].default_value = 0.003
+        L_.new(gr.outputs['Result'], bp.inputs['Height'])
+        nn = _img(nt, _map(spec.get('texture', 'oak_veneer_01'), 'nor_gl.jpg'), 'Non-Color', tsz, obj)
+        nm_ = N_.new('ShaderNodeNormalMap'); nm_.inputs['Strength'].default_value = 0.3; L_.new(nn.outputs['Color'], nm_.inputs['Color'])
+        L_.new(nm_.outputs['Normal'], bp.inputs['Normal']); L_.new(bp.outputs['Normal'], b.inputs['Normal'])
         return m
     if kind in ('wood', 'stone'):
         folder = spec.get('texture') or ('wood_floor' if kind == 'wood' else 'marble_01')
