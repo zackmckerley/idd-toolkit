@@ -1,0 +1,330 @@
+# Builders added 11.09.26 for the room renderings: kitchen cabinetry and appliances, the master bedroom pieces, the arched pair.
+# Exec'd inside photoreal.py's namespace (box, cyl, sweep, material, R, ...), wall coordinates: x along the wall, y up, d out from the face.
+import math as _m
+
+MATS.setdefault('TOE', {'hex': '#2A2826', 'rough': 0.8, 'kind': 'paint'})
+MATS.setdefault('STAINLESS', {'hex': '#B9B8B4', 'rough': 0.28, 'kind': 'metal', 'lin': [0.52, 0.51, 0.49], 'brushed': True})
+MATS.setdefault('GRATE', {'hex': '#1C1C1C', 'rough': 0.45, 'kind': 'metal', 'lin': [0.03, 0.03, 0.03]})
+MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 6.0})
+
+cab_mat = lambda: material(R('cabinet', 'CAB-01'), '-trim')
+stone_mat = lambda: material(R('counter', 'STONE-TOP'))
+metal_mat = lambda: material(R('metal', 'METAL-NICKEL'))
+
+
+def _cab_depth(y0, y1, a=None):
+    """The depth the drawing records on the call (11.09.26: the drawings now pass it); 24 in. when a call carries none."""
+    return float((a or {}).get('depth') or 24.0)
+
+
+def _prism(pts, d0, d1, mat, name='prism'):
+    """Extrude a 2-D outline (wall x, y) from d0 to d1."""
+    n = len(pts)
+    v = [(x, y, d1) for x, y in pts] + [(x, y, d0) for x, y in pts]
+    f = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+    o = obj_from(v, f, mat, name)
+    me = o.data; bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(me); bm.free()
+    return o
+
+
+def _bar_pull(cx, cy, length, vertical, d, metal=None):
+    metal = metal or metal_mat()
+    if vertical:
+        cyl(cx, cy, d + 1.1, 0.25, length, 'y', metal, 'pull')
+        for yy in (cy - length / 2 + 0.6, cy + length / 2 - 0.6): cyl(cx, yy, d + 0.55, 0.2, 1.1, 'd', metal, 'post')
+    else:
+        cyl(cx, cy, d + 1.1, 0.25, length, 'x', metal, 'pull')
+        for xx in (cx - length / 2 + 0.6, cx + length / 2 - 0.6): cyl(xx, cy, d + 0.55, 0.2, 1.1, 'd', metal, 'post')
+
+
+def _inset_front(x0, y0, x1, y1, D, mat=None, glass=False):
+    """An inset door or drawer front in its face-frame opening: a dark 1/8 in. reveal, the front flush with the frame."""
+    mat = mat or cab_mat()
+    r = 0.125
+    if not glass: box(x0, x1, y0, y1, D - 0.02, D + 0.01, material('GAP'), 'reveal')
+    if not glass:
+        box(x0 + r, x1 - r, y0 + r, y1 - r, D + 0.01, D + 0.06, mat, 'front'); return
+    st = 2.25
+    for (a, b_, c, e) in ((x0 + r, x0 + r + st, y0 + r, y1 - r), (x1 - r - st, x1 - r, y0 + r, y1 - r),
+                          (x0 + r, x1 - r, y0 + r, y0 + r + st), (x0 + r, x1 - r, y1 - r - st, y1 - r)):
+        box(a, b_, c, e, D + 0.01, D + 0.06, mat, 'glass_frame')
+    box(x0 + r + st, x1 - r - st, y0 + r + st, y1 - r - st, D - 0.3, D - 0.25, material('GLASS-CLEAR'), 'glass')
+
+
+def _carcass(x, w, y0, y1, D, interior=False):
+    if interior:   # a glass cabinet: the carcass is hollow, a painted interior with two shelves and a lit top
+        m = cab_mat()
+        box(x, x + w, y0, y1, 0.0, 0.75, m, 'cab_back')
+        box(x, x + 0.75, y0, y1, 0.75, D, m, 'cab_side'); box(x + w - 0.75, x + w, y0, y1, 0.75, D, m, 'cab_side')
+        box(x, x + w, y0, y0 + 0.75, 0.75, D, m, 'cab_bottom'); box(x, x + w, y1 - 0.75, y1, 0.75, D, m, 'cab_top')
+        for k in (1, 2):
+            yy = y0 + (y1 - y0) * k / 3; box(x + 0.75, x + w - 0.75, yy - 0.25, yy + 0.25, 1.0, D - 1.5, material('GLASS-CLEAR'), 'shelf')
+        box(x + 2, x + w - 2, y1 - 1.0, y1 - 0.8, 2.0, D - 2.0, material('LED-STRIP'), 'cab_led')
+        return
+    box(x, x + w, y0, y1, 0.0, D, cab_mat(), 'carcass')
+
+
+def b_toe(a, ctx):
+    box(a['x0'], a['x1'], 0.0, 4.5, 0.0, 21.0, material('TOE'), 'toe')
+
+
+def b_frame_opening(a, ctx):
+    if ctx.get('depth', 0) != 0: return
+    D = _cab_depth(a['y0'], a['y1'], a)
+    box(a['x0'] - 2.0, a['x1'] + 2.0, max(0.0, a['y0'] - 2.0), a['y1'] + 2.0, 0.0, D - 0.02, cab_mat(), 'carcass')   # the face frame around it
+    _inset_front(a['x0'], a['y0'], a['x1'], a['y1'], D)
+
+
+def b_drawer_stack(a, ctx):
+    x, w, n, top, bottom = a['x'], a['w'], a.get('n', 3), a.get('top', 34.75), a.get('bottom', 4.5)
+    D = _cab_depth(bottom, top, a); S = 2.0
+    _carcass(x, w, bottom, top, D)
+    inner = top - bottom - S * (n + 1)
+    hs = [inner * 0.22] + [inner * (0.78 / (n - 1))] * (n - 1) if n > 1 else [inner]
+    y = top - S
+    for h in hs:
+        _inset_front(x + S, y - h, x + w - S, y, D)
+        _bar_pull(x + w / 2, y - h / 2, min(12.0, w * 0.4), False, D + 0.06)
+        y -= h + S
+
+
+def _doors(x, w, y0, y1, n, glass, pulls, hinge='L', depth=None):
+    D = float(depth or 24.0); S = 2.0
+    _carcass(x, w, y0, y1, D, interior=glass)
+    if glass:   # the face frame around a glass cabinet
+        m = cab_mat()
+        box(x, x + w, y0, y0 + S, D - 0.75, D, m, 'ff'); box(x, x + w, y1 - S, y1, D - 0.75, D, m, 'ff')
+        box(x, x + S, y0, y1, D - 0.75, D, m, 'ff'); box(x + w - S, x + w, y0, y1, D - 0.75, D, m, 'ff')
+        if n == 2: box(x + w / 2 - S / 2, x + w / 2 + S / 2, y0, y1, D - 0.75, D, m, 'ff')
+    dw = (w - (n + 1) * S) / n
+    for i in range(n):
+        dx = x + S + i * (dw + S)
+        _inset_front(dx, y0 + S, dx + dw, y1 - S, D, glass=glass)
+        if pulls:
+            right = (i == 0 and n == 2) or (n == 1 and hinge == 'L')
+            px = dx + dw - 2.2 if right else dx + 2.2
+            py = (y0 + y1) / 2 if (y1 - y0) < 40 else (y0 + 36 if y1 > 60 else y0 + (y1 - y0) * 0.5)
+            if y0 >= 50: py = y0 + 4.0
+            _bar_pull(px, py, 6.0, True, D + 0.06)
+
+
+def b_door_pair_cab(a, ctx):
+    _doors(a['x'], a['w'], a['y0'], a['y1'], 2, a.get('glass'), a.get('pulls', True), depth=a.get('depth'))
+
+
+def b_single_door_cab(a, ctx):
+    _doors(a['x'], a['w'], a['y0'], a['y1'], 1, a.get('glass'), True, a.get('hinge', 'L'), depth=a.get('depth'))
+
+
+def b_sink_cab(a, ctx):
+    x, w, bottom, top, front = a['x'], a['w'], a.get('bottom', 4.5), a.get('top', 34.75), a.get('front', 7.0)
+    _doors(x, w, bottom, top - front, 2, False, True)
+    _carcass(x, w, top - front, top, 24.0); _inset_front(x + 2, top - front + 1, x + w - 2, top - 1, 24.0)
+
+
+def b_counter(a, ctx):
+    top, slab, ov = a.get('top', 36.0), a.get('slab', 1.25), a.get('overhang', 0.0) or 0.0
+    box(a['x0'] - ov, a['x1'] + ov, top - slab, top, 0.0, 25.5, stone_mat(), 'counter')
+
+
+def b_splash_slab(a, ctx):
+    b_tile_grid({'x0': a['x0'], 'x1': a['x1'], 'y0': a['y0'], 'y1': a['y1'], 'module': (12, 4), 'grout': 0.0625}, ctx)
+
+
+def b_floating_shelf(a, ctx):
+    box(a['x'], a['x'] + a['w'], a['y'], a['y'] + a.get('thick', 2.0), 0.0, 10.0, stone_mat(), 'shelf')
+    box(a['x'] + 1, a['x'] + a['w'] - 1, a['y'] - 0.05, a['y'], 1.0, 2.0, material('LED-STRIP'), 'shelf_led')
+
+
+def b_light_rail(a, ctx):
+    h = a.get('h', 1.5); box(a['x0'], a['x1'], a['y'] - h, a['y'], 11.0, 13.0, cab_mat(), 'light_rail')
+
+
+def b_pot_filler(a, ctx):
+    cx, y = a['cx'], a['y']; m = metal_mat()
+    cyl(cx, y, 0.6, 1.4, 1.2, 'd', m, 'flange'); cyl(cx, y, 4.5, 0.5, 8.0, 'd', m, 'arm'); cyl(cx, y - 2.5, 8.5, 0.4, 5.0, 'y', m, 'spout')
+
+
+def b_outlet_splash(a, ctx):
+    b_outlet({'cx': a['cx'], 'cy': a.get('cy', 42.0), 'horizontal': True}, ctx)
+
+
+def b_pro_range(a, ctx):
+    x, w, h = a['x'], a.get('w', 48.0), a.get('h', 36.0)
+    ss = material('STAINLESS'); gr = material('GRATE'); gl = material('GLASS-DARK') if 'GLASS-DARK' in MATS else material('GAP')
+    box(x + 0.1, x + w - 0.1, 0.0, h - 1.0, 0.0, 27.0, ss, 'range_body')
+    box(x + 1, x + w - 1, 1.5, 4.5, 26.9, 27.2, material('GAP'), 'range_kick')
+    rail_y = h - 5.5
+    for i in range(8): cyl(x + 5 + (w - 10) * i / 7, rail_y + 1.3, 28.0, 1.0, 1.6, 'd', ss, 'knob')
+    split = x + w * 0.62
+    for (d0, d1) in ((x + 1.5, split - 0.5), (split + 0.5, x + w - 1.5)):
+        box(d0, d1, 5.0, rail_y - 1.0, 27.0, 27.6, ss, 'oven_door'); box(d0 + 3, d1 - 3, 10.0, rail_y - 9.0, 27.6, 27.65, gl, 'oven_glass')
+        cyl((d0 + d1) / 2, rail_y - 5.0, 29.4, 0.45, d1 - d0 - 4, 'x', ss, 'handle')
+        for xx in (d0 + 2.5, d1 - 2.5): cyl(xx, rail_y - 5.0, 28.4, 0.3, 1.8, 'd', ss, 'handle_post')
+    box(x, x + w, h - 1.0, h + 0.5, 1.0, 27.0, ss, 'cooktop')
+    for i in range(3):
+        box(x + 1 + i * (w - 2) / 3 + 0.3, x + 1 + (i + 1) * (w - 2) / 3 - 0.3, h + 0.5, h + 1.4, 3.0, 25.5, gr, 'grate')
+    box(x, x + w, h + 0.5, h + 7.0, 0.0, 2.5, ss, 'backguard')
+
+
+def b_hood_breast(a, ctx):
+    x, w, y0, Hh, dp = a['x'], a['w'], a['y0'], a['H'], float(a.get('depth') or 27.0)
+    # a rectangular breast exactly as drawn: straight sides, no taper, floor of the breast at the hood bottom, up to the ceiling
+    m = stone_mat() if a.get('style') == 'stone' else material(R('hood', 'HOOD-PLASTER'))
+    box(x, x + w, y0, Hh, 0.0, dp, m, 'hood_breast')
+    box(x + 3, x + w - 3, y0 - 0.02, y0 + 0.02, 3.0, dp - 3.0, material('GAP'), 'hood_liner')
+
+
+def b_waterfall(a, ctx):   # the island is built whole by the kitchen staging
+    return
+
+
+def b_chair_rail(a, ctx):
+    y, h = a['y'], a.get('h') or T.get('cap', 2.5) if isinstance(T, dict) else 2.5
+    box(a['x0'], a['x1'], y, y + (h or 2.5), 0.0, 1.0, trim_mat(), 'chair_rail')
+
+
+def b_arched_door_pair(a, ctx):
+    """A pair under a semicircular head: arched casing swept over the jambs, leaves cut to the arch with a raised panel each,
+    wall spandrels closing the corners of the rectangular hole above the spring line, vertical pulls at the meeting stiles."""
+    x, w, spring = a['x'], a['w'], a['spring']; r = w / 2.0; cx = x + r; apex = spring + r
+    cs = a.get('cs') or T['casing']; wm = wall_mat(); tm = trim_mat(); dm = material(R('door', 'PT-01-SATIN'), '-trim')
+    def arcpts(rad, a0, a1, n=28):
+        return [(cx + rad * _m.cos(_m.radians(a0 + (a1 - a0) * i / n)), spring + rad * _m.sin(_m.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+    # spandrels (the wall hole is cut to the rectangle up to the apex)
+    _prism([(x, spring), (x, apex + 0.01)] + arcpts(r, 90, 180, 20)[:-1], -6.0, 0.0, wm, 'wall_spandrel')
+    _prism([(x + w, apex + 0.01), (x + w, spring)] + arcpts(r, 0, 90, 20), -6.0, 0.0, wm, 'wall_spandrel')
+    # jamb lining in the wall thickness: legs and the arched soffit
+    box(x - 0.01, x + 0.75, 0, spring, -5.5, 0.0, dm, 'jamb'); box(x + w - 0.75, x + w + 0.01, 0, spring, -5.5, 0.0, dm, 'jamb')
+    pts = arcpts(r, 180, 0, 28)
+    for p, q in zip(pts[:-1], pts[1:]):
+        v = [(p[0], p[1], 0.0), (q[0], q[1], 0.0), (q[0], q[1], -5.5), (p[0], p[1], -5.5)]
+        obj_from(v, [(0, 1, 2, 3), (3, 2, 1, 0)], dm, 'jamb_arch')
+    # casing over the jambs and the arch
+    sweep([(x, 0.0)] + [(x, spring)] + arcpts(r, 180, 0, 28)[1:-1] + [(x + w, spring), (x + w, 0.0)], casing_profile(cs), tm, 'casing')
+    # the leaves
+    st = 4.5; rb = 9.0; rt = 4.5; fd = -0.25; back = fd - 1.75
+    def top(px, rad): return spring + _m.sqrt(max(0.0, rad * rad - (px - cx) ** 2))
+    for (x0, x1, left) in ((x + 0.06, cx - 0.03, True), (cx + 0.03, x + w - 0.06, False)):
+        ang0 = _m.degrees(_m.acos(max(-1, min(1, (x1 - cx) / r)))); ang1 = _m.degrees(_m.acos(max(-1, min(1, (x0 - cx) / r))))
+        outline = [(x0, 0.5), (x1, 0.5)] + [(cx + (r - 0.06) * _m.cos(_m.radians(ang0 + (ang1 - ang0) * i / 20)), spring + (r - 0.06) * _m.sin(_m.radians(ang0 + (ang1 - ang0) * i / 20))) for i in range(21)]
+        _prism(outline, back, fd, dm, 'leaf')
+        rp = r - rt; p0, p1 = x0 + st, x1 - st
+        a0_ = _m.degrees(_m.acos(max(-1, min(1, (p1 - cx) / rp)))); a1_ = _m.degrees(_m.acos(max(-1, min(1, (p0 - cx) / rp))))
+        path = [(p0, rb), (p1, rb)] + [(cx + rp * _m.cos(_m.radians(a0_ + (a1_ - a0_) * i / 16)), spring + rp * _m.sin(_m.radians(a0_ + (a1_ - a0_) * i / 16))) for i in range(17)]
+        sweep(path, [(q, d + fd - 0.5) for q, d in sticking_profile()], dm, 'sticking', closed=True)
+        _prism(path, fd - 0.75, fd - 0.5, dm, 'panel')
+        px = x1 - 2.2 if left else x0 + 2.2
+        _bar_pull(px, 40.0, 12.0, True, fd, metal_mat())
+    box(x, x + w, 0.0, apex, back - 0.05, back, material('GAP'), 'doorback')
+
+
+def b_bed_king(a, ctx):
+    cx, hb_w, hb_h, w, top = a['cx'], a.get('hb_w', 76), a.get('hb_h', 54), a.get('w', 76), a.get('top', 25)
+    up = material(R('upholstery', 'FAB-HEADBOARD')); lin = material(R('bedding', 'FAB-BEDDING'))
+    soft_wall = lambda x0, x1, y0, y1, d0, d1, mat, rad, nm: _soft(x0, x1, y0, y1, d0, d1, mat, rad, nm)
+    soft_wall(cx - hb_w / 2, cx + hb_w / 2, 0.0, hb_h, 0.0, 4.0, up, 1.2, 'headboard')
+    box(cx - w / 2 - 1, cx + w / 2 + 1, 3.0, 13.0, 4.0, 85.0, up, 'bed_base')                       # upholstered platform
+    soft_wall(cx - w / 2, cx + w / 2, 13.0, top - 0.5, 4.5, 84.0, lin, 1.2, 'mattress')
+    soft_wall(cx - w / 2 - 3.5, cx + w / 2 + 3.5, top - 0.5, top + 0.8, 30.0, 86.5, lin, 0.6, 'duvet')          # duvet over the lower two-thirds
+    soft_wall(cx - w / 2 - 3.5, cx + w / 2 + 3.5, 11.0, top + 0.8, 85.2, 86.5, lin, 0.6, 'duvet_drop')
+    for sx in (-1, 1): soft_wall(cx + sx * (w / 2 + 2.2) - 0.65, cx + sx * (w / 2 + 2.2) + 0.65, 11.0, top + 0.8, 30.0, 86.5, lin, 0.6, 'duvet_side')
+    for px in (cx - w / 4, cx + w / 4):
+        soft_wall(px - 13, px + 13, top, top + 25.0, 4.5, 10.5, up, 3.5, 'euro_sham')                          # upright against the headboard
+        soft_wall(px - 14, px + 14, top, top + 6.5, 11.0, 30.0, lin, 3.0, 'pillow')
+    soft_wall(cx - w / 2 - 3.6, cx + w / 2 + 3.6, top + 0.3, top + 1.6, 64.0, 80.0, material('GARM-6'), 0.5, 'throw')
+
+
+def b_nightstand(a, ctx):
+    x, w, h, n = a['x'], a.get('w', 22), a.get('h', 28), a.get('drawers', 2)
+    m = material(R('nightstand', 'WOOD-FURN'))
+    box(x, x + w, 0.0, h, 1.0, 19.0, m, 'nightstand')
+    for i in range(n):
+        y0 = 6 + i * (h - 8) / n; box(x + 1, x + w - 1, y0 + 0.4, y0 + (h - 8) / n - 0.4, 19.0, 19.05, material('GAP'), 'ns_gap')
+        _bar_pull(x + w / 2, y0 + (h - 8) / n / 2, 5.0, False, 19.0, material('METAL-BRASS'))
+    # a lamp
+    cyl(x + w / 2, h + 7, 10.0, 2.2, 14.0, 'y', material('CERAMIC-LAMP') if 'CERAMIC-LAMP' in MATS else material('PLATE-WHITE'), 'lamp_base')
+    cyl(x + w / 2, h + 19, 10.0, 6.0, 9.0, 'y', material('LAMP'), 'lamp_shade', cap=True)
+    lamp(x + w / 2, h + 19, 10.0, watts=6.0, radius=2.0)
+
+
+def _soft(x0, x1, y0, y1, d0, d1, mat, rad, nm):
+    o = box(x0, x1, y0, y1, d0, d1, mat, nm)
+    if o is None: return
+    bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = min(rad, (x1 - x0) / 2.2, (y1 - y0) / 2.2, (d1 - d0) / 2.2) * IN; bv.segments = 4; bv.limit_method = 'NONE'
+    for pg in o.data.polygons: pg.use_smooth = True
+
+
+def b_panel_wall(a, ctx):
+    """Applied moulding panels: a dado cap at the target height, panels below and above, sized evenly between openings."""
+    x0, x1, Hh, tgt = a['x0'], a['x1'], a['H'], a.get('target', 32.0) or 32.0
+    tm = trim_mat(); base_h = T['base']; crown_d = T['crown']
+    cap = tgt
+    box(x0, x1, cap, cap + 2.25, 0.0, 1.25, tm, 'dado_cap')
+    ops = [(o[0], o[1]) for o in (a.get('openings') or []) if isinstance(o, (list, tuple))]
+    segs = subtract((x0, x1, 0, 1), [(o0 - 6, o1 + 6, 0, 1) for o0, o1 in ops]) if ops else [(x0, x1, 0, 1)]
+    for (s0, s1, _, _) in segs:
+        span = s1 - s0
+        if span < 10: continue
+        n = max(1, int(round(span / 30.0))); m = 3.0; pw = (span - m * (n + 1)) / n
+        for i in range(n):
+            px0 = s0 + m + i * (pw + m); px1 = px0 + pw
+            for (py0, py1) in ((base_h + 3.0, cap - 3.0), (cap + 2.25 + 4.0, Hh - crown_d - 4.0)):
+                if py1 - py0 < 6: continue
+                sweep([(px0, py0), (px1, py0), (px1, py1), (px0, py1)], [(q, d) for q, d in sticking_profile(0.75, 0.6)], tm, 'panel_mold', closed=True)
+
+
+def b_cabinet_lower(a, ctx):
+    x, w, h = a['x'], a['w'], a.get('h', 30)
+    _doors(x, w, a.get('toe', 3), h, a.get('doors', 2), False, a.get('pulls', True))
+    box(x - 0.5, x + w + 0.5, h, h + 1.25, 0.0, 14.5, trim_mat(), 'cab_top')
+
+
+def b_shelves(a, ctx):
+    x, w, y0, y1, n = a['x'], a['w'], a['y0'], a['y1'], a.get('n', 3)
+    for i in range(1, n + 1):
+        y = y0 + (y1 - y0) * i / (n + 1); box(x, x + w, y, y + a.get('thick', 1.0), 0.0, 12.0, trim_mat(), 'shelf')
+
+
+def b_drywall_column(a, ctx):
+    """A drywall column floor to ceiling, its depth off the wall as the drawing records it, base and crown wrapped round its face."""
+    x, w, dp = a['x'], a['w'], float(a.get('depth') or 26.0)
+    box(x, x + w, 0.0, H, 0.0, dp, wall_mat(), 'wall_column')
+    tm = trim_mat(); hb = T['base']; cd = T['crown']
+    box(x - 0.01, x + w + 0.01, 0.0, hb, dp, dp + 0.75, tm, 'column_base')
+    sweep([(x + w, H), (x, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'column_crown')
+
+
+def b_counter_stool(a, ctx):
+    """Counter stool tucked at the seating edge: leather seat on a slim brass frame with a foot ring."""
+    cx, seat = a['cx'], a.get('seat', 26.0); d = 13.0
+    sm = material('BAG-1'); lm = material(R('metal', 'METAL-BRASS'))
+    cyl(cx, seat - 1.2, d, 8.0, 2.5, 'y', sm, 'stool_seat')
+    for (dx, dd) in ((-5.5, -5.5), (5.5, -5.5), (5.5, 5.5), (-5.5, 5.5)): cyl(cx + dx, (seat - 2.5) / 2, d + dd, 0.35, seat - 2.5, 'y', lm, 'stool_leg')
+    for (dx, dd, ax, ln) in ((0, -5.5, 'x', 11.0), (0, 5.5, 'x', 11.0)): cyl(cx + dx, 9.0, d + dd, 0.3, ln, ax, lm, 'stool_ring')
+    for dx in (-5.5, 5.5): cyl(cx + dx, 9.0, d, 0.3, 11.0, 'd', lm, 'stool_ring')
+
+
+def b_veneer_door(a, ctx):
+    """A veneer door in its face frame, glass with lit shelves behind when the drawing says glass; long pulls as drawn."""
+    x, w, y0, y1 = a['x'], a['w'], a['y0'], a['y1']; D = float(a.get('depth') or 24.0); glass = a.get('glass')
+    _carcass(x, w, y0, y1, D, interior=glass)
+    if glass:
+        m = cab_mat()
+        for (p0, p1, q0, q1) in ((x, x + 2, y0, y1), (x + w - 2, x + w, y0, y1), (x, x + w, y0, y0 + 2), (x, x + w, y1 - 2, y1)):
+            box(p0, p1, q0, q1, D - 0.75, D, m, 'ff')
+    _inset_front(x + 2, y0 + 2, x + w - 2, y1 - 2, D, glass=glass)
+    px = x + w - 4.2 if a.get('hinge', 'L') == 'L' else x + 4.2
+    if a.get('pull') == 'long': _bar_pull(px, 48.0, 36.0, True, D + 0.06)
+    else: _bar_pull(px, (y0 + y1) / 2 if (y1 - y0) < 40 else y0 + 36, 6.0, True, D + 0.06)
+
+
+EXTRA_BUILDERS = {'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
+                  'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
+                  'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
+                  'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,
+                  'bed_king': b_bed_king, 'nightstand': b_nightstand, 'panel_wall': b_panel_wall, 'cabinet_lower': b_cabinet_lower,
+                  'shelves': b_shelves, 'chair_rail': b_chair_rail,
+                  # line-drawing only, or built whole elsewhere
+                  'rev_cloud': None, 'hammered': None, 'glazing': None, 'miter_corner': None, 'sink_undermount_front': None,
+                  'data_jack': None, 'jib_door': None, 'arched_opening': None}

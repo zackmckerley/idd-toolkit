@@ -25,14 +25,15 @@ def quad_marker(sh, cx, cy, sheet, views, r=13.0):
         sh.text(tx, ty, str(n), 5.2, INK, align='c')
 
 OUT = '/home/claude/flrwork/261105.HD102.SecondaryBaths.pdf'
-H = 120.0; HEAD = 96.0
+H = 120.0; HEAD = 96.0                  # H set per bath in _build(): FOR A-206 baths 2 and 3 9'-10", A-205 guest bath 10'-8" (coordination 11.09.26)
+H_B23, H_G = 118.0, 128.0
 CS = TRIM['casing']; BASE = TRIM['base']; CR = TRIM['crown']; M = TRIM['margin']
 TILE = (24, 12)                        # WT-01 12 x 24 porcelain, set horizontal, joints centered
 WHITE = (1, 1, 1); BEYOND = (0.55, 0.55, 0.55)
 K = E.SCALES['1/2']                    # 11.07.26 wide sheet: 1/2" (3/4" needs 650 pt of height a view, two rows give 552)
 K_LABEL = 'SCALE: 1/2" TO 1\'-0"'
 VAN_H = 34.0; MIR = (32.0, 48.0); MIR_B = 48.0; OUT_CL = 42.0; SW = 48.0   # LED mirror 4'-0" to 8'-0", the bath window's sill and head
-WIN_SILL = 48.0                        # bath windows: sill 4'-0", head 8'-0", obscure tempered glass, drywall return and no casing, VERIFY
+WIN_SILL = 59.0                        # FOR A-600 window I: 2'-2" x 3'-1", sill 4'-11", head 8'-0"; obscure tempered, drywall return, no casing
 
 REV1 = json.load(open('/home/claude/flrwork/rev1/rooms_display.json'))   # FOR REV 1 room bounds, display space (key plans follow the new base)
 
@@ -64,7 +65,21 @@ def beyond(fn):
     try: fn()
     finally: C.INK, C.MID = keep
 
-def tile(v, x0, x1, y0=0, y1=H): C.tile_grid(v, x0, x1, y0, y1, TILE, show=[(x0, x1, y0, y1)])
+def tile(v, x0, x1, y0=0, y1=None):
+    y1 = H if y1 is None else y1
+    C.tile_grid(v, x0, x1, y0, y1, TILE, show=[(x0, x1, y0, y1)])
+
+FLUSH_CL = 44.0; SEAT_GFCI = 14.0; SEAT_OFF = 8.0     # flush plate CL 3'-8" and the seat GFCI 8" off the bowl CL, per ID-502 detail 5 (review 11.09.26)
+def wall_toilet(v, cx, w=14.5):
+    """Wall-hung smart toilet on an in-wall carrier, seen from the front (owner 11.09.26): bowl off the floor, no tank, flush plate on the
+    wall CL 3'-8", a GFCI for the seat 8" off the bowl CL at CL 1'-2", dashed behind the bowl."""
+    C._poly(v, [(cx - w / 2, 15.5), (cx - w / 2 + 2.2, 7.0), (cx + w / 2 - 2.2, 7.0), (cx + w / 2, 15.5)], C.OUTLINE, fill=(1, 1, 1))
+    C._ellipse(v, cx, 15.5, w / 2, 1.2, C.OUTLINE, fill=(1, 1, 1))
+    C._line(v, (cx - w / 2, 17.0), (cx + w / 2, 17.0), C.OUTLINE); C._line(v, (cx - w / 2 + 1, 18.3), (cx + w / 2 - 1, 18.3), C.MED)
+    C._rect(v, cx - 4.5, FLUSH_CL - 3.0, cx + 4.5, FLUSH_CL + 3.0, C.OUTLINE, fill=(1, 1, 1)); C._rect(v, cx - 1.6, FLUSH_CL - 1.6, cx + 1.6, FLUSH_CL + 1.6, C.FINE)
+    gx = cx + SEAT_OFF                                                        # behind the bowl's edge: drawn dashed
+    C._rect(v, gx - 1.4, SEAT_GFCI - 2.25, gx + 1.4, SEAT_GFCI + 2.25, C.FINE, MID, dashes='[1.5 1.0] 0')
+    return gx
 
 def vanity_wall(v, x, w, mirror_w=MIR[0]):
     """Furniture vanity with a deck faucet and a frameless LED mirror set to the window's height, centered on the vanity."""
@@ -132,8 +147,8 @@ class View(E.ElevationView):
 def window_return(v, x, w, sill, head):
     """Bath window on a drywall return: the opening and the sash, no casing and no outer line."""
     C._rect(v, x, sill, x + w, head, C.OUTLINE); C._rect(v, x + 1.25, sill + 1.25, x + w - 1.25, head - 1.25, C.MED)
-    C._line(v, (x + 3, head - 3), (x + w * 0.45, sill + (head - sill) * 0.45), C.FINE, C.PALE)
-    C._line(v, (x + 5, head - 3), (x + w * 0.6, sill + (head - sill) * 0.45), C.FINE, C.PALE)
+    C.glazing(v, x + 1.25, sill + 1.25, x + w - 1.25, head - 1.25)         # divided lites (owner 11.09.26: all windows and glass doors match)
+    C.rev_cloud(v, x, sill, x + w, head, pad=2.0)
 
 def niche(v, x, w, y, h):
     """Tiled niche, no shelf."""
@@ -210,17 +225,18 @@ def fixture_wall(v, flip):
     C.glass_edge(v, X(ALC), 80)
     w0, w1 = span(*WIN)
     window_return(v, w0, w1 - w0, WIN_SILL, HEAD)
-    C.toilet(v, X(TOI_C) - 7.5, 15)
+    wall_toilet(v, X(TOI_C))
     v0, v1 = span(*VAN)
     cx = vanity_wall(v, v0, v1 - v0, mirror_w=MIRW)
     C.outlet(v, X(GFCI), OUT_CL)
     mtag(v, alc[0] + 7.5, 98, 'WT-01'); tag(v, (w0 + w1) / 2, 101, 'OBSCURE GLASS')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points(sorted({0, X(VAN[0]), cx, X(VAN[1]), X(TOI_C), X(ALC), X(VALVE), L})))
     v.dim_h(0, L, v.Y(0) + 31, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, 20, 26, VAN_H, OUT_CL, MIR_B, 80, HEAD, H - CR, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, 20, 26, VAN_H, OUT_CL, MIR_B, WIN_SILL, 80, HEAD, H - CR, H]))
     a = 'SOUTH' if not flip else 'NORTH'
     return ['36" x 18" VANITY. LED MIRROR 30" x 48". GFCI 4-1/2" PAST VANITY, CL 3\'-6".',
-            'WINDOW SILL 4\'-0", OBSCURE TEMPERED. VALVE 4\'-0", SPOUT 2\'-2", HEAD 6\'-8".']
+            'WINDOW I PER FOR A-600, 2\'-2" x 3\'-1", SILL 4\'-11", OBSCURE TEMPERED. VALVE 4\'-0", SPOUT 2\'-2", HEAD 6\'-8".',
+            'WALL-HUNG SMART TOILET ON A CARRIER, FLUSH PLATE CL 3\'-8", SEAT GFCI 8" OFF THE BOWL CL, CL 1\'-2" (DASHED, BEHIND THE BOWL), SEE 5/ID-502.']
 
 # ---- bath 2 (south)
 def b2_north(v): return alcove_back(v, 'L')
@@ -379,7 +395,7 @@ def g_south(v):
     C.shower_head(v, SHW / 2, 80)
     C.glass_edge(v, SHW, 96)
     tc = L - GTOI_C
-    C.toilet(v, tc - 7.5, 15)
+    wall_toilet(v, tc)
     vx = (L - GVAN[1], L - GVAN[0])
     cx = vanity_wall(v, vx[0], vx[1] - vx[0], mirror_w=GMIR)
     C.outlet(v, vx[0] - 4.5, OUT_CL)
@@ -388,7 +404,7 @@ def g_south(v):
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, VAN_H, OUT_CL, MIR_B, 80, MIR_B + MIR[1], H - CR, H]))
     return ['SHOWER HEAD CL 6\'-8". 33" x 18" VANITY. LED MIRROR 24" x 48".',
-            'GFCI 4-1/2" PAST VANITY, CL 3\'-6".']
+            'GFCI 4-1/2" PAST VANITY, CL 3\'-6". WALL-HUNG SMART TOILET ON A CARRIER, FLUSH PLATE CL 3\'-8", SEAT GFCI 8" OFF THE BOWL CL, CL 1\'-2" (DASHED, BEHIND THE BOWL), SEE 5/ID-502.']
 
 def g_west(v):
     L = GW
@@ -439,6 +455,20 @@ def k_arc(sh, P, c, r, a0, a1, w=0.4, dashes='[2 1.5] 0'):
     import math
     pts = [P(c[0] + r * math.cos(math.radians(t)), c[1] + r * math.sin(math.radians(t))) for t in [a0 + (a1 - a0) * i / 16 for i in range(17)]]
     sh.polyline(pts, w, ACC, dashes=dashes, close=False)
+def k_toilet_wall(sh, P, wall, cl, axis, sign, IN_=1.5):
+    """Wall-hung toilet in plan (review 11.09.26): FOR's floor-mount toilet and tank whited out, then a bowl off the wall face with the carrier
+    dashed in the wall. axis 'x': the wall is vertical at x=wall, the bowl projects along x by sign; 'y': the wall is horizontal at y=wall."""
+    import math
+    def Q(d, t): return P(wall + sign * d * IN_, cl + t * IN_) if axis == 'x' else P(cl + t * IN_, wall + sign * d * IN_)
+    a, b = Q(0.4, -11.5), Q(31.0, 11.5)                                         # mask FOR's symbol (tank and bowl)
+    sh.rect((min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1])), width=0, color=WHITE, fill=WHITE)
+    a, b = Q(-6.0, -10.0), Q(0.0, 10.0)                                         # carrier in the furred wall, dashed
+    sh.rect((min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1])), width=0.4, color=ACC, dashes='[2 1.5] 0')
+    pts = [Q(0.0, -7.0), Q(6.0, -7.25)] + [Q(6.0 + 15.0 * math.sin(math.radians(t_)), -7.25 * math.cos(math.radians(t_))) for t_ in range(0, 181, 10)] + [Q(0.0, 7.0)]
+    sh.polyline(pts, 0.6, ACC, close=True)
+    pts = [Q(8.0 + 10.5 * math.sin(math.radians(t_)), -5.0 * math.cos(math.radians(t_))) for t_ in range(0, 181, 10)]
+    sh.polyline(pts, 0.4, ACC, close=False)
+
 def k_vanity(sh, P, x0, y0, x1, y1):
     k_rect(sh, P, x0, y0, x1, y1, 0.6, WHITE)
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
@@ -471,6 +501,7 @@ def draw_views(sh, cells, views, room, note_size=6.0):
         origin = E.fit_origin(cell, spec, K, top=top)
         v = View(sh.p, sh.font, sh.fontname, origin, K, spec)
         fn(v)
+        v.dim_v(0, H, v.X(L) + 40, [0, H])                                     # overall height, floor to ceiling (review 11.09.26)
         v.text(v.X(0) - 6, v.Y(0) - 2.5, 'FIN. FLR.', 5.0, MID, align='r')
         ny = cell[1] + 30
         for ln in lines: sh.text(cell[2] - 8, ny, ln, note_size, MID, align='r'); ny += lh
@@ -491,6 +522,8 @@ MATERIALS = ['VANITY: PAINTED, TURNED LEGS, STONE TOP, DECK FAUCET.',
              'GLASS: 1/2" TEMPERED, FRAMELESS, BRUSHED BRASS.',
              'BRASS EDGE TRIM AT TILE TO PAINT. NO CROWN AT TILE.',
              'WALLS PT-02, CROWN CM-01, BASE 8-1/2", CASING 5".',
+             'CEILINGS PER FOR: BATHS 2 AND 3 9\'-10", GUEST BATH 10\'-8".',
+             'TOILETS: WALL-HUNG SMART, IN-WALL CARRIER IN A FURRED CHASE.',
              'GFCI CL 3\'-6", SWITCHES CL 4\'-0", HUMIDITY FAN,',
              'WET-RATED DOWNLIGHT OVER EACH TUB AND SHOWER.',
              'TOWEL BARS 4\'-0", RINGS 4\'-4", HOOKS 5\'-6",',
@@ -541,6 +574,7 @@ BATHS = {   # sheet: room, FOR box of the room (inside faces), FOR labels and va
 }
 
 def _build():
+    global H
     doc = fitz.open()
     frame = (FR.x0 + 6, HDR_Y + 8, TB_X - 10, FR.y1 - 6)             # HDR_Y + 8 is 24 pt clear of the top frame (no header strip, 11.07.26)
     KB = 16 / 3                                                                # each bath's own key plan at 1" (11.07.26: one bath a sheet, each sheet stands alone)
@@ -549,6 +583,7 @@ def _build():
                                   (3, 'SOUTH WALL - DOOR TO BEDROOM 2', BW, b2_south), (4, 'WEST WALL - VANITY, TOILET, TUB', BD, b2_west)]),
             ('ID-739A', 'BATH 3', [(1, 'NORTH WALL - PAPER HOLDER, TOWEL RING', BW, b3_north), (2, 'EAST WALL - DOOR TO BEDROOM 3', BD, b3_east),
                                    (3, 'SOUTH WALL - TUB ALCOVE', BW, b3_south), (4, 'WEST WALL - TUB, TOILET, VANITY', BD, b3_west)])):
+        H = H_B23                                                    # FOR A-206 (coordination 11.09.26)
         room, fbox, cover, van, glass, mk, nm = BATHS[sid]
         sh = Sheet(doc); sh.frame('%s ELEVATIONS' % name, 'AS NOTED', ['INTERIOR ELEVATIONS', name], sid, legend_rule=False)
         A, B, KC_, MC = grid(frame, (380, 520), 890)
@@ -556,6 +591,7 @@ def _build():
         E.title_bar(sh.p, sh.font, sh.fontname, KC_, 5, 'FLOOR 2 KEY PLAN - %s' % name, 'SCALE: %s TO 1\'-0"' % KP_LABEL[KB])
         t, P = key_plan(sh, KC_, 2, [room], fbox, cover, k=KB, pad=(14, 14, 14, 14), bottom=70)
         mask_outside(sh, t, P, (fbox[0] - 12.5, fbox[1] - 7.5, fbox[2] + 7.5, fbox[3] + 7.5))   # nothing of the next room shows
+        k_toilet_wall(sh, P, 446.5, 369.0 if sid == 'ID-739' else 218.1, 'x', 1)
         k_vanity(sh, P, *van)
         k_line(sh, P, (446.2, glass), (491.2, glass), 1.3)
         quad_marker(sh, *P(*mk), sid, {'N': 1, 'E': 2, 'S': 3, 'W': 4})
@@ -565,6 +601,7 @@ def _build():
         y = notes_block(sh, MC[0] + 8, MC[1] + 30, MC[2] - MC[0] - 16, [CHANGES_23[0], CHANGES_23[1], '2. FIXED GLASS SCREEN 30" x 60" ON THE TUB AT THE VALVE END.'])
         notes_block(sh, MC[0] + 8, y + 8, MC[2] - MC[0] - 16, MATERIALS)
     # ---- ID-740 guest bath
+    H = H_G                                                                    # FOR A-205 guest bath 10'-8"
     sh = Sheet(doc); sh.frame('GUEST BATHROOM ELEVATIONS', 'AS NOTED', ['INTERIOR ELEVATIONS', 'GUEST BATHROOM'], 'ID-740', legend_rule=False)
     KG = 16 / 3                                                                # key plan 1" (was 1/2")
     A, B, KC_, MC = grid(frame, (460, 320), 650)
@@ -575,6 +612,7 @@ def _build():
     t, P = key_plan(sh, KC_, 1, ['GUEST BATHROOM'], (356.2, 815.2, 511.2, 905.2),
                     [(419, 819, 452, 838), (356.4, 874.4, 407.0, 905.0), (457.9, 815.9, 510.5, 898.0)], k=KG, pad=(14, 14, 14, 14), bottom=70)
     mask_outside(sh, t, P, (344.4, 804.3, 518.0, 913.9))
+    k_toilet_wall(sh, P, 905.2, 431.85, 'y', -1)
     k_vanity(sh, P, 359.2, 878.2, 408.7, 905.2)
     k_line(sh, P, (457.2, 851.2), (457.2, 905.2), 1.3)                                       # fixed panel
     k_line(sh, P, (457.2, 815.6), (421.2, 815.6), 1.3)                                       # the door, open along the north wall

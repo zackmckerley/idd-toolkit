@@ -24,20 +24,37 @@ def _line_open(v, a, b, w=C.MED, c=None, dashes=None):
     sh_ = v.p.new_shape(); sh_.draw_line(fitz.Point(v.X(a[0]), v.Y(a[1])), fitz.Point(v.X(b[0]), v.Y(b[1])))
     sh_.finish(color=c, width=w, dashes=dashes, closePath=False); sh_.commit()
 C._line = _line_open
-def leaf(v, x, w, head, panels, swing, toward):
+def leaf(v, x, w, head, panels, swing, toward, **kw):
     """Door leaf with the set's swing rule: solid swing marks toward the viewer, dashed away."""
     _SOLID[0] = toward
-    try: C.door_leaf(v, x, w, head, panels=panels, swing=swing)
+    try: C.door_leaf(v, x, w, head, panels=panels, swing=swing, **kw)
     finally: _SOLID[0] = False
 from idd_sheet import Sheet, FR, TB_X, HDR_Y, fix_soft_hyphen
+def _muntins(v, x0, y0, x1, y1, cols=None, rows=None, bar=0.875):
+    """Muntin grid with every bar drawn once as a pair of lines at one weight: verticals run through, horizontals stop at them."""
+    x0, x1 = min(x0, x1), max(x0, x1); y0, y1 = min(y0, y1), max(y0, y1)
+    c_, r_ = C.lite_grid(x1 - x0, y1 - y0)
+    cols = c_ if cols is None else cols; rows = r_ if rows is None else rows
+    xs = [x0 + (x1 - x0) * i / cols for i in range(1, cols)]; ys = [y0 + (y1 - y0) * j / rows for j in range(1, rows)]
+    for my in ys: C._rect(v, x0, my - bar / 2, x1, my + bar / 2, 0.01, WHITE, fill=WHITE)
+    for mx in xs: C._rect(v, mx - bar / 2, y0, mx + bar / 2, y1, 0.01, WHITE, fill=WHITE)
+    for mx in xs:
+        for e in (-bar / 2, bar / 2): C._line(v, (mx + e, y0), (mx + e, y1), C.FINE)
+    stops = [x0] + [e for mx in xs for e in (mx - bar / 2, mx + bar / 2)] + [x1]
+    for my in ys:
+        for e in (-bar / 2, bar / 2):
+            for a, b in zip(stops[0::2], stops[1::2]): C._line(v, (a, my + e), (b, my + e), C.FINE)
+C.muntins = _muntins
 from idd_std import INK, MID, LIGHT, TRIM
 
 OUT = '/home/claude/flrwork/261105.HD102.MasterBathPilot.pdf'
-H = 120.0                 # ceiling, VERIFY
+H = 118.0                 # FOR A-206 9'-10" (A-400 reads 9'-11"; FOR to confirm), coordination 11.09.26
 HEAD, SILL = 96.0, 48.0   # door and window heads, bath window sills, VERIFY
 CS = TRIM['casing']
 CTR, FAUCET, MIR_B, MIR_T, SCONCE = 34.0, 40.0, 44.0, HEAD + CS, 66.0   # mirror top on the top of the head casing
-TILE = (48, 96)           # WT-02 large-format porcelain slab, 48 x 96 panels set vertical, seams as drawn
+TILE = (48, 96)           # ST-04 master bath marble (the vanity top stone, owner 11.09.26; was WT-02 porcelain), 48 x 96 panels set vertical, seams as drawn
+TUB_SILL = 6.0            # FOR window L (A-600, A-301): 5'-0" x 7'-6" fixed, head 8'-0", sill 0'-6", impact, tempered
+SWIN_SILL = 70.0          # FOR window K (A-600): 3'-1" x 2'-2" fixed over the shower, head 8'-0", sill 5'-10"
 WHITE = (1, 1, 1); BEYOND = (0.55, 0.55, 0.55)
 
 # ---- plan, inches from FOR REV 1 (see the docstring)
@@ -67,11 +84,16 @@ TUB_L = 58.0                              # 58" freestanding tub in place of FOR
 TUB_CL = ((TUB_WALL[1] - TUB_WALL[0]) - TUB_L) / 2
 PIER_WC = (TUB_WALL[1], WC_D[0])          # pier between the tub alcove and the water closet door (plan x)
 SH_IN = (0.0, FX(512.2))                  # shower interior (plan x), 3'-8"
-TER_Y0, TER_Y1 = FY(1113.1), FY(1197.1)   # terrace door opening in the west wall (from the north face), 4'-8"
+TER_Y0, TER_Y1 = FY(1113.1), FY(1197.1)   # FOR's terrace door opening in the west wall (from the north face), 4'-8"
+TER_W = 42.0                              # owner 11.09.26 (second pass): the pair narrowed to 3'-6" (two 1'-9" leaves)
+TER_C = FRONT_Y0 - (FRONT_Y1 - 20.1) / 2  # centered on the clear wall between the shower front wall stub and the vanity end, equal clear each side.
+                                          # Not on the full wall face: equal 1'-6-1/2" piers would put the north jamb 1-1/2" behind the 20.1"-deep vanity end
+TER_N, TER_S = TER_C - TER_W / 2, TER_C + TER_W / 2   # new north and south jambs (from the north face), 26-3/8" and 68-3/8"
+SHD_W = WC_DOOR                           # owner 11.09.26: shower door opening the same as the water closet door's, 2'-6" x 8'-0", cased the same
+SHD = (round(((SH_IN[0] + SH_IN[1]) / 2 - SHD_W / 2) * 8) / 8, round(((SH_IN[0] + SH_IN[1]) / 2 + SHD_W / 2) * 8) / 8)   # centered on the shower (plan x), 7" to 37"
 SWIN_Y0, SWIN_Y1 = FY(1220.5), FY(1276.0) # shower window in the west wall (from the north face), 3'-1"
 TOILET_W = FX(665.4) - FX(643.4)          # 14-5/8" toilet, tank against the south wall, centered on the water closet
 TOILET_X = (WC_CTR - TOILET_W / 2, WC_CTR + TOILET_W / 2)
-SH_DOOR = 28.0                            # frameless glass shower door hinged on the pier, the rest of the front one fixed panel to the stub
 VALVE_FOR = FY(1248.2) - FY(1205.5)       # FOR's valve, 2'-4-1/2" in from the alcove line on the shower's east partition
 VALVE_IN = 15.0                           # moved to 15" from the glass so it is reached from the door without stepping into the spray
 SEAM_SH = 34.0                            # the shower east wall slab seam, clear of the valve, the slide bar and the ceiling head
@@ -113,6 +135,11 @@ def slide_bar(v, cx, y0=40.0, y1=76.0):
     C._rect(v, cx - 1.2, y1 - 9, cx + 1.2, y1 - 3, C.OUTLINE, fill=WHITE); C._ellipse(v, cx, y1 - 2.0, 1.6, 1.0, C.OUTLINE, fill=WHITE)
     C._ellipse(v, cx, y0 - 4.0, 1.0, 1.0, C.OUTLINE, fill=WHITE)
 def finish_tag(v, x, y, s): v.text(v.X(x), v.Y(y), s, 5.2, MID, align='c')
+def tub_w(v, x, w, h=22):
+    """The freestanding tub, filled white so the window (to 0'-6" AFF per FOR) and the slab joints behind it stop at its silhouette."""
+    body = [(x, h), (x + 0.4, h - 6), (x + 1.4, h - 12), (x + 3.2, 5), (x + 5.5, 1.8), (x + 9, 0.8), (x + w - 9, 0.8), (x + w - 5.5, 1.8), (x + w - 3.2, 5), (x + w - 1.4, h - 12), (x + w - 0.4, h - 6), (x + w, h)]
+    C._poly(v, [(x - 0.6, h)] + body + [(x + w + 0.6, h)], 0.1, WHITE, fill=WHITE)   # the body closed by its rim: the tub itself
+    C.freestanding_tub(v, x, w, h, filler=None)
 def _dim_v(self, y0i, y1i, x_pt, pts_i, side='r'):
     """E.ElevationView.dim_v with the fit test on the printed label width: a label longer than its segment is set level, beside the string."""
     ys = [self.Y(q) for q in pts_i]
@@ -157,9 +184,19 @@ def dimh(v, x0i, x1i, y_pt, pts_i):
         elif i == len(segs) - 1: v.text(v.X(b) + 4.0, y_pt + 2.2, t, 5.0)
         else: v.text((v.X(a) + v.X(b)) / 2, y_pt - 5.5, t, 5.0, align='c')      # above, clear of the tick tops
 def slab(v, x0, x1, seams, h0=0, h1=H, course=96.0):
-    """WT-02 48 x 96 slab: vertical seams where given, the horizontal seam at 8'-0"."""
+    """ST-04 48 x 96 slab: vertical seams where given, the horizontal seam at 8'-0"."""
     for xs in seams: C._line(v, (xs, h0), (xs, h1), C.FINE, C.TILE)
     if h0 < course < h1: C._line(v, (x0, course), (x1, course), C.FINE, C.TILE)
+def glass_door(v, x, w, h, hinge='L'):
+    """Owner 11.09.26: the shower door is one panel of hammered glass, no frame and no muntins: 1/2" tempered, two wall-mount glass
+    hinges on the pier side, a 12" pull at the latch side, solid swing marks (it swings out, toward the viewer)."""
+    C._rect(v, x + 0.25, 0.5, x + w - 0.25, h - 0.5, C.OUTLINE)
+    C.hammered(v, x + 1.0, 1.2, x + w - 1.0, h - 1.2)
+    hx, lx = (x + 0.25, x + w - 0.25) if hinge == 'L' else (x + w - 0.25, x + 0.25)
+    C._line(v, (lx, 0.5), (hx, h / 2), C.FINE, MID); C._line(v, (lx, h - 0.5), (hx, h / 2), C.FINE, MID)
+    for hy in (12, h - 12): C._rect(v, hx - 1.5, hy - 1.8, hx + 1.5, hy + 1.8, C.MED, fill=WHITE)
+    px = lx - 3.0 if hinge == 'L' else lx + 1.8
+    C._rect(v, px, 36, px + 1.2, 48, C.OUTLINE, fill=WHITE)
 def shower_front(v, x, w, h=96, door_w=28):
     """Frameless 1/2" tempered front: the door hinged on the pier (left) on two wall-mount glass hinges, a fixed panel to the stub.
     Swing marks meet at the hinge side, the pull at the latch side, header channel across the top."""
@@ -182,19 +219,24 @@ def casing_north_only(v, x, w, head):
 def north(v):
     L = ROOM_W
     shell(v, L, crown=[(0, L)], base=[(VAN_L[0] + VAN_W, WIC_X - CS), (WIC_X + WIC_W + CS, VAN_R[0])])   # no base behind the vanities
-    C.door_pair(v, WIC_X, WIC_W, HEAD, panels=1)
+    C.arched_door_pair(v, WIC_X, WIC_W, HEAD - WIC_W / 2, panels=1, hw='pull')             # owner 11.09.26 PM: arched, apex at the 8'-0" head line
+    C.rev_cloud(v, WIC_X - CS, 3.0, WIC_X + WIC_W + CS, HEAD + CS, pad=1.0)          # Harmon hinges (owner 11.09.26)
+    from idd_sheet import _FR as _F
+    tx_, ty_ = WIC_X + WIC_W / 2, HEAD + CS + 5.0; hw_ = (_F.text_length('19A', fontsize=7.0) / 2 + 3.0) / v.k; hh_ = 5.5 / v.k
+    C._rect(v, tx_ - hw_, ty_ - hh_, tx_ + hw_, ty_ + hh_, 0.6, INK, fill=WHITE)      # door 19A (the door schedule, ID-002)
+    v.text(v.X(tx_), v.Y(ty_) + 2.5, '19A', 7.0, INK, align='c')
     for (x, w), side in ((VAN_L, -1), (VAN_R, 1)):
         C.vanity_furniture(v, x, w, h=CTR, legs=True, drawers=3, faucet_style='wall')
         mx = x + w / 2; mw = MIR_W
         C.mirror_framed(v, mx - mw / 2, mw, MIR_B, MIR_T - MIR_B)
         for s in (mx - mw / 2 - SC_OFF, mx + mw / 2 + SC_OFF): C.sconce(v, s, SCONCE, 'cylinder')
         C.outlet(v, mx + side * GFCI_OFF, GFCI_CL, 'GFCI')                     # outboard mirror margin, within 3' of the basin
-        C.towel_bar(v, mx, y=TBAR_Y, w=TBAR_W)                                  # hand towels on the vanity front (the east wall is the pocket)
+        # owner 11.09.26 evening: no towel bar on the vanities
     dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, VAN_L[0], VAN_L[0] + VAN_W / 2, VAN_L[0] + VAN_W, WIC_X - CS, WIC_X + WIC_W + CS, VAN_R[0], VAN_R[0] + VAN_W / 2, VAN_R[0] + VAN_W, L]))
     dimh(v, 0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TRIM['base'], CTR, FAUCET, MIR_B, SCONCE, HEAD, MIR_T, H - TRIM['crown'], H]))
-    return ['51" PAINTED FURNITURE VANITIES, STONE TOPS, WALL FAUCETS CL 3\'-4". FRAMED MIRRORS 25" x 57", TOP AT 8\'-5". SCONCES CL 5\'-6".',
-            'W.I.C.: PAIR OF 1\'-6" PAINTED DOORS. GFCI CL 3\'-6" AT EACH VANITY. 18" TOWEL BAR ON EACH VANITY APRON. PT-02, CM-01.']
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TRIM['base'], CTR, FAUCET, MIR_B, SCONCE, HEAD - WIC_W / 2, HEAD, MIR_T, H - TRIM['crown'], H]))
+    return ['51" PAINTED FURNITURE VANITIES, ST-04 TOPS, WALL FAUCETS CL 3\'-4". FRAMED MIRRORS 25" x 57", TOP AT 8\'-5". SCONCES CL 5\'-6".',
+            'W.I.C.: DOOR 19A, PAIR OF 1\'-6" PAINTED DOORS ON HARMON HINGES UNDER A SEMICIRCULAR ARCH, SPRING 6\'-6", APEX 8\'-0"; MIRROR TOPS ON THE ARCH CASING. GFCI CL 3\'-6" AT EACH VANITY. PT-02, CM-01.']
 
 def east(v):
     L = FRONT_Y0
@@ -218,69 +260,65 @@ def south(v):
     pier_wc = (sx(PIER_WC[1]), sx(PIER_WC[0]))
     tub = (sx(TUB_WALL[1]), sx(TUB_WALL[0]))
     pier_sh = (sx(PIER_SH[1]), sx(PIER_SH[0]))
-    sh_open = (sx(PIER_SH[0]), sx(STUB_SH[1]))
-    stub = (sx(STUB_SH[1]), L)
-    shell(v, L, crown=[(0, pier_wc[1]), (pier_sh[0], L)], base=[(0, wc_door[0]), (wc_door[1], pier_wc[1]), pier_sh, stub])
-    # beyond, lightly: tub alcove back wall (tile line, window, tub) and the shower back wall (niche)
+    shd = (sx(SHD[1]), sx(SHD[0]))                                       # shower door opening, the pier (hinge) side at the left
+    shell(v, L, crown=[(0, pier_wc[1]), (pier_sh[0], L)], base=[(0, wc_door[0]), (wc_door[1], pier_wc[1]), (pier_sh[0], shd[0] - CS)])
+    # beyond, lightly: tub alcove back wall (FOR's window L to 0'-6" AFF, tub in front of it)
     keep = (C.INK, C.MID); C.INK = BEYOND; C.MID = BEYOND
     win = (tub[0] + WIN_M, tub[1] - WIN_M)
-    C.window(v, win[0], win[1] - win[0], SILL, HEAD, lites=3, trim=False)
-    C.tub_filler_wall(v, (tub[0] + tub[1]) / 2, 30); C.freestanding_tub(v, (tub[0] + tub[1]) / 2 - TUB_L / 2, TUB_L, 22, filler=None)
-    shc = (sx(SH_IN[1]) + sx(SH_IN[0])) / 2; C.niche(v, shc - 12, 24, 58, 12, shelves=0)
+    C.window(v, win[0], win[1] - win[0], TUB_SILL, HEAD, lites=3, trim=False)
+    tub_w(v, (tub[0] + tub[1]) / 2 - TUB_L / 2, TUB_L, 22)
     C.INK, C.MID = keep
-    # header wall over the shower glass, same as over the water closet door: masks what is beyond above 8'-0"
-    C._rect(v, sh_open[0], HEAD, sh_open[1], H, C.FINE, WHITE, fill=WHITE); C.crown(v, sh_open[0], sh_open[1], H)
-    C._line(v, (sh_open[0], HEAD), (sh_open[1], HEAD), C.OUTLINE)
-    # the alcove openings: heavy jamb lines with a shadow on the recess side
-    for (a, b), top in ((tub, H), (sh_open, HEAD)):
+    # the tub alcove opening: heavy jamb lines with a shadow on the recess side
+    for (a, b), top in ((tub, H),):
         C._line(v, (a, 0), (a, top), C.HEAVY); C._line(v, (b, 0), (b, top), C.HEAVY)
         C._line(v, (a + 0.6, 0), (a + 0.6, top), C.FINE, LIGHT); C._line(v, (b - 0.6, 0), (b - 0.6, top), C.FINE, LIGHT)
-    # shower glass: frameless 1/2" tempered front, the 28 in. door hinged on the pier (left), one fixed panel to the stub
-    fin = sh_open[1] - sh_open[0] - SH_DOOR
-    shower_front(v, sh_open[0], sh_open[1] - sh_open[0], HEAD, SH_DOOR)
-    finish_tag(v, sh_open[0] + 10.5, 5.5, '1/2" TEMPERED')   # low on the hinge side, clear of the swing lines
+    # shower (owner 11.09.26): the front is a painted wall like the water closet's, a cased 2'-6" x 8'-0" opening (the W.C. door's size and casing),
+    # one panel of hammered glass, no frame and no muntins (owner 11.09.26), hinged on the pier side, swinging out to the room
+    C.casing(v, shd[0], SHD_W, HEAD); glass_door(v, shd[0], SHD_W, HEAD, 'L')
+    C.rev_cloud(v, tub[0] + 1, 3.0, L - 1, HEAD + CS + 2, pad=1.0, tag_at='tl')   # the tub window (sill per FOR) and the shower front, one cloud
     # water closet door in the front wall, hinged at the east jamb; robe hook on the pier
     C.casing(v, wc_door[0], WC_DOOR, HEAD); leaf(v, wc_door[0], WC_DOOR, HEAD, 2, 'L', toward=False)
     robe_hook(v, (pier_wc[0] + CS + pier_wc[1]) / 2, 68)                          # centered on the pier clear of the casing
     finish_tag(v, (tub[0] + tub[1]) / 2, 108, 'TUB ALCOVE BEYOND, SEE ID-732')
-    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, wc_door[0], wc_door[1], pier_wc[1], tub[1], sh_open[0], sh_open[0] + SH_DOOR, sh_open[1], L]))
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, wc_door[0], wc_door[1], pier_wc[1], tub[1], shd[0], shd[1], L]))
     dimh(v, 0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 36, 48, HEAD, H - TRIM['crown'], H]))
-    return ['WATER CLOSET DOOR 2\'-6", SEE ID-733. TUB ALCOVE WT-02 SLAB, SEE ID-732. DOUBLE ROBE HOOK CL 5\'-8".',
-            'SHOWER: 1/2" TEMPERED GLASS, 8\'-0" HIGH, 28" DOOR ON WALL HINGES, %s FIXED PANEL. PAINTED HEADER ABOVE.' % E.ftin(round(fin * 8) / 8)]
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TUB_SILL, HEAD, H - TRIM['crown'], H]))
+    return ['W.C. DOOR 2\'-6", SEE ID-733. TUB ALCOVE ST-04, WINDOW L SILL 0\'-6" PER FOR, SEE ID-732. ROBE HOOK CL 5\'-8".',
+            'SHOWER: 2\'-6" x 8\'-0" ONE PANEL OF 1/2" HAMMERED TEMPERED GLASS, NO FRAME, NO MUNTINS, GLASS HINGES ON THE PIER SIDE, CASED AS THE W.C. DOOR, SWINGS OUT. PAINTED WALL.']
 
 def west(v):
     """West wall from the shower stub to the north corner; the shower side wall is drawn with the shower on ID-732."""
     L = FRONT_Y0
     stub = (0.0, FRONT_Y1 - FRONT_Y0)                    # 0 to 4.8, 3.9 in. proud
-    door = (FRONT_Y0 - TER_Y1, FRONT_Y0 - TER_Y0)        # 1.1 to 56.8
+    door = (FRONT_Y0 - TER_S, FRONT_Y0 - TER_N)         # 10-3/4" to 52-3/4": 3'-6", centered between the stub and the vanity end (owner 11.09.26)
     shell(v, L, crown=[(0, L)], base=[(door[1] + CS, L)])
-    w_ = door[1] - door[0]; casing_north_only(v, door[0], w_, HEAD)
-    leaf(v, door[0], w_ / 2, HEAD, 'glass', 'L', toward=False); leaf(v, door[0] + w_ / 2, w_ / 2, HEAD, 'glass', 'R', toward=False)
-    finish_tag(v, door[1] - 12.0, 12.5, 'TEMPERED')   # south leaf, below its lower swing line
+    w_ = door[1] - door[0]; C.casing(v, door[0], w_, HEAD)                       # cased both sides now: 1-1/4" to the stub and to the vanity end
+    for x_, sw_ in ((door[0], 'L'), (door[0] + w_ / 2, 'R')): leaf(v, x_, w_ / 2, HEAD, 'glass', sw_, toward=False)   # divided lites per the set rule
+    tx_ = door[0] + w_ * 0.75 + 2.0; tw_ = v.F.text_length('TEMPERED', fontsize=5.2) / v.k
+    C._rect(v, tx_ - tw_ / 2 - 0.6, 1.4, tx_ + tw_ / 2 + 0.6, 5.4, 0.01, WHITE, fill=WHITE)
+    finish_tag(v, tx_, 2.2, 'TEMPERED')               # on the south leaf's bottom rail, clear of the swing lines
+    C.rev_cloud(v, door[0] + 2.25, 7.0, door[1] + CS + 2.7, HEAD + CS + 5.5, pad=0.0)          # in the stile, the bottom rail, past the casing and under the crown: no line ridden
     C._rect(v, L - 20.1, 0, L, CTR, C.FINE, WHITE, fill=WHITE)              # the north casing and the base break behind the vanity
     C.vanity_end(v, L, depth=20.1, h=CTR, open_to='L')
-    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, door[0], door[1], L]))
+    dimh(v, 0, L, v.Y(0) + 14, [0, stub[1], door[0], door[1], L - 20.1, L])        # equal clear to the stub and to the vanity end
     dimh(v, 0, L, v.Y(0) + 27, [0, L])
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, CTR, HEAD, H - TRIM['crown'], H]))
-    return ['TERRACE DOORS: PAIR OF 2\'-4" FULL-LITE DOORS, 8\'-0" HEAD, TEMPERED IMPACT GLASS. SOUTH JAMB WRAPPED, NO CASING.',
-            'PT-02, CM-01. SHOWER SIDE WALL, SEE ID-732.']
+    return ['FOR\'S DOOR 10: PAIR OF 1\'-9" FULL-LITE DOORS (3\'-6", FOR 4\'-4"), DIVIDED LITES, 8\'-0" HEAD, TEMPERED IMPACT.',
+            'CENTERED BETWEEN THE SHOWER FRONT WALL AND THE VANITY END, 6-1/4" CLEAR EACH SIDE, CASED BOTH SIDES. PT-02, CM-01. SHOWER SIDE WALL, SEE ID-732.']
 
 # ================================================================== shower (ID-732), all faces WT-02 floor to ceiling
 def shower_west(v):
     """Shower side wall with the window, looking west: back wall at the left, glass line at the right."""
-    L = ALC_D
+    L = ALC_D                                                          # the front is a wall now (owner 11.09.26): cut at the right
     win = (wx(SWIN_Y1), wx(SWIN_Y0))
-    shell(v, L, cut_right=False)
+    shell(v, L)
     C.tile_grid(v, 0, L, 0, H, TILE, show=[(0, L, 0, H)])
-    C.window(v, win[0], win[1] - win[0], SILL, HEAD, lites=2, trim=False)
-    sw = FRONT_Y1 - FRONT_Y0                                           # the stub's end, the alcove wall's 4-1/2" thickness
-    C.pilaster(v, L, sw, H, shadow_side='L'); C.tile_grid(v, L, L + sw, 0, H, TILE, show=[(L, L + sw, 0, H)])
-    C.glass_edge(v, L, HEAD)
-    dimh(v, 0, L + sw, v.Y(0) + 14, E.snap_points([0, win[0], win[1], L, L + sw], tol=0.3))
-    v.dim_v(0, H, v.X(L + sw) + 14, E.snap_points([0, SILL, HEAD, H]))
-    return ['WT-02 SLAB 48" x 96", FLOOR TO CEILING, SEAMS AS DRAWN.',
-            'WINDOW 3\'-1" x 4\'-0", 4\'-0" SILL, TEMPERED. SLAB SILL, SLOPED.']
+    C.window(v, win[0], win[1] - win[0], SWIN_SILL, HEAD, lites=2, trim=False)
+    C.rev_cloud(v, 1.5, 3.5, L - 1.5, H - 1.5, pad=0.5, tag_at='tl')
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, win[0], win[1], L], tol=0.3))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, SWIN_SILL, HEAD, H]))
+    return ['ST-04 MARBLE SLAB 48" x 96", FLOOR TO CEILING, SEAMS AS DRAWN.',
+            'FOR\'S WINDOW K, 3\'-1" x 2\'-2", SILL 5\'-10", HEAD 8\'-0", IMPACT, TEMPERED, DIVIDED LITES. SLAB SILL, SLOPED.']
 
 def shower_south(v):
     L = SH_IN[1] - SH_IN[0]
@@ -290,40 +328,38 @@ def shower_south(v):
     seat_front(v, 0, SEAT)                                             # the SE corner is at the left looking south
     dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, SEAT, L / 2 - 12, L / 2 + 12, L]))
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, SEAT_H, 58, 70, H]))
-    return ['WT-02 SLAB, SEAM AT 8\'-0". NICHE 24" x 12" x 3-1/2", SILL AT 4\'-10".',
+    C.rev_cloud(v, 1.5, 3.5, L - 1.5, H - 1.5, pad=0.5, tag_at='tl')
+    return ['ST-04 MARBLE SLAB, SEAM AT 8\'-0". NICHE 24" x 12" x 3-1/2", SILL AT 4\'-10".',
             'CORNER SEAT, 15" LEGS, SLAB TOP AT 1\'-5". LINEAR DRAIN AT THIS WALL.']
 
 def shower_east(v):
     """The partition to the tub alcove, looking east: glass line at the left, back wall at the right."""
-    L = ALC_D
-    shell(v, L, cut_left=False)
+    L = ALC_D                                                          # the front is a wall now (owner 11.09.26): cut at the left
+    shell(v, L)
     slab(v, 0, L, [SEAM_SH])
-    pw = FRONT_Y1 - FRONT_Y0                                           # the pier's 4-1/2" jog at the alcove line, where the glass lands
-    v.x_left = -pw
-    C.pilaster(v, -pw, pw, H, shadow_side='R'); C.tile_grid(v, -pw, 0, 0, H, TILE, show=[(-pw, 0, 0, H)])
     C.valve(v, VALVE_IN, 48)
     ceiling_head(v, L / 2)
     slide_bar(v, VALVE_IN + 7.0)
     seat_side(v, L, 'L')
-    C.glass_edge(v, -pw / 2, HEAD)
-    dimh(v, -pw, L, v.Y(0) + 14, E.snap_points([-pw, 0, VALVE_IN, VALVE_IN + 7.0, L - SEAT, L], tol=0.3))
+    C.rev_cloud(v, 1.5, 3.5, L - 1.5, H - 1.5, pad=0.5, tag_at='tl')
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, VALVE_IN, VALVE_IN + 7.0, L - SEAT, L], tol=0.3))
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, SEAT_H, 40, 48, 76, HEAD, H]))
-    return ['VALVE CL 4\'-0", %s FROM THE GLASS. HAND SHOWER ON A 36" SLIDE BAR.' % E.ftin(VALVE_IN),
-            '12" CEILING RAIN HEAD. WT-02 SLAB, SEAMS AT %s AND 8\'-0".' % E.ftin(SEAM_SH)]
+    return ['VALVE CL 4\'-0", %s FROM THE FRONT WALL. HAND SHOWER ON A 36" SLIDE BAR.' % E.ftin(VALVE_IN),
+            '12" CEILING RAIN HEAD. ST-04 MARBLE SLAB, SEAMS AT %s AND 8\'-0".' % E.ftin(SEAM_SH)]
 
 # ================================================================== tub alcove (ID-732), WT-02 to 8'-0", PT-02 and crown above
 def tub_south(v):
     L = TUB_WALL[1] - TUB_WALL[0]
     shell(v, L)
-    sm = [L / 2 - 24, L / 2 + 24]                                       # a 48" panel centered behind the filler, equal pieces each side
-    slab(v, 0, L, sm)
-    C.window(v, WIN_M, L - 2 * WIN_M, SILL, HEAD, lites=3, trim=False)
-    C.tub_filler_wall(v, L / 2, 30); C.freestanding_tub(v, TUB_CL, TUB_L, 22, filler=None)
+    slab(v, 0, L, [])                                                  # the window takes the wall: ST-04 at the margins, below the sill and over the head
+    C.window(v, WIN_M, L - 2 * WIN_M, TUB_SILL, HEAD, lites=3, trim=False)
+    tub_w(v, TUB_CL, TUB_L, 22)                # the filler moves to the east side wall (the back wall is glass)
+    C.rev_cloud(v, 1.5, 3.5, L - 1.5, H - 1.5, pad=0.5, tag_at='tl')
     dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, WIN_M, L - WIN_M, L]))
     dimh(v, 0, L, v.Y(0) + 31, E.snap_points([0, TUB_CL, L - TUB_CL, L]))
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 22, 30, SILL, HEAD, H]))
-    return ['WT-02 SLAB, 48" PANEL CENTERED. WINDOW 5\'-0" x 4\'-0", 4\'-0" SILL, TEMPERED.',
-            '58" FREESTANDING TUB, CENTERED. WALL FILLER CL 2\'-6" WITH HAND SHOWER.']
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TUB_SILL, 22, HEAD, H]))
+    return ['ST-04 MARBLE. FOR\'S WINDOW L, 5\'-0" x 7\'-6", SILL 0\'-6", HEAD 8\'-0", IMPACT, TEMPERED, DIVIDED LITES.',
+            '58" FREESTANDING TUB, CENTERED. FILLER ON THE EAST SIDE WALL, VIEW 6.']
 
 def tub_side(v, which):
     """Alcove side walls. West: back wall at the left. East: back wall at the right. 24 in. towel bar at the room end."""
@@ -331,32 +367,62 @@ def tub_side(v, which):
     shell(v, L, cut_right=(which == 'E'), cut_left=(which == 'W'))
     C.tile_grid(v, 0, L, 0, H, TILE, show=[(0, L, 0, H)])
     if which == 'W':
-        C.freestanding_tub(v, 0.5, 32.9, 22, filler=None); C.towel_bar(v, L - 22, 48, 24)
+        tub_w(v, 0.5, 32.9, 22); C.towel_bar(v, L - 22, 48, 24)
         pts = [0, 32.9, L - 34, L - 10, L]
     else:
-        C.freestanding_tub(v, L - 33.4, 32.9, 22, filler=None); C.towel_bar(v, 22, 48, 24)
+        tub_w(v, L - 33.4, 32.9, 22); C.towel_bar(v, 22, 48, 24)
+        FCX = round((L - 33.4 / 2) * 8) / 8                         # wall filler and hand shower centered on the tub's depth (the back wall is the window)
+        C.tub_filler_wall(v, FCX, 30)
         pts = [0, 10, 34, L - 32.9, L]
     dimh(v, 0, L, v.Y(0) + 14, E.snap_points(pts))
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 22, 48, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 22, 30, 48, H] if which == 'E' else [0, 22, 48, H]))
     side = 'WEST' if which == 'W' else 'EAST'
-    return ['WT-02 SLAB FLOOR TO CEILING.', '24" TOWEL BAR CL 4\'-0" AT THE ROOM END.']
+    C.rev_cloud(v, 1.5, 3.5, L - 1.5, H - 1.5, pad=0.5, tag_at='tl')
+    if which == 'E': return ['ST-04 MARBLE FLOOR TO CEILING. WALL FILLER CL 2\'-6", HAND SHOWER.', '24" TOWEL BAR CL 4\'-0" AT THE ROOM END.']
+    return ['ST-04 MARBLE FLOOR TO CEILING.', '24" TOWEL BAR CL 4\'-0" AT THE ROOM END.']
+
+
+# ---- wall-hung smart toilet (owner 11.09.26 coordination: wall-hung smart toilets on in-wall carriers, GFCI for the seat)
+WH_PROJ = 21.5     # bowl projection from the finished wall
+WH_TOP = 16.5      # seat top AFF (carrier set; 15" to 19" adjustable)
+FP_B, FP_T = 40.75, 47.25   # flush plate, CL 3'-8" to match ID-502 detail 5
+GF_OFF, GF_CL = 8.0, 13.0   # smart-seat GFCI 8" beside the bowl centerline, CL 1'-1" (ID-502: 6" to 8", 12" to 15" AFF)
+def wh_front(v, x, w):
+    """Wall-hung bowl seen from the front: lid and seat, bowl tapering to its underside, flush plate on the wall above, no tank."""
+    cx = x + w / 2
+    C._poly(v, [(x + 0.6, WH_TOP - 1.2), (x + w - 0.6, WH_TOP - 1.2), (x + w - 1.6, 10.5), (cx + 3.2, 8.2), (cx - 3.2, 8.2), (x + 1.6, 10.5)], C.OUTLINE, fill=WHITE)
+    C._rect(v, x, WH_TOP - 1.2, x + w, WH_TOP, C.OUTLINE, fill=WHITE)                  # seat and lid edge
+    C._rect(v, cx - 4.75, FP_B, cx + 4.75, FP_T, C.OUTLINE, fill=WHITE)                # flush plate CL 3'-8" (ID-502 detail 5), carrier behind
+    C._line(v, (cx, FP_B + 0.6), (cx, FP_T - 0.6), C.FINE)
+    C._line(v, (x + 2, 8.6), (x + w - 2, 8.6), C.FINE, LIGHT)                          # shadow line under the floating bowl
+def wh_profile(v, wall_x, facing='L'):
+    """Wall-hung bowl in profile from the wall at wall_x, projecting left ('L') or right ('R'); flush plate proud of the wall."""
+    d = -1 if facing == 'L' else 1
+    X = lambda t: wall_x + d * t
+    pts = [(X(0), 9.0), (X(0), WH_TOP - 1.2), (X(WH_PROJ), WH_TOP - 1.2), (X(WH_PROJ - 0.5), 13.0), (X(WH_PROJ - 3.0), 10.2), (X(9.0), 8.6), (X(4.0), 8.6)]
+    C._poly(v, pts, C.OUTLINE, fill=WHITE)
+    C._rect(v, X(0), WH_TOP - 1.2, X(WH_PROJ + 0.3), WH_TOP, C.OUTLINE, fill=WHITE)      # seat and lid
+    C._rect(v, X(0), FP_B, X(0.75), FP_T, C.OUTLINE, fill=WHITE)                        # flush plate
 
 # ================================================================== water closet (ID-733), PT-02, crown, base
 def wc_south(v):
     L = WC_IN[1] - WC_IN[0]
     shell(v, L, crown=[(0, L)], base=[(0, L)])
-    tx = WC_IN[1] - TOILET_X[1]; C.toilet(v, tx, TOILET_X[1] - TOILET_X[0])   # looking south from the water closet's own east face
-    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, tx + (TOILET_X[1] - TOILET_X[0]) / 2, L]))
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 31.5, H - TRIM['crown'], H]))
-    return ['TOILET CENTERED ON THE WALL. PT-02, CM-01.']
+    tx = WC_IN[1] - TOILET_X[1]; tcx = tx + (TOILET_X[1] - TOILET_X[0]) / 2   # looking south from the water closet's own east face
+    C.outlet(v, tcx - GF_OFF, GF_CL)                                           # smart seat power beside the bowl, partly behind it (FOR's GFI on this wall)
+    wh_front(v, tx, TOILET_X[1] - TOILET_X[0])
+    v.text(v.X(tcx - GF_OFF - 4.5), v.Y(GF_CL), 'GFCI', 5.0, align='r')
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, tcx - GF_OFF, tcx, L]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, GF_CL, WH_TOP, FP_B + 3.25, H - TRIM['crown'], H]))
+    return ['WALL-HUNG SMART TOILET ON A CARRIER, FLUSH PLATE CL 3\'-8".', 'GFCI 8" BESIDE THE BOWL CL, CL 1\'-1". PT-02, CM-01.']
 
 def wc_east(v):
     """Looking east inside the water closet: door wall at the left, toilet in profile at the right."""
     L = ALC_D
     shell(v, L, crown=[(0, L)], base=[(0, L)], cut_left=True)
-    C.toilet_profile(v, L, facing='L', length=28.7)
-    C.paper_holder(v, L - 28.7 - 8, 26)
-    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, L - 28.7 - 8, L]))
+    wh_profile(v, L, facing='L')
+    C.paper_holder(v, L - WH_PROJ - 8, 26)
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, L - WH_PROJ - 8, L - WH_PROJ, L]))
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 26, H - TRIM['crown'], H]))
     return ['PAPER HOLDER CL 2\'-2", 8" AHEAD OF THE BOWL.', 'PT-02, CM-01.']
 
@@ -374,9 +440,9 @@ def wc_west(v):
     """Inside the water closet looking west: the partition to the tub alcove, door wall at the right."""
     L = ALC_D
     shell(v, L, crown=[(0, L)], base=[(0, L)])
-    C.toilet_profile(v, 0, facing='R', length=28.7)
+    wh_profile(v, 0, facing='R')
     C.switch(v, L - 4.0, 48.0, 'S/F')                                      # light and fan, at the latch side of the door (west jamb)
-    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, 28.7, L - 4.0, L]))
+    dimh(v, 0, L, v.Y(0) + 14, E.snap_points([0, WH_PROJ, L - 4.0, L]))
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, 48.0, H - TRIM['crown'], H]))
     return ['LIGHT AND FAN SWITCHES (2-GANG) CL 4\'-0"', 'AT THE LATCH SIDE. PT-02, CM-01.']
 
@@ -424,7 +490,6 @@ def key_plan(sh):
     for x, w in (VAN_L, VAN_R):
         R_(x, 0.0, x + w, 20.1, fill=WHITE, w=0.8, c=INK)
         cx_ = x + w / 2; R_(cx_ - 8.5, 4.5, cx_ + 8.5, 16.0, fill=WHITE, w=0.5, c=INK); L_((cx_, 0.0), (cx_, 5.5), 0.8)
-        L_((cx_ - TBAR_W / 2, 21.0), (cx_ + TBAR_W / 2, 21.0), 1.6)                  # towel bar on the apron
     # W.I.C.: FOR's pocket leaf out of the wall, a pair of 1'-6" doors swinging into the closet
     R_(41.0, -9.6, WIC_X, -6.9, fill=WG, c=WG); R_(WIC_X, -9.6, WIC_X + WIC_W, -6.9)
     for hx, a0, a1 in ((WIC_X, 270, 360), (WIC_X + WIC_W, 180, 270)):
@@ -435,9 +500,9 @@ def key_plan(sh):
     for j0, j1 in ((WC_D[0] - 1.88, WC_D[0]), (WC_D[1], WC_D[1] + 1.88)): R_(j0, FRONT_Y0, j1, FRONT_Y1, fill=WHITE, w=0.5, c=INK)
     R_(WC_IN[0] + 0.3, FRONT_Y1 + 0.3, WC_IN[1] - 0.3, ROOM_D - 0.3)
     L_((WC_D[1], FRONT_Y1), (WC_D[1], FRONT_Y1 + WC_DOOR), 0.8); arc(WC_D[1], FRONT_Y1, WC_DOOR, 90, 180)
-    tw = 20.0; R_(WC_CTR - tw / 2, ROOM_D - 8.5, WC_CTR + tw / 2, ROOM_D - 0.5, fill=WHITE, w=0.6, c=INK)    # tank
+    R_(WC_CTR - 4.75, ROOM_D - 0.9, WC_CTR + 4.75, ROOM_D - 0.3, fill=WHITE, w=0.5, c=INK)    # flush plate on the carrier wall, no tank (wall-hung)
     import math
-    pts = [fitz.Point(*P(WC_CTR + 7.3 * math.cos(math.radians(t)), ROOM_D - 8.5 - 10.3 + 10.3 * math.sin(math.radians(t)))) for t in range(0, 361, 10)]
+    pts = [fitz.Point(*P(WC_CTR + 7.3 * math.cos(math.radians(t)), ROOM_D - 1.0 + 20.5 * math.sin(math.radians(t)))) for t in range(180, 361, 10)]   # wall-hung bowl, 21-1/2" from the wall
     s_ = sh.p.new_shape(); s_.draw_polyline(pts); s_.finish(color=INK, width=0.6, fill=WHITE, closePath=True); s_.commit()
     # shower: FOR's X to a center drain, valve and front out; the 1/2" glass front, 28" door hung on the pier, the fixed panel,
     # the valve 1'-3" from the glass, a linear drain at the back wall, FOR's 15" corner seat
@@ -445,9 +510,14 @@ def key_plan(sh):
     R_(SH_IN[1] - 0.5, FRONT_Y1 + 20.0, SH_IN[1] - 0.05, FRONT_Y1 + 37.0)                       # FOR's valve trim off the partition face
     R_(-0.05, FRONT_Y0 - 0.05, STUB_SH[1], FRONT_Y1 + 0.05, fill=WG, c=WG)
     R_(STUB_SH[1], FRONT_Y0 - 0.45, PIER_SH[0], FRONT_Y1 + 0.45)
-    gy = (FRONT_Y0 + FRONT_Y1) / 2; fx = PIER_SH[0] - SH_DOOR
-    L_((STUB_SH[1], gy), (fx, gy), 1.6); L_((fx, gy), (PIER_SH[0], gy), 0.5, MID)
-    L_((PIER_SH[0], gy), (PIER_SH[0], gy - SH_DOOR), 1.2); arc(PIER_SH[0], gy, SH_DOOR, 180, 270)
+    # owner 11.09.26: the shower front is a wall with a cased 2'-6" opening (the W.C. door's size), a hammered-glass door hinged on the pier side, swinging out
+    for j0, j1 in ((STUB_SH[1], SHD[0]), (SHD[1], PIER_SH[0])): R_(j0, FRONT_Y0, j1, FRONT_Y1, fill=WHITE, w=0.5, c=INK)
+    L_((SHD[1], FRONT_Y0), (SHD[1], FRONT_Y0 - SHD_W), 1.2); arc(SHD[1], FRONT_Y0, SHD_W, 180, 270)
+    L_((SHD[0], (FRONT_Y0 + FRONT_Y1) / 2), (SHD[1], (FRONT_Y0 + FRONT_Y1) / 2), 0.3, MID)                    # threshold line
+    import idd_sheet as _IS
+    def cloud(x0, y0, x1, y1, tag_at='tr'):
+        a_, b_ = P(x0, y0), P(x1, y1); _IS.rev_cloud_pt(sh.p, fitz.Rect(min(a_[0], b_[0]), min(a_[1], b_[1]), max(a_[0], b_[0]), max(a_[1], b_[1])), tag_at=tag_at)
+    cloud(SHD[0] - 3.0, FRONT_Y0 - SHD_W - 4.0, SHD[1] + 5.0, FRONT_Y0 - 4.0)          # the swing, in open space off the wall and jamb lines
     sx_ = SH_IN[1]; vy = FRONT_Y1 + VALVE_IN
     R_(sx_ - 1.2, vy - 3.0, sx_, vy + 3.0, fill=WHITE, w=0.6, c=INK); L_((sx_ - 1.2, vy), (sx_ - 3.0, vy), 0.8)
     R_(2.0, ROOM_D - 4.0, SH_IN[1] - SEAT - 1.0, ROOM_D - 2.0, fill=WHITE, w=0.5, c=INK)          # linear drain
@@ -458,7 +528,9 @@ def key_plan(sh):
     for inset, w_ in ((0.0, 0.9), (2.0, 0.4)):
         rr = fitz.Rect(*P(t0 + inset, ty0 + inset), *P(t0 + TUB_L - inset, ty1 - inset))
         s_ = sh.p.new_shape(); s_.draw_rect(rr, radius=0.45); s_.finish(color=INK, width=w_, fill=WHITE); s_.commit()
-    fc = (TUB_WALL[0] + TUB_WALL[1]) / 2; R_(fc - 1.5, ROOM_D - 1.6, fc + 1.5, ROOM_D, fill=WHITE, w=0.6, c=INK); L_((fc, ROOM_D - 1.6), (fc, ROOM_D - 6.0), 0.8)
+    fyc = (ty0 + ty1) / 2                                                     # owner 11.09.26: the back wall is window to 1'-0" AFF, so the filler is on the east side wall
+    R_(TUB_WALL[1] - 1.6, fyc - 1.5, TUB_WALL[1], fyc + 1.5, fill=WHITE, w=0.6, c=INK); L_((TUB_WALL[1] - 1.6, fyc), (TUB_WALL[1] - 8.0, fyc), 0.8)
+    cloud(TUB_WALL[1] - 10, fyc - 6, TUB_WALL[1] + 3.0, fyc + 6)                  # the filler and its box; the right edge in the poche, the wall face crossed square
     # FOR's clipped ticks past the south wall at the southeast corner
     R_(96.0, ROOM_D + 8.6, ROOM_W + 20.0, ROOM_D + 22.0)
     R_(TUB_WALL[0] + 2.6, ROOM_D + 9.3, TUB_WALL[1] + 4, ROOM_D + 18.0)          # the terrace edge below the tub window: not this room
@@ -484,7 +556,7 @@ def key_plan(sh):
     for (x_, y_), t_ in (((21.5, 97.0), 'SHOWER'), ((80.0, 124.0), 'TUB'), ((155.0, 133.0), 'W.C.')):
         q_ = P(x_, y_); sh.text(q_[0], q_[1] + 3, t_, 9.0, INK, align='c', raw=True)
     from idd_sheet import _FR
-    for (x_, y_), t_ in (((155.0, 50.0), '19'),):
+    for (x_, y_), t_ in (((155.0, 50.0), '19'), ((WIC_X + WIC_W / 2, 14.0), '19A')):      # 19A: the W.I.C. pair (ID-002)
         q_ = P(x_, y_); hw = _FR.text_length(t_, fontsize=8) / 2 + 4
         sh.rect((q_[0] - hw, q_[1] - 6.5, q_[0] + hw, q_[1] + 6.5), width=0.6, color=INK, fill=WHITE)
         sh.text(q_[0], q_[1] + 2.9, t_, 8, INK, align='c', raw=True)
@@ -500,13 +572,21 @@ def key_plan(sh):
     s_.finish(color=INK, width=0.4, fill=INK); s_.commit()
     sh.text(na[0] + 20, na[1] + 3.5, 'N', 9, INK, raw=True)
     sh.text(na[0] + 52, by + 1, 'FLOOR 2 KEY PLAN, 1" TO 1\'-0"', 10.0, INK, bold=True, spacing=0.6, raw=True)   # caption on the line under the plan
-    for g_ in sh.p.get_drawings():
-        r_ = g_['rect']
-        if any(it[0] == 'c' for it in g_['items']) and r_.x1 < P(0, 0)[0] and P(0, TER_Y0)[1] - 6 < r_.y0 and r_.y1 < P(0, TER_Y1)[1] + 6:
-            s_ = sh.p.new_shape()
-            for it in g_['items']:
-                if it[0] == 'c': s_.draw_bezier(*it[1:5])
-            s_.finish(color=INK, width=0.4, closePath=False); s_.commit()
+    # owner 11.09.26: terrace pair narrowed to 3'-6" (two 1'-9" leaves), centered on the wall inside: FOR's leaves out, both jambs infilled
+    px0, py_ = P(0, TER_Y0 - 6)[0], P(0, TER_Y0 - 6)[1]                      # the west wall's exterior face, read off FOR's poche north of the opening
+    xs_ = [g_['rect'].x0 for g_ in sh.p.get_drawings() if g_.get('fill') is not None and g_['rect'].x0 < px0 - 20 and abs(g_['rect'].x1 - px0) < 3
+           and g_['rect'].y0 <= py_ <= g_['rect'].y1]
+    WALL_X = round((px0 - max(xs_)) / PT_IN * 8) / 8 if xs_ else 10.0
+    XE = -WALL_X                                                              # exterior face of the west wall
+    R_(XE - 32.0, TER_Y0 - 3.0, XE - 0.05, TER_Y1 + 3.0)                      # FOR's open leaves and swings, outside the wall
+    R_(XE, TER_Y0, 0.6, TER_Y1)                                               # the opening through the wall, FOR's inside-face tick with it
+    R_(XE - 0.8, TER_Y0 - 4.0, 0.0, TER_N, fill=WG, c=WG)                     # new wall north of the opening, lapped over FOR's jamb so the poche reads as one
+    R_(XE - 0.8, TER_S, 0.0, TER_Y1 + 6.0, fill=WG, c=WG)                     # new wall south of the opening, filled to FOR's poche
+    for yh, a0, a1, d in ((TER_N, 90, 180, 1), (TER_S, 180, 270, -1)):
+        L_((XE, yh), (XE - TER_W / 2, yh), 0.8); arc(XE, yh, TER_W / 2, a0, a1)
+    L_((XE, TER_N), (XE, TER_S), 0.3, MID)                                    # threshold
+    for j0, j1 in ((TER_N - 1.75, TER_N), (TER_S, TER_S + 1.75)): R_(XE, j0, 0.0, j1, fill=WHITE, w=0.5, c=INK)   # door frame jambs through the wall
+    L_((XE, TER_N), (0.0, TER_N), 0.5); L_((XE, TER_S), (0.0, TER_S), 0.5)
     from idd_sheet import FREG as _F
     x = target.x0 + KP_CONTENT[2] + 44; xr = TB_X - 24
     BODY, HEAD, LH = 9.5, 10.5, 14.5                     # print about 6 and 7 pt
@@ -523,13 +603,17 @@ def key_plan(sh):
     para('TB  TOWEL BAR'); para('RH  DOUBLE ROBE HOOK')
     lines.append((0, '', BODY, False, 18, None))
     lines.append((0, "CHANGES FROM FOR'S PLAN", HEAD, True, LH + 3, None))
-    for i, ln in enumerate(('TWO 51" FURNITURE VANITIES, CENTERED.',
-               'W.I.C.: PAIR OF 1\'-6" SWING DOORS.',
+    for i, ln in enumerate(('TWO 51" FURNITURE VANITIES, CENTERED, ST-04 TOPS.',
+               'W.I.C.: DOOR 19A, PAIR OF 1\'-6" SWING DOORS ON HARMON HINGES, SEMICIRCULAR ARCHED HEAD (SPRING 6\'-6", APEX 8\'-0").',
                'W.C. DOOR CENTERED ON THE W.C. WALL.',
-               'SHOWER: 28" GLASS DOOR ON THE PIER, LINEAR DRAIN AT THE BACK WALL, HAND SHOWER.',
-               'SHOWER VALVE %s FROM THE GLASS.' % E.ftin(VALVE_IN),
-               '58" FREESTANDING TUB, WALL-MOUNTED FILLER.',
-               'WT-02 SLAB FLOOR TO CEILING IN THE SHOWER AND TUB ALCOVE.')):
+               'SHOWER: THE GLASS FRONT IS A PAINTED WALL WITH A CASED 2\'-6" x 8\'-0" OPENING (THE W.C. DOOR\'S SIZE AND CASING), ONE-PANEL HAMMERED-GLASS DOOR, NO FRAME, NO MUNTINS, SWINGS OUT. LINEAR DRAIN AT THE BACK WALL, HAND SHOWER.',
+               'SHOWER VALVE %s FROM THE FRONT WALL (FOR: 2\'-9" FROM ITS GLASS), LINEAR DRAIN AT THE BACK WALL (FOR: CENTER DRAIN), CEILING RAIN HEAD: FOR / PLUMBER TO RELOCATE, SLAB RECESS AND SLEEVES BEFORE THE POUR.' % E.ftin(VALVE_IN),
+               '58" FREESTANDING TUB. FILLER ON THE ALCOVE EAST WALL: THE BACK WALL IS WINDOW. FLOOR 2 IS A SLAB: EVERY MOVED DRAIN SLEEVED BEFORE THE POUR.',
+               'TUB WINDOW L AS FOR SCHEDULES IT: 5\'-0" x 7\'-6", SILL 0\'-6". W.C. DOOR 2\'-6" (FOR 2\'-8") TO MATCH THE SHOWER OPENING. WALL-HUNG SMART TOILET ON A CARRIER, GFCI BEHIND.',
+               'TERRACE PAIR, FOR\'S DOOR 10, NARROWED TO 3\'-6" (TWO 1\'-9" LEAVES; A-202 DRAWS 4\'-8", A-600 READS 4\'-4"), CENTERED BETWEEN THE SHOWER FRONT WALL AND THE VANITY END (6-1/4" CLEAR EACH SIDE), WALL INFILLED BOTH SIDES.',
+               'ST-04 MARBLE (THE VANITY TOP STONE) FLOOR TO CEILING IN THE SHOWER AND TUB ALCOVE.',
+               'FLOOR: WD-01 HERRINGBONE WITH A WD-02 BORDER, SEE ID-102. SHOWER FLOOR TL-03 PORCELAIN MOSAIC.',
+               'DIVIDED LITES ON EVERY WINDOW AND THE TERRACE PAIR; THE SHOWER DOOR IS ONE PANEL OF HAMMERED GLASS.')):
         para(ln, indent=16, num='%d.' % (i + 1)); lines.append((0, '', BODY, False, 4, None))
     colh = sum(l_[4] for l_ in lines)
     pt0, pb0 = target.y0 + KP_CONTENT[1], target.y0 + KP_CONTENT[3]          # the column centered on the plan
@@ -542,7 +626,7 @@ def key_plan(sh):
 
 ROOM = ((1, 'NORTH ELEVATION - MASTER BATH', ROOM_W, north), (2, 'EAST ELEVATION - MASTER BATH', FRONT_Y0, east),
         (3, 'SOUTH ELEVATION - MASTER BATH', ROOM_W, south), (4, 'WEST ELEVATION - MASTER BATH', FRONT_Y0, west))
-ALCOVES = ((1, 'SHOWER - WEST WALL', ALC_D + FRONT_Y1 - FRONT_Y0, shower_west), (2, 'SHOWER - SOUTH WALL', SH_IN[1], shower_south), (3, 'SHOWER - EAST WALL', ALC_D, shower_east),
+ALCOVES = ((1, 'SHOWER - WEST WALL', ALC_D, shower_west), (2, 'SHOWER - SOUTH WALL', SH_IN[1], shower_south), (3, 'SHOWER - EAST WALL', ALC_D, shower_east),
            (4, 'TUB ALCOVE - WEST WALL', ALC_D, lambda v: tub_side(v, 'W')), (5, 'TUB ALCOVE - SOUTH WALL', TUB_WALL[1] - TUB_WALL[0], tub_south),
            (6, 'TUB ALCOVE - EAST WALL', ALC_D, lambda v: tub_side(v, 'E')))
 WC = ((1, 'WATER CLOSET - NORTH WALL', WC_IN[1] - WC_IN[0], wc_north), (2, 'WATER CLOSET - EAST WALL', ALC_D, wc_east),
@@ -592,6 +676,7 @@ def draw_views(sh, frame, views, rows, note_size=6.0):
         origin = fit(cell, L, k)
         v = E.ElevationView(sh.p, sh.font, sh.fontname, origin, k, spec)
         notes = fn(v)
+        v.dim_v(0, H, v.X(L) + 30, [0, H])                                     # overall, finish floor to ceiling (review 11.09.26)
         v.text(v.X(getattr(v, 'x_left', 0)) - 6, v.Y(0) + 7, 'FIN. FLR.', 5.0, MID, align='r')
         from idd_sheet import FREG as _F
         assert len(notes) <= 2, (title, 'more than 2 note lines')

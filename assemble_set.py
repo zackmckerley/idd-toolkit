@@ -20,5 +20,8 @@ for path, titles in PARTS:
 out.set_toc(toc)
 out.set_metadata({'title': 'Casa Grove - Interior Design Set (Helios Development, HD102)', 'author': 'Helios Development', 'subject': 'Issued 11.01.26 for pricing and coordination, not for permit',
                   'creator': 'Helios Development', 'producer': 'Helios Development', 'keywords': 'Casa Grove, 3350 Thomas Ave, HD102, interior design set'})
-OUT = '261101.HD102.InteriorDesignSet.pdf'; out.save(OUT, garbage=3, deflate=True)
+OUT = '261101.HD102.InteriorDesignSet.pdf'
+import os, sys  # REFUSE_OVERWRITE: this is the 11.01.26 issued set; never overwrite an existing issue (owner rule: never delete a live file)
+if os.path.exists(OUT): sys.exit('refusing to overwrite ' + OUT + '; this script is retired, use build_review_set.py')
+out.save(OUT, garbage=3, deflate=True)
 print('saved', OUT, len(out), 'pages')

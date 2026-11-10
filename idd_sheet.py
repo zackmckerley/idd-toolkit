@@ -10,7 +10,8 @@ TB_X = W - 254.0       # title block left edge (218 pt wide, as before)
 HDR_Y = 52.0           # no header strip (owner 11.07.26: the title is in the title block only); content starts at HDR_Y + 8, 24 pt below the frame
 RULE = 0.5
 EXTRA_REVS = []
-PRINT_DATE = '11.07.26'          # the review draft printed on 11 x 17                 # e.g. [('1', '11.05.26', 'BASE PLAN TO FOR REV 1')], set by a reissue driver
+PRINT_DATE = '11.09.26'          # owner comments 11.09.26 reissue (review draft was 11.07.26)
+REVS = [('0', '11.07.26', 'REVIEW DRAFT'), ('1', '11.09.26', 'OWNER COMMENTS'), ('2', '11.09.26', 'COORDINATED WITH FOR REV 1')]          # the review draft printed on 11 x 17                 # e.g. [('1', '11.05.26', 'BASE PLAN TO FOR REV 1')], set by a reissue driver
 # Fonts (owner pick 11.07.26, option F): Inter for all drawing text, a serif for titles and sheet numbers to match the HELIOS lockup.
 INTER_R = '/usr/share/fonts/opentype/inter/Inter-Medium.otf'      # Medium, not Regular: the 11 x 17 print read too light (owner 11.07.26)
 INTER_B = '/usr/share/fonts/opentype/inter/Inter-Bold.otf'
@@ -212,7 +213,7 @@ class Sheet:
         ry = yy + 66; p.line((x0, ry), (x1, ry), RULE)
         lab(ry + 20, 'REVISIONS')
         cols = [x0, x0 + 30, x0 + 92, x1]; hy = ry + 30; pitch = 18
-        revs = [('0', PRINT_DATE, 'REVIEW DRAFT')]          # review draft: one row on every sheet (the history lives in the project record)
+        revs = list(REVS)          # review draft rows on every sheet (the history lives in the project record)
         nrows = len(revs)
         for i in range(nrows + 1): p.line((x0, hy + pitch * i), (x1, hy + pitch * i), 0.3, LIGHT)
         for c in cols[1:3]: p.line((c, hy), (c, hy + pitch * nrows), 0.3, LIGHT)
@@ -355,3 +356,30 @@ def print_ink(doc):
             for ref in re_.findall(r'(\d+) 0 R', res[1] if res[0] in ('dict', 'xref') else ''):
                 r_ = int(ref)
                 if doc.xref_get_key(r_, 'Subtype')[1] == '/Form' and r_ not in seen: fix(r_); stack.append(r_)
+
+
+CLOUDS = False      # owner 11.09.26: no revision clouds unless he asks (these sheets are not going to the city)
+def rev_cloud_pt(page, r, tag='1', bump=7.0, color=(0.0, 0.0, 0.0), width=0.9, tag_at='tr'):
+    if not CLOUDS: return
+    """Revision cloud around page rect r (points), scalloped outward, with a delta tag at a corner (owner comments 11.09.26:
+    every change on the reissue is clouded so the review starts at the clouds)."""
+    import math
+    r = fitz.Rect(r); pts = []
+    def edge(a, b):
+        L = math.hypot(b[0] - a[0], b[1] - a[1]); n = max(1, round(L / bump)); return [(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n) for i in range(n)]
+    corners = [(r.x0, r.y0), (r.x1, r.y0), (r.x1, r.y1), (r.x0, r.y1)]
+    sh = page.new_shape()
+    for i in range(4):
+        a, b = corners[i], corners[(i + 1) % 4]; seg = edge(a, b) + [b]
+        for j in range(len(seg) - 1):
+            p0, p1 = seg[j], seg[j + 1]; mx, my = (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2
+            dx, dy = p1[0] - p0[0], p1[1] - p0[1]; L = math.hypot(dx, dy) or 1
+            nx, ny = dy / L, -dx / L              # outward normal for a clockwise loop in page space (y down)
+            ctrl = (mx + nx * L * 0.55, my + ny * L * 0.55)
+            sh.draw_bezier(fitz.Point(*p0), fitz.Point(p0[0] + (ctrl[0] - p0[0]) * 0.9, p0[1] + (ctrl[1] - p0[1]) * 0.9),
+                           fitz.Point(p1[0] + (ctrl[0] - p1[0]) * 0.9, p1[1] + (ctrl[1] - p1[1]) * 0.9), fitz.Point(*p1))
+    sh.finish(color=color, width=width, closePath=False); sh.commit()
+    cx, cy = {'tr': (r.x1 + 4, r.y0 - 4), 'tl': (r.x0 - 4, r.y0 - 4), 'br': (r.x1 + 4, r.y1 + 4), 'bl': (r.x0 - 4, r.y1 + 4)}[tag_at]
+    s_ = 7.5; tri = [fitz.Point(cx, cy - s_), fitz.Point(cx + s_ * 0.9, cy + s_ * 0.6), fitz.Point(cx - s_ * 0.9, cy + s_ * 0.6)]
+    sh = page.new_shape(); sh.draw_polyline(tri + [tri[0]]); sh.finish(color=color, width=0.7, fill=(1, 1, 1), closePath=True); sh.commit()
+    page.insert_text(fitz.Point(cx - 2.0, cy + 3.2), tag, fontsize=6.5, fontname='helv', color=color)

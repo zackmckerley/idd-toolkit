@@ -8,11 +8,11 @@
    "crown": "PT-02",
    "panel": "WP-02",
    "vanity": "VAN-01",
-   "counter": "STONE-TOP",
+   "counter": "CAL-MONET",
    "mirror_frame": "METAL-NICKEL",
    "metal": "METAL-NICKEL",
    "shade": "SHADE",
-   "tile": "WT-02",
+   "tile": "CAL-MONET-HONED",
    "floor": "WD-01"
   },
   "views": {
@@ -22,6 +22,96 @@
    "TUB ALCOVE*": {
     "wall": "WT-02"
    }
+  }
+ },
+ "KITCHEN": {
+  "roles": {
+   "wall": "PT-01",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-01-SATIN",
+   "metal": "METAL-BRASS",
+   "floor": "WD-01",
+   "ceiling": "PT-01",
+   "cabinet": "OAK-STAINED",
+   "counter": "CAL-MONET",
+   "tile": "BSP-01",
+   "hood": "HOOD-PLASTER"
+  }
+ },
+ "LIVING ROOM": {
+  "roles": {
+   "wall": "PT-02",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-01-SATIN",
+   "metal": "METAL-BRASS",
+   "floor": "WD-01",
+   "ceiling": "PT-01",
+   "cabinet": "PT-01-SATIN",
+   "counter": "ST-01"
+  }
+ },
+ "ENTRY": {
+  "roles": {
+   "wall": "PT-02",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-01-SATIN",
+   "metal": "METAL-BRASS",
+   "floor": "ST-02",
+   "ceiling": "PT-01",
+   "counter": "CAL-VIOLA",
+   "mirror_frame": "METAL-BRASS"
+  },
+  "views": {
+   "NORTH ELEVATION": {
+    "wall": "WC-02"
+   },
+   "SOUTH ELEVATION": {
+    "wall": "WC-02"
+   },
+   "EAST ELEVATION - VANITY*": {
+    "wall": "WC-02"
+   },
+   "WEST ELEVATION - DOOR": {
+    "wall": "WC-02"
+   }
+  }
+ },
+ "MASTER BEDROOM": {
+  "roles": {
+   "wall": "PT-02",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-01-SATIN",
+   "metal": "METAL-BRASS",
+   "floor": "WD-HB",
+   "ceiling": "PT-01"
+  }
+ },
+ "MASTER CLOSET": {
+  "roles": {
+   "wall": "MW-01",
+   "trim": "MW-01",
+   "door": "PT-01-SATIN",
+   "crown": "MW-01",
+   "metal": "BRONZE",
+   "floor": "WD-HB",
+   "ceiling": "PT-01",
+   "counter": "CAL-MONET",
+   "cabinet": "MW-01"
+  }
+ },
+ "POOL HOUSE OFFICE": {
+  "roles": {
+   "wall": "PT-05",
+   "trim": "PT-01-SATIN",
+   "door": "PT-01-SATIN",
+   "crown": "PT-01-SATIN",
+   "metal": "METAL-BRASS",
+   "floor": "ST-05",
+   "ceiling": "PT-01"
   }
  }
 }

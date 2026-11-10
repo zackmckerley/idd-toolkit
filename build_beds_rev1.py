@@ -29,7 +29,10 @@ plan north = up the FOR sheet:
       south    FOR's built-in cabinets 543.1 to 691.2 (8'-2-3/4" x 2'-0", 376.0 to 413.2); the vestibule's back wall with entry 24:
                leaf 705.7 to 756.7 (2'-10", arc r 51), hinged east, swings in (north)
       west     bath 3 door 20: leaf 144.5 to 192.5 (2'-8", arc r 48), hinged north, swings into the bath
-Heights assumed (VERIFY): ceilings 10'-0" both floors, door heads 8'-0", window stools 1'-6"."""
+Heights per FOR Rev 1 (coordination 11.09.26, coord/heights.json): guest bedroom ceiling 10'-8" (A-205, 10'-4" cove band), bedrooms 2 and 3
+9'-10" (A-206, 9'-6" band). Owner 11.09.26: crown kept, held 4" below the ceiling with an LED cove on its top (FOR's L11/L12 cove).
+Windows per FOR A-600, heads 8'-0": D (guest) 4'-1" x 6'-2-1/4", sill 1'-9-3/4"; J x2 (bedroom 2) 2'-2-1/2" x 4'-4-5/8", sill 3'-7-3/8";
+H (bedroom 3) 8'-0" x 6'-0" XO slider, sill 2'-0". D, H and J are FOR's egress windows."""
 import sys, math
 sys.path.insert(0, '/home/claude/flrwork/rev1')
 import pymupdf as fitz
@@ -45,19 +48,23 @@ def draw_views(sh, cells, views, scale='1/2', ceiling=None):
     """build_kitchen.draw_views with the line pitch set for the 11 x 17 print size."""
     k = E.SCALES[scale]
     for cell, (n, title, L, fn, extra) in zip(cells, views):
+        h0, c0 = H, COVE
+        if hasattr(fn, 'h'): set_room(fn.h)                                   # a view at FOR's band height (review 11.09.26)
         E.title_bar(sh.p, sh.font, sh.fontname, cell, n, title, 'SCALE: %s" TO 1\'-0"' % scale)
         spec = {'room': 'BEDROOM', 'view': title, 'length': L + extra, 'ceiling': ceiling or H}
         probe = E.ElevationView(Sheet(fitz.open()).p, sh.font, sh.fontname, (0, 0), k, spec)
-        text = fn(probe)
+        text = fn(probe) + ((' ' + fn.note) if hasattr(fn, 'note') else '')
         width = min(cell[2] - cell[0] - 16, 660)
         lines_ = wrap(text, NOTE, width)
         top = 28 + len(lines_) * NOTE_LH + 10
         origin = E.fit_origin(cell, spec, k, top=top)
         v = E.ElevationView(sh.p, sh.font, sh.fontname, origin, k, spec)
         fn(v)
+        v.dim_v(0, H, v.X(L + extra) + 40, [0, H])                             # overall height, floor to ceiling (review 11.09.26)
         v.text(v.X(0) - 6, v.Y(0) + 7, 'FIN. FLR.', 5.0, MID, align='r')
         ny = cell[1] + 30
         for ln in lines_: sh.text(cell[2] - 8, ny, ln, NOTE, MID, align='r'); ny += NOTE_LH
+        set_room(h0, c0)
 
 def para_block(sh, x, y, paras, width, size=NOTE, lh=None, head_color=INK):
     lh = lh or ps(size) + 2.2
@@ -88,13 +95,21 @@ import base_rev1 as BR, keyclip as KC
 OUT = '/home/claude/flrwork/261106.HD102.Bedrooms.pdf'
 ISSUE = '11.06.26'
 IN = 1.5
-H = 120.0; HEAD = 96.0
+H = 120.0; HEAD = 96.0; COVE = 4.0                 # H set per room by set_room(); COVE: crown top this far below the ceiling, LED on top
 CS = TRIM['casing']; BASE = TRIM['base']; CAP = TRIM['dado']; M = TRIM['margin']; CR = TRIM['crown']
 SILL = 18.0; OUT_CL = 18.0; SW = 48.0; TV_CL = 60.0; EM = 6.0
 S3_BED = 34.0                                    # bedside three-way CL 2'-10": plate top 3'-0-1/4", 3/4" under the cap (underside 3'-1")
 UW_CL = 11.0                                     # duplex under a window: horizontal, CL 11" between the base (8-1/2") and the apron (1'-1-1/2")
 NS = 24.0; NS_GAP = 1.0; HB_W, HB_H = 76.0, 54.0
-TOP = H - CR - 1.0                               # built-in top, 1" scribe under the crown (9'-3")
+TOP = H - COVE - CR - 1.0                        # built-in top, 1" scribe under the crown
+
+def set_room(h, cove=4.0):
+    """Room height per FOR (coordination 11.09.26) and the crown cove drop; the built-in top follows."""
+    global H, COVE, TOP
+    H, COVE = h, cove; TOP = H - COVE - CR - 1.0
+
+H_F1, H_F2 = 128.0, 118.0
+SILL_D, SILL_J, SILL_H = 21.75, 43.375, 24.0       # FOR A-600: D 1'-9-3/4", J 3'-7-3/8", H 2'-0" (heads 8'-0")
 TOE = 4.0; RAIL = 84.0
 
 def r8(x): return round(x * 8) / 8
@@ -127,7 +142,8 @@ def shell(v, L, base=None, crown=None, right='cut'):
     for a, b in (base if base is not None else [(0, L)]):
         if b - a > 0.5: C.base(v, a, b)
     for a, b in (crown if crown is not None else [(0, L)]):
-        C.crown(v, a, b, H)
+        C.crown(v, a, b, H - COVE)
+        if COVE > 0: C._line(v, (a + 1.0, H - COVE + 0.6), (b - 1.0, H - COVE + 0.6), C.FINE, MID, '[1.5 1.0] 0')   # LED strip on the crown top
     v.line((X0 - 8, Y0), (X1 + 8, Y0), 1.2); v.line((X0, Y1), (X1, Y1), 0.9)
     v.rect(X0 - 4, Y0, X0, Y1, 0.6, fill=(0.3, 0.3, 0.3))
     if right == 'cut': v.rect(X1, Y0, X1 + 4, Y1, 0.6, fill=(0.3, 0.3, 0.3))
@@ -145,18 +161,28 @@ def casing2(v, x, w, head, csl=CS, csr=CS, sill=0):
     C._line(v, (x - csl + 1.0, sill), (x - csl + 1.0, head + CS - 1.0), C.FINE, C.LIGHT); C._line(v, (x + w + csr - 1.0, sill), (x + w + csr - 1.0, head + CS - 1.0), C.FINE, C.LIGHT)
     C._line(v, (x - csl + 1.0, head + CS - 1.0), (x + w + csr - 1.0, head + CS - 1.0), C.FINE, C.LIGHT)
 
-def window2(v, x, w, lites=1, csl=CS, csr=CS, lo=None, hi=None):
-    """C.window with its own leg widths, the stool horns kept inside the wall (lo, hi)."""
+def window2(v, x, w, lites=1, csl=CS, csr=CS, lo=None, hi=None, sill=None, apron=True, hung=False):
+    """C.window with its own leg widths, the stool horns kept inside the wall (lo, hi). sill: FOR's sill for this window (A-600);
+    apron=False where the stool sits just above the dado cap."""
+    SILL = globals()['SILL'] if sill is None else sill
     casing2(v, x, w, HEAD, csl, csr, SILL)
     s0, s1 = x - csl - 0.75, x + w + csr + 0.75
     if lo is not None: s0 = max(s0, lo)
     if hi is not None: s1 = min(s1, hi)
-    C._rect(v, s0, SILL - 1.5, s1, SILL, C.OUTLINE); C._rect(v, x - csl + 0.5, SILL - 1.5 - TRIM['cap'], x + w + csr - 0.5, SILL - 1.5, C.OUTLINE)
+    C._rect(v, s0, SILL - 1.5, s1, SILL, C.OUTLINE)
+    if apron: C._rect(v, x - csl + 0.5, SILL - 1.5 - TRIM['cap'], x + w + csr - 0.5, SILL - 1.5, C.OUTLINE)
     C._rect(v, x, SILL, x + w, HEAD, C.OUTLINE); lw = w / lites
-    for i in range(lites):
+    if hung:                                                                  # single hung: lower sash under a meeting rail, fixed upper (review 11.09.26)
+        mr = r8((SILL + HEAD) / 2)
+        C._rect(v, x + 1.25, mr - 1.0, x + w - 1.25, mr + 1.0, C.MED, fill=(1, 1, 1))
+        for a_, b_ in ((SILL + 1.25, mr - 1.0), (mr + 1.0, HEAD - 1.25)):
+            C._rect(v, x + 1.25, a_, x + w - 1.25, b_, C.MED); C.glazing(v, x + 1.25, a_, x + w - 1.25, b_)
+    else:
+      for i in range(lites):
         gx = x + i * lw; C._rect(v, gx + 1.25, SILL + 1.25, gx + lw - 1.25, HEAD - 1.25, C.MED)
-        C._line(v, (gx + 3, HEAD - 3), (gx + lw * 0.45, SILL + (HEAD - SILL) * 0.45), C.FINE, C.PALE)
-        C._line(v, (gx + 5, HEAD - 3), (gx + lw * 0.6, SILL + (HEAD - SILL) * 0.45), C.FINE, C.PALE)
+        C.glazing(v, gx + 1.25, SILL + 1.25, gx + lw - 1.25, HEAD - 1.25)        # divided lites (owner 11.09.26: all windows and glass doors match)
+    cx0 = x - csl if lo is None else max(x - csl, lo + 2.0); cx1 = x + w + csr if hi is None else min(x + w + csr, hi - 2.0)   # cloud kept inside the wall, clear of the dimension string
+    C.rev_cloud(v, cx0, SILL - 1.5 - (TRIM['cap'] if apron else 0), cx1, HEAD + CS, pad=2.0)
 
 def under_window(v, x):
     C.outlet(v, x, UW_CL, horizontal=True)
@@ -173,7 +199,7 @@ def door(v, x, w, hinge, label=None, csl=CS, csr=CS, swing_in=False):
     C._line(v, (far, 0), (h_, HEAD / 2), C.FINE, MID, dash); C._line(v, (far, HEAD), (h_, HEAD / 2), C.FINE, MID, dash)
     lever = far - 3 if far > h_ else far + 3
     C._ellipse(v, lever, 38, 0.9, 0.9, C.FINE); C._line(v, (lever, 38), (lever + (-3.5 if far > h_ else 3.5), 38), C.MED)
-    if label: tag(v, x + w / 2, HEAD + CS + 5.5, label)
+    if label: tag(v, x + w / 2, HEAD + CS + 2.2, label)          # between the head casing and the crown (review 11.09.26)
 
 def sw(v, cx, cy):
     """Switch plate with its tag below the plate, clear of the cap."""
@@ -223,10 +249,10 @@ def bed_wall(v, L, bc, s3_at):
     sw(v, EM / 2 if s3_at == 'L' else L - EM / 2, S3_BED)
     paper(v, L, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, n0, n0 + NS, bc, n1, n1 + NS, L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, S3_BED, CAP, HB_H, H - CR, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, S3_BED, CAP, HB_H, H - COVE - CR, H - COVE, H]))
 
 BED_TXT = ('BED CENTERED, USB DUPLEX BEHIND EACH NIGHTSTAND CL 1\'-6", BEDSIDE THREE-WAY CL 2\'-10". '
-           'DADO WAINSCOT, CAP AT 3\'-4", WC-01 ABOVE, CM-01 CROWN.')
+           'DADO WAINSCOT, CAP AT 3\'-4", WC-01 ABOVE, CM-01 CROWN WITH LED COVE ABOVE, SEE 4/ID-502.')
 
 # ------------------------------------------------------------------ guest bedroom, ID-738A
 GW, GE, GN, GS = 356.2, 619.2, 650.6, 804.7
@@ -244,7 +270,7 @@ def guest_east(v):
     outer_outlets(v, boxes[:1]); sw(v, d[0] - CS - M / 2 - 0.5, SW)
     paper(v, L, x=d[0] / 2)
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, SW, CAP, HEAD, HEAD + CS, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, SW, CAP, HEAD, HEAD + CS, H - COVE, H]))
     return 'ENTRY 16, %s x 8\'-0", SWINGS IN. THREE-WAY DIMMER CL 4\'-0" AT THE LATCH. WC-01 ABOVE THE CAP.' % F(36.0)
 
 def guest_south(v):
@@ -265,7 +291,7 @@ def guest_south(v):
     tag(v, c, TV_CL + 16, 'TV-READY, BLOCKING (DASHED)')
     paper(v, L, x=c, y=100.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, wic[0], wic[1], c, bath[0], bath[1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, SW, TV_CL, HEAD, HEAD + CS, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, SW, TV_CL, HEAD, HEAD + CS, H - COVE, H]))
     return ('W.I.C. DOOR 11 AND BATH DOOR 11, %s x 8\'-0". TV-READY POWER AND DATA (2 CAT6, 1 COAX) CL 5\'-0", 2x10 BLOCKING. '
             'BATH LIGHT AND FAN SWITCHES (S2) CL 4\'-0" AT THE BATH DOOR LATCH.' % F(32.0))
 
@@ -277,14 +303,16 @@ def guest_west(v):
     gap = w[0] - CS - (d[1] + CS)
     shell(v, L, base=[(d[1] + CS, L)])
     door(v, d[0], 32.0, 'L', '02', csl=dcs)
-    window2(v, w[0], w[1] - w[0], lites=2, csr=wcs, hi=L)
+    window2(v, w[0], w[1] - w[0], csr=wcs, hi=L, sill=SILL_D, hung=True)
     under_window(v, (w[0] + w[1]) / 2)
-    tag(v, w[0] + (w[1] - w[0]) / 4 + 1.0, 30.0, 'TEMPERED', 5.0, INK, box=True)
+    mr = r8((SILL_D + HEAD) / 2); gx0, gx1, gy0, gy1 = w[0] + 1.25, w[1] - 1.25, SILL_D + 1.25, mr - 1.0
+    nc, nr = C.lite_grid(gx1 - gx0, gy1 - gy0); pw_, ph_ = (gx1 - gx0) / nc, (gy1 - gy0) / nr
+    tag(v, gx0 + pw_ / 2, gy0 + ph_ / 2 - 1.0, 'TEMPERED', 4.5, INK, box=True)   # centered in a lower pane, clear of the muntins
     C._rect(v, 0, H - 4, L, H, C.FINE, MID, dashes='[2 1.5] 0')
     paper(v, L, x=(w[0] + w[1]) / 2, y=106.5)
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], w[0], w[1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, UW_CL, SILL, HEAD, HEAD + CS, H - 4, H]))
-    return ('EXTERIOR DOOR 02 AND WINDOW PER FOR, IMPACT-RATED. WINDOW TEMPERED. STOOL 1\'-6", HEAD 8\'-0". CORNER CASING LEGS NARROWED AS DIMENSIONED. '
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, UW_CL, SILL_D, HEAD, HEAD + CS, H - 4, H]))
+    return ('EXTERIOR DOOR 02 AND WINDOW D PER FOR A-600 (EGRESS), 4\'-1" x 6\'-2-1/4" SINGLE HUNG, IMPACT-RATED, TEMPERED. STOOL 1\'-9-3/4", HEAD 8\'-0". CORNER CASING LEGS NARROWED AS DIMENSIONED. '
             'NO DADO. DUPLEX UNDER THE WINDOW CL 11". DRAPERY POCKET 4" FULL WIDTH (DASHED).')
 
 # ------------------------------------------------------------------ bedroom 2, ID-738B
@@ -303,8 +331,8 @@ def b2_north(v):
     paper(v, L, x=d[0] / 2 + 2, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], bi[0], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TOE, OUT_CL, TV_CL, RAIL, HEAD, TOP, H]))
-    return ('BATH 2 DOOR 20, %s x 8\'-0". BUILT-IN: PAINTED INSET, 2\'-0" DEEP, 4" TOE, TALL PAIRS TO 7\'-0" WITH ROD AND SHELF, UPPERS TO 9\'-3". '
-            'TV-READY POWER AND DATA BEHIND THE WEST LEAF CL 5\'-0".' % F(32.0))
+    return ('BATH 2 DOOR 20, %s x 8\'-0". BUILT-IN: PAINTED INSET, 2\'-0" DEEP, 4" TOE, TALL PAIRS TO 7\'-0" WITH ROD AND SHELF, UPPERS TO %s UNDER THE CROWN. '
+            'TV-READY POWER AND DATA BEHIND THE WEST LEAF CL 5\'-0".' % (F(32.0), F(TOP)))
 
 def b2_east(v):
     L = r8((B2S - B2N) / IN)
@@ -315,7 +343,7 @@ def b2_east(v):
     outer_outlets(v, boxes); sw(v, d[1] + CS + M / 2 + 0.5, SW)
     paper(v, L, x=(d[1] + L) / 2, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, SW, CAP, HEAD, HEAD + CS, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, SW, CAP, HEAD, HEAD + CS, H - COVE, H]))
     return 'ENTRY 24, %s x 8\'-0", SWINGS IN. THREE-WAY DIMMER CL 4\'-0" AT THE LATCH. WC-01 ABOVE THE CAP.' % F(34.0)
 
 def b2_south(v):
@@ -327,16 +355,16 @@ def b2_west(v):
     L = r8((B2S - B2N) / IN); n = B2S
     ws = [(r8((n - 625.3) / IN), r8((n - 625.3) / IN) + 26.0), (r8((n - 508.2) / IN), r8((n - 508.2) / IN) + 26.0)]
     shell(v, L)
-    for a, b in ws: window2(v, a, b - a, lites=1)
-    boxes = dado(v, L, [(a - CS, b + CS) for a, b in ws], centered=L / 2)
+    boxes = dado(v, L, [], centered=L / 2)                                     # FOR's sills (3'-7-3/8") clear the cap: the dado runs under the windows
+    for a, b in ws: window2(v, a, b - a, lites=1, sill=SILL_J, apron=False)
     pier = [bx for bx in boxes if ws[0][1] < bx[0] and bx[1] < ws[1][0]]
     if pier: C.outlet(v, (pier[len(pier) // 2][0] + pier[len(pier) // 2][1]) / 2, OUT_CL)
     C._rect(v, 0, H - 4, L, H, C.FINE, MID, dashes='[2 1.5] 0')
     paper(v, L, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, ws[0][0], ws[0][1], ws[1][0], ws[1][1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, SILL, CAP, HEAD, HEAD + CS, H - 4, H]))
-    return ('TWO WINDOWS PER FOR, IMPACT-RATED, STOOL 1\'-6", HEAD 8\'-0", 5" CASING, STOOL AND APRON. DADO ON THE PIER ONLY. '
-            'DRAPERY POCKET 4" FULL WIDTH (DASHED).')
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, SILL_J, HEAD, HEAD + CS, H - 4, H]))
+    return ('TWO WINDOWS J PER FOR A-600 (EGRESS), 2\'-2-1/2" x 4\'-4-5/8", IMPACT-RATED, STOOL 3\'-7-3/8", HEAD 8\'-0", 5" CASING, '
+            'STOOL ABOVE THE DADO CAP, NO APRON, DADO CONTINUOUS UNDER THE WINDOWS. DRAPERY POCKET 4" FULL WIDTH (DASHED).')
 
 # ------------------------------------------------------------------ bedroom 3, ID-738C
 B3W, B3E, B3N, B3S, VW, VS = 543.1, 764.2, 137.0, 376.0, 698.2, 449.5
@@ -350,16 +378,17 @@ def b3_east(v):
     w = (r8((214.9 - B3N) / IN), r8((214.9 - B3N) / IN) + r8((356.9 - 214.9) / IN))
     vs = r8((B3S - B3N) / IN)
     shell(v, L)
-    window2(v, w[0], w[1] - w[0], lites=2)
+    window2(v, w[0], w[1] - w[0], lites=2, sill=SILL_H)
     boxes = dado(v, L, [(w[0] - CS, w[1] + CS)])
     for b_ in (boxes[0], min((b_ for b_ in boxes if b_[0] > w[1]), key=lambda b_: b_[0])): C.outlet(v, (b_[0] + b_[1]) / 2, OUT_CL)
     under_window(v, (w[0] + w[1]) / 2)
-    C._line(v, (vs, 0.3), (vs, H - CR), C.FINE, MID, '[3 2] 0'); tag(v, (vs + L) / 2, 80.0, 'VESTIBULE')
+    C._line(v, (vs, 0.3), (vs, H - COVE - CR), C.FINE, MID, '[3 2] 0'); tag(v, (vs + L) / 2, 80.0, 'VESTIBULE')
     C._rect(v, 0, H - 4, L, H, C.FINE, MID, dashes='[2 1.5] 0')
     paper(v, L, x=w[0] / 2, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, w[0], (w[0] + w[1]) / 2, w[1], vs, L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, UW_CL, OUT_CL, CAP, HEAD, HEAD + CS, H - 4, H]))
-    return ('WINDOW PAIR PER FOR, IMPACT-RATED, STOOL 1\'-6", HEAD 8\'-0", ONE 5" CASING. DUPLEX UNDER THE PAIR CL 11". '
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, UW_CL, OUT_CL, SILL_H, CAP, HEAD, HEAD + CS, H - 4, H]))
+    return ('WINDOW H PER FOR A-600 (EGRESS), 8\'-0" x 6\'-0" XO SLIDER, IMPACT-RATED, STOOL 2\'-0" (MEETS THE 24" MINIMUM, NO LIMITER), '
+            'HEAD 8\'-0", ONE 5" CASING. DUPLEX UNDER THE WINDOW CL 11". '
             'DRAPERY POCKET 4" FULL WIDTH (DASHED).')
 
 def b3_south(v):
@@ -368,14 +397,14 @@ def b3_south(v):
     st = r8((n - 691.2) / IN)                                                  # the stub wall end
     d = (r8((n - 756.7) / IN), r8((n - 756.7) / IN) + 34.0)
     shell(v, L, base=[], crown=[(0, L)])
-    C._rect(v, vo, 0, st, H - CR, C.OUTLINE, (0.3, 0.3, 0.3), fill=(0.3, 0.3, 0.3))   # the stub wall, cut
+    C._rect(v, vo, 0, st, H - COVE - CR, C.OUTLINE, (0.3, 0.3, 0.3), fill=(0.3, 0.3, 0.3))   # the stub wall, cut
     door(v, d[0], 34.0, 'L', None, swing_in=True)
     tag(v, vo / 2, 104.5, 'ENTRY 24, 4\'-1" BEYOND', 5.0, MID, box=True)
     tvx = wardrobe(v, st, L, tv=(0, 'L'))
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], vo, st, L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, TOE, TV_CL, RAIL, HEAD, TOP, H]))
-    return ('ENTRY 24 IN THE VESTIBULE, %s x 8\'-0", SWINGS IN. BUILT-IN: PAINTED INSET, 2\'-0" DEEP, TALL PAIRS TO 7\'-0", UPPERS TO 9\'-3". '
-            'TV-READY POWER AND DATA BEHIND THE EAST LEAF CL 5\'-0".' % F(34.0))
+    return ('ENTRY 24 IN THE VESTIBULE, %s x 8\'-0", SWINGS IN. BUILT-IN: PAINTED INSET, 2\'-0" DEEP, TALL PAIRS TO 7\'-0", UPPERS TO %s UNDER THE CROWN. '
+            'TV-READY POWER AND DATA BEHIND THE EAST LEAF CL 5\'-0".' % (F(34.0), F(TOP)))
 
 def b3_west(v):
     L = r8((B3S - B3N) / IN); n = B3S
@@ -386,7 +415,7 @@ def b3_west(v):
     outer_outlets(v, boxes)
     paper(v, L, x=d[0] / 2, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, d[0], d[1], L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, HEAD, HEAD + CS, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, HEAD, HEAD + CS, H - COVE, H]))
     return 'BATH 3 DOOR 20, %s x 8\'-0". DADO WAINSCOT, WC-01 ABOVE THE CAP.' % F(32.0)
 
 def b3_vest(v):
@@ -397,7 +426,7 @@ def b3_vest(v):
     ox = (boxes[-1][0] + boxes[-1][1]) / 2; C.outlet(v, ox, OUT_CL)
     paper(v, L, x=L / 2 + 4, y=104.0)
     dimh(v, v.Y(0) + 14, E.snap_points([0, sx, ox, L], tol=0.5)); dimh(v, v.Y(0) + 42, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, SW, H - CR, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, CAP, SW, H - COVE - CR, H - COVE, H]))
     return 'VESTIBULE STUB WALL. THREE-WAY DIMMER CL 4\'-0", DUPLEX CL 1\'-6". WC-01 ABOVE THE CAP.'
 
 def key_plan(sh, floor, rect, names_list, target_xy, k):
@@ -412,6 +441,19 @@ def key_plan(sh, floor, rect, names_list, target_xy, k):
         assert KC.apply(sh.p, target, clip_disp, k, KC.room_poly(floor, names, pad=9.0, doors=True)), 'key plan clip'
     def P(x, y): d_ = T(x, y); return (target.x0 + (d_[0] - clip_disp.x0) * k, target.y0 + (d_[1] - clip_disp.y0) * k)
     return target, P
+
+def kp_toilet_wall(sh, P, wall, cl, axis, sign, IN_=1.5):
+    """Wall-hung toilet in the key plan (review 11.09.26, as on ID-262/342/352): FOR's floor-mount toilet and tank whited out, a bowl off
+    the wall face, the carrier dashed in the wall. FOR pt; axis 'x': the wall is vertical at x=wall, the bowl projects along x by sign."""
+    import math
+    def Q(d, t): return P(wall + sign * d * IN_, cl + t * IN_) if axis == 'x' else P(cl + t * IN_, wall + sign * d * IN_)
+    def R(a, b): return fitz.Rect(min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1]))
+    sh.p.draw_rect(R(Q(0.4, -11.5), Q(31.0, 11.5)), color=None, fill=(1, 1, 1), width=0)
+    sh.p.draw_rect(R(Q(-6.0, -10.0), Q(0.0, 10.0)), color=INK, width=0.4, dashes='[2 1.5] 0')
+    pts = [Q(0.0, -7.0), Q(6.0, -7.25)] + [Q(6.0 + 15.0 * math.sin(math.radians(t_)), -7.25 * math.cos(math.radians(t_))) for t_ in range(0, 181, 10)] + [Q(0.0, 7.0)]
+    sh.polyline(pts, 0.6, INK, close=True)
+    sh.polyline([Q(8.0 + 10.5 * math.sin(math.radians(t_)), -5.0 * math.cos(math.radians(t_))) for t_ in range(0, 181, 10)], 0.4, INK, close=False)
+KP_TOILETS = {'ID-260': (905.2, 431.85, 'y', -1), 'ID-340': (446.5, 369.0, 'x', 1), 'ID-350': (446.5, 218.1, 'x', 1)}   # from build_baths_rev1 key plans
 
 def wipe(sh, P, x0, y0, x1, y1):
     """Mask a stray piece of the neighbouring room left inside the clip pad (FOR pt)."""
@@ -462,7 +504,8 @@ def text_len(txt, s):
 STANDARD = [(True, 'BEDROOM STANDARD'),
             'DADO WAINSCOT: BASE 8-1/2", CAP TOP AT 3\'-4". WALLPAPER WC-01 ABOVE TO THE CM-01 CROWN.',
             'TRIM PT-01 SATIN. DOORS 8\'-0" SINGLE PANEL, 5" CASING.',
-            'WINDOWS: STOOL 1\'-6", HEAD 8\'-0", STOOL AND APRON.',
+            'WINDOWS PER FOR A-600: HEAD 8\'-0", SILLS AS SCHEDULED, STOOL AND APRON (NO APRON WHERE THE STOOL CLEARS THE CAP).',
+            'CEILINGS PER FOR: 10\'-8" FLOOR 1, 9\'-10" FLOOR 2. CM-01 CROWN HELD 4" BELOW THE CEILING, LED COVE ON ITS TOP (FOR\'S COVE), SEE 4/ID-502.',
             'DUPLEX CL 1\'-6" IN A DADO BOX. SWITCHES CL 4\'-0".',
             'TV-READY POWER AND DATA CL 5\'-0" OPPOSITE THE BED.']
 
@@ -479,13 +522,13 @@ SUITES = {   # sheet: floor, base rect (FOR pt), rooms clipped, room labels, qua
                    labels=[('BEDROOM 2', 560, 600, 9.0), ('BUILT-IN', 617, 441, 9.0)], quad=(600, 545, 'ID-738B'), ref=(513, 367, 'ID-739'), single=[],
                    built=[(543.1, 419.6, 691.2, 457.1)], dark=[], white=[(518.0, 644.5, 531.0, 651.7)],
                    bath='BATH 2: ELEVATIONS AND TILE ON ID-342.',
-                   changes=['BUILT-IN: PAINTED INSET WARDROBE TO 9\'-3".', 'TV-READY OUTLET ON THE BUILT-IN BACK PANEL.']),
+                   changes=['BUILT-IN: PAINTED INSET WARDROBE TO 8\'-9" UNDER THE CROWN (FOR CEILING 9\'-10").', 'TV-READY OUTLET ON THE BUILT-IN BACK PANEL.']),
     'ID-350': dict(floor=2, rect=(425, 115, 785, 458), names=['BEDROOM 3', 'BATH 3'],
                    title=['BEDROOM 3 AND BATH 3', 'KEY PLAN'], plan='FLOOR 2 KEY PLAN',
                    labels=[('BEDROOM 3', 640, 220, 9.0), ('BUILT-IN', 617, 397, 9.0)], quad=(655, 300, 'ID-738C'), ref=(513, 217, 'ID-739A'),
                    single=[(724.8, 383.9, 5, 'ID-738C', 'W')], built=[(543.1, 376.0, 691.2, 413.2)], dark=[], white=[(428.0, 299.9, 540.0, 314.0), (524.0, 328.0, 535.8, 352.0)], sheet_white=[(416.0, 788.0, 427.3, 800.0)],
                    bath='BATH 3: ELEVATIONS AND TILE ON ID-352.',
-                   changes=['BUILT-IN: PAINTED INSET WARDROBE TO 9\'-3".', 'TV-READY OUTLET ON THE BUILT-IN BACK PANEL.',
+                   changes=['BUILT-IN: PAINTED INSET WARDROBE TO 8\'-9" UNDER THE CROWN (FOR CEILING 9\'-10").', 'TV-READY OUTLET ON THE BUILT-IN BACK PANEL.',
                             'SWITCH AND DUPLEX ON THE VESTIBULE STUB WALL.'])}
 
 def suite_sheet(sh, d):
@@ -505,6 +548,8 @@ def suite_sheet(sh, d):
     for r_ in d['white']: wipe(sh, P, *r_)
     for r_ in d.get('sheet_white', []): sh.p.draw_rect(fitz.Rect(r_), color=None, fill=(1, 1, 1), width=0)   # wall stubs past the clip, sheet pt
     for r_ in d.get('built', []): mark_builtin(sh, P, *r_)
+    kt = next((v_ for k_, v_ in KP_TOILETS.items() if SUITES.get(k_) is d), None)
+    if kt: kp_toilet_wall(sh, P, *kt)
     for txt, x, y, s in d['labels']:
         q = P(x, y)
         if txt == 'BUILT-IN': w_ = text_len(txt, s) + 8; sh.p.draw_rect(fitz.Rect(q[0] - w_ / 2, q[1] - s - 2.5, q[0] + w_ / 2, q[1] + 3.5), color=None, fill=(1, 1, 1), width=0)
@@ -532,6 +577,10 @@ def suite_sheet(sh, d):
     y_end = para_block(sh, cx, cy + 62, paras, colw, size=10.0, lh=14.0)
     assert y_end < ay1 - 4, ('notes run off the sheet', y_end)
     return t
+
+GUEST_BAND = 124.0; F2_BAND = 114.0                                      # FOR A-205 guest bedroom 10'-4" cove band; A-206 9'-6" window band
+for _f in (b2_west, b3_east): _f.h = F2_BAND; _f.note = 'CEILING 9\'-6" BAND AT THE WINDOW WALL (FOR A-206), 9\'-10" BEYOND.'
+for _f in (guest_north, guest_east, guest_south, guest_west): _f.note = 'CEILING 10\'-4" BAND AT THE WALLS (FOR A-205), 10\'-8" AT THE CENTER.'
 
 def build():
     idd_std.PROJECT['date'] = ISSUE
@@ -564,6 +613,7 @@ def build():
         kid = keyp[sid]; d = SUITES[kid]
         s = Sheet(doc); s.frame(' '.join(d['title']), 'SCALE: 3/4" TO 1\'-0"', d['title'], kid, revisions=rev, legend_rule=False)
         suite_sheet(s, d)
+        set_room(GUEST_BAND if d['floor'] == 1 else H_F2)                 # FOR's ceiling at the walls: the guest bedroom's 10'-4" band (review 11.09.26)
         s = Sheet(doc); s.frame(title, 'SCALE: 1/2" TO 1\'-0"', tl, sid, revisions=rev, legend_rule=False)
         draw_views(s, cells, views, scale='1/2')
     fix_soft_hyphen(doc)

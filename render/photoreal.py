@@ -40,6 +40,18 @@ STAGE = args[args.index('--stage') + 1] if '--stage' in args else 'none'
 # wall stands in the tub alcove, not in the room), so a perspective inside the room leaves those pieces out
 SKIP = set(args[args.index('--skip') + 1].split(',')) if '--skip' in args else set()
 LIGHTS_ON = '--lights' in args
+# room assembly by hand (11.09.26): --walls N=i,E=j,S=k,W=l picks the captured view for each side; --shift EAST=-24 slides a
+# wall along itself (a wall longer than the room, its extra length beyond the first corner); --dims WID,DEP the room size;
+# --open WEST leaves a side open; every other side without a view gets a plain wall
+_FULL = {'N': 'NORTH', 'E': 'EAST', 'S': 'SOUTH', 'W': 'WEST'}
+WALLMAP = {_FULL.get(k, k): int(v) for k, v in (kv.split('=') for kv in args[args.index('--walls') + 1].split(','))} if '--walls' in args else None
+SHIFT = {_FULL.get(k, k): float(v) for k, v in (kv.split('=') for kv in args[args.index('--shift') + 1].split(','))} if '--shift' in args else {}
+DIMS = [float(v) for v in args[args.index('--dims') + 1].split(',')] if '--dims' in args else None
+OPEN = set(_FULL.get(k, k) for k in args[args.index('--open') + 1].split(',')) if '--open' in args else set()
+# the lighting plan (render/export_lights.py): recessed downlights and pendants at their drawn positions, room inches; --dusk: an
+# evening photograph, daylight down, every fixture of the plan on (the way the lighting design reads)
+LIGHTPLAN = json.load(open(args[args.index('--lightplan') + 1])) if '--lightplan' in args else None
+DUSK = '--dusk' in args
 V = json.load(open(views_path))[idx]
 _ppi = args[args.index('--ppi') + 1] if '--ppi' in args else 'auto'
 PPI = float(V['k']) * 17.0 / 1892.0 * 300.0 if _ppi == 'auto' else float(_ppi)
@@ -167,6 +179,23 @@ def material(code, variant=''):
         ab = nt.nodes.new('ShaderNodeMath'); ab.operation = 'SUBTRACT'; ab.inputs[1].default_value = 0.5; nt.links.new(mx0.outputs[0], ab.inputs[0])
         ab2 = nt.nodes.new('ShaderNodeMath'); ab2.operation = 'ABSOLUTE'; nt.links.new(ab.outputs[0], ab2.inputs[0])
         nt.links.new(ab2.outputs[0], cr.inputs['Fac']); nt.links.new(cr.outputs['Color'], b.inputs['Base Color'])
+        if spec.get('vein2'):
+            # a second vein colour (Calacatta Monet: violet-grey veins that turn gold and sage in places): a twin ramp in the
+            # second colour, blended in by a broad, slow noise so a vein changes colour along its length
+            v2 = hex_lin(spec['vein2'])
+            cr2 = nt.nodes.new('ShaderNodeValToRGB'); e2_ = cr2.color_ramp.elements
+            core2 = tuple(b_ * (1 - 0.7 * strength) + v_ * 0.7 * strength for b_, v_ in zip(base, v2))
+            halo2 = tuple(b_ * (1 - 0.25 * strength) + v_ * 0.25 * strength for b_, v_ in zip(base, v2))
+            e2_[0].position = 0.0; e2_[0].color = (*core2, 1); e2_[1].position = 0.09; e2_[1].color = (*base, 1)
+            e3_ = cr2.color_ramp.elements.new(0.01); e3_.color = (*halo2, 1)
+            nt.links.new(ab2.outputs[0], cr2.inputs['Fac'])
+            nz2 = nt.nodes.new('ShaderNodeTexNoise'); nz2.inputs['Scale'].default_value = 0.6; nz2.inputs['Detail'].default_value = 2.0
+            nt.links.new(mp.outputs['Vector'], nz2.inputs['Vector'])
+            mr2 = nt.nodes.new('ShaderNodeMapRange'); mr2.inputs['From Min'].default_value = 0.48; mr2.inputs['From Max'].default_value = 0.56
+            nt.links.new(nz2.outputs['Fac'], mr2.inputs['Value'])
+            mxc = nt.nodes.new('ShaderNodeMix'); mxc.data_type = 'RGBA'
+            nt.links.new(mr2.outputs['Result'], mxc.inputs['Factor']); nt.links.new(cr.outputs['Color'], mxc.inputs[6]); nt.links.new(cr2.outputs['Color'], mxc.inputs[7])
+            nt.links.new(mxc.outputs[2], b.inputs['Base Color'])
         b.inputs['Coat Weight'].default_value = 0.0 if spec.get('honed') else 0.25; b.inputs['Coat Roughness'].default_value = 0.05
         _bevel_normal(nt, b, 0.12)
         return m
@@ -763,6 +792,7 @@ def b_mirror_led(a, ctx):
     box(x, x + w, y, y + h, 1.0, 1.25, material('MIRROR-SILVER'), 'mirror'); box(x + 0.5, x + w - 0.5, y + 0.5, y + h - 0.5, 0.0, 1.0, material('GAP'), 'back')
 
 
+exec(open(os.path.join(HERE, 'extra_builders.py')).read())
 BUILDERS = {'base': b_base, 'crown': b_crown, 'casing': b_casing, 'door_leaf': b_door_leaf, 'door_pair': b_door_pair,
             'vanity_furniture': b_vanity_furniture, 'faucet_wall': b_faucet_wall, 'faucet': b_faucet, 'mirror_framed': b_mirror_framed,
             'mirror_panel': b_mirror_panel, 'sconce': b_sconce, 'outlet': b_outlet, 'switch': b_switch, 'towel_bar': b_towel_bar,
@@ -774,6 +804,7 @@ BUILDERS = {'base': b_base, 'crown': b_crown, 'casing': b_casing, 'door_leaf': b
             'mirror_led': b_mirror_led,
             # drawn only for the line drawing, no object: the shadow line, the hidden basin
             'shadow': None, 'basin_hidden': None}
+BUILDERS.update(EXTRA_BUILDERS)
 MATS.setdefault('GLASS-CLEAR', {'kind': 'glass'})
 MATS.setdefault('GROUT', {'hex': '#CFCBC3', 'rough': 0.8, 'kind': 'plastic'})
 
@@ -819,6 +850,7 @@ def _group_of(v):
 def room_walls():
     """The walls of this view's room or compartment, keyed by direction, when they close into a rectangle (a three-sided
     compartment counts: its open side faces the room)."""
+    if WALLMAP: return dict(WALLMAP)
     g0, _ = _group_of(V)
     if not g0: return None
     got = {}
@@ -834,7 +866,9 @@ def room_walls():
 
 WALLS = room_walls()
 ROOM_MODE = WALLS is not None and idx in WALLS.values()
-if ROOM_MODE:
+if ROOM_MODE and DIMS:
+    WID, DEP = DIMS
+elif ROOM_MODE:
     WID = ALL[WALLS.get('NORTH', WALLS.get('SOUTH'))]['length']; DEP = ALL[WALLS.get('EAST', WALLS.get('WEST'))]['length']
 else:
     WID, DEP = L, DEPTH
@@ -844,7 +878,7 @@ def wall_matrix(direction):
     """Wall-local metres (x along the wall, -y out from the face, z up) to world (X east, Y north, Z up)."""
     rot = {'NORTH': 0, 'EAST': -90, 'SOUTH': 180, 'WEST': 90}[direction]
     tr = {'NORTH': (0, DEP), 'EAST': (WID, DEP), 'SOUTH': (WID, 0), 'WEST': (0, 0)}[direction]
-    return Matrix.Translation((tr[0] * IN, tr[1] * IN, 0)) @ Matrix.Rotation(math.radians(rot), 4, 'Z')
+    return Matrix.Translation((tr[0] * IN, tr[1] * IN, 0)) @ Matrix.Rotation(math.radians(rot), 4, 'Z') @ Matrix.Translation((SHIFT.get(direction, 0.0) * IN, 0, 0))
 
 
 PORTALS = []
@@ -857,6 +891,9 @@ def build_wall(vi, M, front_room_depth):
     before = set(bpy.data.objects)
     Lw = float(V['length'])
     hs = [(o['x0'], o['x1'], o['y0'], o['y1']) for o in V['openings'] if 'x0' in o and o.get('ctx', [''])[0] == o['kind']]
+    if not any(o.get('kind') == 'door' for o in V['openings']):   # an arched pair drawn by component: its wall hole up to the apex
+        hs += [(c['args']['x'], c['args']['x'] + c['args']['w'], 0.0, c['args']['spring'] + c['args']['w'] / 2)
+               for c in V.get('calls', []) if c['comp'] == 'arched_door_pair' and c['depth'] == 0]
     for i, r in enumerate(subtract((-6.0, Lw + 6.0, 0.0, H), hs)):
         box(r[0], r[1], r[2], r[3], -6.0, 0.0, wall_mat(), 'wall')
     PORTALS.clear()
@@ -894,7 +931,8 @@ WINDOWS = []
 if ROOM_MODE:
     for d_ in DIRS:
         if d_ in WALLS: build_wall(WALLS[d_], wall_matrix(d_), DEP if d_ in ('NORTH', 'SOUTH') else WID)
-    OPEN_SIDES = [d_ for d_ in DIRS if d_ not in WALLS]
+    OPEN_SIDES = [d_ for d_ in DIRS if d_ not in WALLS and (not WALLMAP or d_ in OPEN)]
+    PLAIN_SIDES = [d_ for d_ in DIRS if WALLMAP and d_ not in WALLS and d_ not in OPEN]
     V = ALL[idx]; roles = dict(room['roles'])
     for pat, ov in room.get('views', {}).items():
         if fnmatch.fnmatch((V['view'] or '').upper(), pat): roles.update(ov)
@@ -915,6 +953,9 @@ def world_box(x0, x1, y0, y1, z0, z1, mat, name):
     me = bpy.data.meshes.new(name); me.from_pydata([(a_ * IN, b_ * IN, c_ * IN) for a_, b_, c_ in v], [], [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
     o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
 if floor_rect:
+    for d_ in (PLAIN_SIDES if ROOM_MODE else []):
+        r_ = {'NORTH': (-6, WID + 6, DEP, DEP + 6), 'SOUTH': (-6, WID + 6, -6, 0), 'EAST': (WID, WID + 6, -6, DEP + 6), 'WEST': (-6, 0, -6, DEP + 6)}[d_]
+        world_box(r_[0], r_[1], r_[2], r_[3], 0, H, wall_mat(), 'wall_plain')
     world_box(-12, WID + 12, -12, DEP + 12, -2, 0, material(R('floor', 'WD-01')), 'floor')
     world_box(-12, WID + 12, -12, DEP + 12, H, H + 4, material(R('ceiling', 'PT-01')), 'ceiling')
 else:
@@ -948,7 +989,10 @@ def downlight(X, Y, watts=1.5, cone=70):
     o.visible_glossy = False; DOWN.append(o)
     world_box(X - 2.0, X + 2.0, Y - 2.0, Y + 2.0, H - 0.05, H, material('TRIM-RING'), 'trim_ring')
 MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'})
-if floor_rect:
+if floor_rect and LIGHTPLAN:
+    for l_ in LIGHTPLAN:
+        if l_['type'] == 'recess': downlight(l_['X'], l_['Y'], watts=7.0, cone=60)
+elif floor_rect:
     n_ = max(1, int(round(WID / 48)))
     rows_ = (DEP - 20, 20) if DEP >= 60 else (DEP / 2,)
     for i in range(n_):
@@ -1033,8 +1077,10 @@ def stage_bath():
         soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb + 1.0, y_ + 0.2, y_ + 1.1, tw, 0.45, 'hand_towel_fold')
 
 
+exec(open(os.path.join(HERE, 'stages.py')).read())
 if PERSP:
     if STAGE == 'bath' and ROOM_MODE: stage_bath()
+    elif STAGE in STAGES: STAGES[STAGE]()
     cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'PERSP'; cam_d.lens = LENS; cam_d.sensor_width = 36.0; cam_d.sensor_fit = 'HORIZONTAL'
     cam_d.clip_start = max(0.01, CLIP * IN); cam_d.clip_end = 60.0
     cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
@@ -1049,14 +1095,14 @@ if PERSP:
     sc.render.resolution_x, sc.render.resolution_y = W_r, H_r
     # the garden outside the windows: an outdoor HDRI in place of the studio one, so the glass shows planting and sky
     env.image = bpy.data.images.load(os.path.join(ASSETS, 'green_sanctuary_2k.hdr'))
-    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 7.0
+    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.5 if DUSK else 7.0
     # late-afternoon sun, low from the west-southwest, through the windows and glass doors: long patches on the floor and
     # the lower walls, the contrast every interior photograph is built on
     if not LIGHTS_ON:   # a daytime photograph: downlights off, sconces on low
         for o in DOWN: o.hide_render = True
     for o in bpy.data.objects:
         if o.type == 'LIGHT' and o.data.type == 'SUN':
-            o.data.energy = 22.0; o.data.angle = math.radians(1.2)
+            o.data.energy = 0.0 if DUSK else 22.0; o.data.angle = math.radians(1.2)
             o.rotation_euler = (math.radians(90 - 32), 0, math.radians(-70))
     for o in bpy.data.objects:                                   # walls for the exposure mask
         if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1

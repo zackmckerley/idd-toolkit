@@ -101,13 +101,30 @@ def mid_shelf(y0, y1, pitch):
     n = max(1, int(round((y1 - y0) / pitch))); p = (y1 - y0) / n
     return min((y0 + i * p + 0.75 for i in range(1, n)), key=lambda y: abs(y - (y0 + y1) / 2))
 
-def ladder(v, rail_y=123.5):
+def _rungs(rail_y, shelf_pitch=None, shelf_thick=2.0):
+    """Rung heights, evenly spaced at about 12", placed so no rung lands on a shelf or the cabinet top (review 11.09.26)."""
+    bands = []
+    if shelf_pitch:
+        y0, y1 = CAB_H + TOP_T, BELT0; n = max(1, int(round((y1 - y0) / shelf_pitch))); p = (y1 - y0) / n
+        bands = [(CAB_H, CAB_H + TOP_T)] + [(y0 + i * p, y0 + i * p + shelf_thick) for i in range(1, n)]
+    best = None
+    for q10 in range(110, 131):
+        q = q10 / 10.0
+        for s10 in range(80, 141, 2):
+            st = s10 / 10.0; ys = []; y = st
+            while y < rail_y - 6.0: ys.append(y); y += q
+            clr = min((min(abs(y - a), abs(y - b)) if not (a - 0.7 <= y <= b + 0.7) else -1.0 for y in ys for a, b in bands), default=9.0)
+            key = (clr, -abs(q - 12.0))
+            if best is None or key > best[0]: best = (key, ys)
+    return best[1]
+
+def ladder(v, rail_y=123.5, shelf_pitch=None, shelf_thick=2.0):
     """A brass rail on the belt course of each flank, one rolling ladder (it lifts off to cross the breast), parked at the north wall."""
     for a, b in ((0.5, B0 - 0.5), (B1 + 0.5, RD - 0.5)): C._rect(v, a, rail_y, b, rail_y + 1.25, C.MED, fill=WHITE)
     x0, x1 = 3.0, 21.0
-    for x in (x0, x1): C._rect(v, x, 0.5, x + 1.5, rail_y + 3, C.OUTLINE, fill=WHITE)
-    y = 10.0
-    while y < rail_y - 6: C._rect(v, x0 + 1.5, y, x1, y + 1.0, C.MED, fill=WHITE); y += 11.0
+    for y in _rungs(rail_y, shelf_pitch, shelf_thick): C._rect(v, x0 + 1.5, y - 0.625, x1, y + 0.625, C.MED, fill=WHITE)   # rungs masked
+    for x in (x0, x1): C._rect(v, x, 0.5, x + 1.75, rail_y + 3, C.OUTLINE, fill=WHITE)   # stiles masked, drawn over the rung ends
+    C._rect(v, x0 - 0.5, rail_y + 1.25, x1 + 2.25, rail_y + 3.0, C.MED, fill=WHITE)      # hook over the rail
 
 def arched_niche(v, a, b, seed):
     """One arched book niche over the cabinet: 6 in. margins, springing at 7'-6", three shelves."""
@@ -128,7 +145,7 @@ def wall(v, spec):
         for y in (BELT0, FF2): C._line(v, (B0, y), (B1, y), C.FINE, C.MID)   # six slabs in three rows, seams on the belt and cap lines
     else:
         if f == 'library': shelves += stacked_case(v, B0, B1, 2, spec['pitch'], 1.5, spec['density'], 90, spec.get('back', False), lower=False)
-        G.belt(v, B0, B1); G.cap(v, B0, B1)
+        if spec.get('shaft') != 'plain': G.belt(v, B0, B1); G.cap(v, B0, B1)   # the owner's pick: the breast one plane, nothing across it
         C.base(v, B0, CX - FB_W / 2 - LEG); C.base(v, CX + FB_W / 2 + LEG, B1)
     for x in (B0, B1): C._line(v, (x, 0), (x, H - CRG), C.OUTLINE)
     C._line(v, (B1 - 0.75, 0), (B1 - 0.75, H - CRG), C.FINE, LIGHT)
@@ -148,6 +165,11 @@ def wall(v, spec):
             w2 = (b - a - 12) / 2; h2 = (BOX_TOP - FF2 - 12) / 2   # a 2 x 2 grid of picture-frame boxes, the case behind closed
             for i in range(2):
                 for j in range(2): G.box(v, a + 4 + i * (w2 + 4), a + 4 + i * (w2 + 4) + w2, FF2 + 4 + j * (h2 + 4), FF2 + 4 + j * (h2 + 4) + h2)
+        elif f == 'full' and spec.get('mid') == 'panel':     # owner pick 11.09.26: option 7 with option 8's panel in the band (the wainscot break)
+            base_cab(v, a, b)
+            shelves += case(v, a, b, CAB_H + TOP_T, BELT0, spec['bays'], spec['pitch'], spec['thick'], spec['density'], 20 + sd, spec.get('back', False))
+            G.box(v, a + 4, b - 4, BELT1 + 4, FF2 - 5.5)
+            shelves += case(v, a, b, FF2, CASE_TOP, spec['bays'], spec['pitch'], spec['thick'], spec['density'], 25 + sd, spec.get('back', False))
         elif f in ('full', 'library'):
             base_cab(v, a, b); shelves += stacked_case(v, a, b, spec['bays'], spec['pitch'], spec['thick'], spec['density'], 20 + sd, spec.get('back', False))
         elif f == 'glass':
@@ -158,7 +180,7 @@ def wall(v, spec):
             shelves += case(v, a, b, FF2, CASE_TOP, 1, 19.2, 1.5, 0.45, 85 + sd)
             glass_doors(v, a + SIDE, b - SIDE, FF2 + 0.25, CASE_TOP - 0.25, mid_shelf(FF2, CASE_TOP, 19.2), pulls=False)
         G.belt(v, a, b); G.cap(v, a, b)
-    if spec.get('ladder'): ladder(v)
+    if spec.get('ladder'): ladder(v, shelf_pitch=spec['pitch'] if spec.get('mid') == 'panel' else None, shelf_thick=spec.get('thick', 2.0))
     C.crown(v, 0, L, H, drop=CRG); G.ceiling(v, 0, L)
     G.poche(v, -4, 0, 0, H); G.poche(v, L, L + 4, 0, G.SOFFIT); G.poche(v, L, L + 4, G.SOFFIT, FF2); G.section(v, L, L + 4.0, FF2, G.GT + 2.0)
     spec['shelves'] = shelves; spec['feet'] = SURF[0] / 12
@@ -179,8 +201,9 @@ V = [
          note='OPEN SHELVES FROM THE CABINET TOP TO THE BELT, A PANEL BOX ABOVE THE CAP, ART (S1 OPTION A). HALF THE BOOKCASE LOOK.'),
     dict(n=6, title='OPEN BELOW, PANELED FRONTS ABOVE', flank='lowopen', art=True,
          note='OPEN SHELVES TO THE BELT, A STEP STOOL REACHES THEM ALL, PANELING IN FOUR BOXES ABOVE THE CAP, ART. BOOKS BELOW THE BELT ONLY.'),
-    dict(n=7, title='FLOOR TO CEILING, TONAL (RECOMMENDED)', short='FLOOR TO CEILING, TONAL', flank='full', bays=1, pitch=18.0, thick=2.0, density=0.35, back=False, art=False,
-         note='RECOMMENDED. FLOOR TO CEILING SHELVES EACH SIDE, BUT CALM: ONE WIDE BAY, NO UPRIGHTS, 2" SHELVES ABOUT 18" ON CENTER, PAINTED THE WALL COLOR, LIGHTLY STYLED, NO ART.'),
+    dict(n=7, title='FLOOR TO CEILING, TONAL (OWNER PICK)', short='FLOOR TO CEILING, TONAL', flank='full', bays=1, pitch=18.0, thick=2.0, density=0.35, back=False, art=False,
+         mid='panel', shaft='plain', ladder=True,
+         note='OWNER PICK 11.09.26. FLOOR TO CEILING SHELVES EACH SIDE: ONE WIDE BAY, 2" SHELVES ABOUT 18" ON CENTER, PAINTED THE WALL COLOR, A PANEL IN THE 10 FT BAND, A ROLLING LADDER, THE BREAST ONE PLANE, NO ART.'),
     dict(n=8, title='FLOOR TO CEILING BEHIND GLASS', flank='glass', art=False,
          note='FLOOR TO CEILING CASES BEHIND INSET GLASS, DOORS BELOW THE BELT, REMOVABLE PANES ABOVE THE CAP. THE BOOKS READ THROUGH GLASS, THE FRAMES KEEP THE WALL ORDERED. NO ART.'),
     dict(n=9, title='FLOOR TO CEILING LIBRARY, LADDER (YL)', flank='full', bays=2, pitch=13.0, thick=1.25, density=0.7, back=True, art=True, ladder=True,
@@ -188,7 +211,8 @@ V = [
     dict(n=10, title='THE LIBRARY WALL', flank='library', bays=2, pitch=13.0, thick=1.25, density=0.7, back=True, art=False, ladder=True,
          note='SHELVES ON THE FLANKS AND ACROSS THE BREAST ABOVE THE BELT, THE WHOLE WALL BOOKS. THE BUSIEST, SHOWN SO YOU CAN SEE THE ENDPOINT.'),
 ]
-STOCKED = dict(n=11, title='7 FULLY STOCKED, FOR COMPARISON', flank='full', bays=1, pitch=18.0, thick=2.0, density=0.7, back=False, art=False, note='')
+STOCKED = dict(n=11, title='7 FULLY STOCKED, FOR COMPARISON', flank='full', bays=1, pitch=18.0, thick=2.0, density=0.7, back=False, art=False, note='',
+               mid='panel', shaft='plain', ladder=True)
 
 DETAIL = {
     1: 'WP-01 PICTURE-FRAME PANELING OVER 30" CLOSED BASE CABINETS WITH A WS-01 TOP, ONE BOX BELOW THE BELT AND ONE ABOVE THE CAP. THE BREAST IS PLASTER WITH ONLY THE FIREPLACE AND THE TV ON IT: '
@@ -349,23 +373,23 @@ SHORT = {
     4: 'ONE ARCHED BOOK NICHE EACH SIDE OVER THE CABINETS, PANELS ABOVE, ART. ABOUT 22 FEET OF SHELF, ALL WITHIN REACH FROM THE FLOOR.',
     5: 'OPEN SHELVES UP TO 10 FT, THEN PLAIN PAINTED WALL WITH ONE PANEL, ART. EVERY SHELF IS REACHED FROM A STEP STOOL. THE LEAST MILLWORK OF THE BOOK OPTIONS.',
     6: 'THE SAME SHELVES AS 5, BUT THE CABINETRY CONTINUES TO THE CEILING AS PAINTED PANELS, SO IT LOOKS LIKE FLOOR TO CEILING BUILT-INS. MORE MILLWORK, MORE COST. ART.',
-    7: 'FLOOR TO CEILING SHELVES, ONE WIDE OPENING EACH SIDE, THICK SHELVES ABOUT 18" APART, PAINTED THE WALL COLOR, LIGHTLY STYLED, NO ART. THE TOP HALF IS REACHED ONLY FROM A ROLLING SCAFFOLD.',
+    7: 'AS PICKED: FLOOR TO CEILING SHELVES, ONE WIDE OPENING EACH SIDE, 2" SHELVES 18" APART, A PANEL IN THE 10 FT BAND (AS C ON ID-236), A SMALL ROLLING LADDER ON A RAIL, THE BREAST ONE PLANE. DRAWN ON ID-231.',
     8: 'FLOOR TO CEILING SHELVES BEHIND GLASS DOORS, NO ART. KEEPS THE BOOKS TIDY AND THE DUST OUT. COSTS MORE, AND THE GLASS REFLECTS THE WINDOWS.',
     9: 'YL\'S LIBRARY: TWO OPENINGS EACH SIDE, SHELVES 13" APART, DARK BACKS, FULL OF BOOKS, A ROLLING LADDER, ART. ABOUT 135 FEET OF SHELF.',
     10: 'SHELVES BOTH SIDES AND ACROSS THE CHIMNEY BREAST ABOVE 10 FT, THE WHOLE WALL BOOKS, A LADDER, NO ART. THE BUSIEST, NOT RECOMMENDED.'}
-MARK = {7: 'RECOMMENDED', 2: 'CURRENTLY DRAWN ON ID-231'}
+MARK = {7: 'OWNER PICK 11.09.26'}
 TITLE_R = {1: 'PANELED, NOTHING ABOVE THE TV', 2: 'PANELED, ART ABOVE THE TV', 3: 'MARBLE CHIMNEY BREAST', 4: 'ARCHED BOOK NICHES',
            5: 'SHELVES TO 10 FT, PLAIN WALL ABOVE', 6: 'SHELVES TO 10 FT, PANELS TO CEILING', 7: 'FLOOR TO CEILING, WALL COLOR', 8: 'FLOOR TO CEILING BEHIND GLASS',
            9: 'FULL LIBRARY WITH A LADDER (YL)', 10: 'THE WHOLE WALL BOOKS'}
 COST = {1: '$', 2: '$', 3: '$$$', 4: '$$', 5: '$$', 6: '$$$', 7: '$$$', 8: '$$$$', 9: '$$$$', 10: '$$$$'}
 UPKEEP = {1: 'NOTHING TO STYLE OR DUST', 2: 'NOTHING TO STYLE OR DUST', 3: 'NOTHING TO STYLE OR DUST', 4: 'DUST FROM THE FLOOR',
-          5: 'DUST FROM A STEP STOOL', 6: 'DUST FROM A STEP STOOL', 7: 'STEP STOOL BELOW 10 FT, A ROLLING SCAFFOLD ABOVE', 8: 'CLEAN THE GLASS, A SCAFFOLD FOR THE TOP PANES',
+          5: 'DUST FROM A STEP STOOL', 6: 'DUST FROM A STEP STOOL', 7: 'ROLLING LADDER BELOW 10 FT, A SCAFFOLD ABOVE', 8: 'CLEAN THE GLASS, A SCAFFOLD FOR THE TOP PANES',
           9: 'LADDER TO 12 FT, A SCAFFOLD ABOVE', 10: 'LADDER AND A SCAFFOLD'}
 
 def mark(sh, x, y, t):
     """A dark flag with white text: RECOMMENDED, CURRENTLY DRAWN."""
     w = _FB.text_length(t, fontsize=8.0) + 12
-    sh.p.draw_rect(fitz.Rect(x, y - 10, x + w, y + 4), color=None, fill=INK if t == 'RECOMMENDED' else MID, width=0)
+    sh.p.draw_rect(fitz.Rect(x, y - 10, x + w, y + 4), color=None, fill=INK if t.startswith(('RECOMMENDED', 'OWNER PICK')) else MID, width=0)
     sh.p.insert_text((x + 6, y), t, fontsize=8.0, fontname='cgb', color=(1, 1, 1))
 
 def wrap_raw(t, size, width, font=None):
@@ -374,6 +398,23 @@ def wrap_raw(t, size, width, font=None):
         if f.text_length((cur + ' ' + w).strip(), fontsize=size) > width and cur: out.append(cur); cur = w
         else: cur = (cur + ' ' + w).strip()
     return out + ([cur] if cur else [])
+
+def _cloud_inside(page, r, tag='1'):
+    """Revision cloud with its delta inside the rect's top-right corner (the shared one puts it outside, on the panel divider)."""
+    import idd_sheet as _I
+    tmp = fitz.open(); tp = tmp.new_page(width=page.rect.width, height=page.rect.height)
+    _I.rev_cloud_pt(tp, r, tag)                                            # draw on a scratch page, then copy only the scallops
+    for dr in tp.get_drawings():
+        if dr.get('fill') is not None: continue                            # skip the delta (the only filled path)
+        sh_ = page.new_shape()
+        for it in dr['items']:
+            if it[0] == 'c': sh_.draw_bezier(*it[1:5])
+            elif it[0] == 'l': sh_.draw_line(it[1], it[2])
+        sh_.finish(color=dr.get('color'), width=dr.get('width') or 0.9, closePath=False); sh_.commit()
+    cx, cy = r.x1 - 12, r.y0 + 12; s_ = 7.5
+    tri = [fitz.Point(cx, cy - s_), fitz.Point(cx + s_ * 0.9, cy + s_ * 0.6), fitz.Point(cx - s_ * 0.9, cy + s_ * 0.6)]
+    sh_ = page.new_shape(); sh_.draw_polyline(tri + [tri[0]]); sh_.finish(color=(0, 0, 0), width=0.7, fill=(1, 1, 1), closePath=True); sh_.commit()
+    page.insert_text(fitz.Point(cx - 2.0, cy + 3.2), tag, fontsize=6.5, fontname='helv', color=(0, 0, 0))
 
 def labels(v, k):
     """Option 1 names the parts once, in plain words, on its plaster breast."""
@@ -391,7 +432,9 @@ def overview(sh, cells, specs):
     for cell, s in zip(cells, specs):
         x0, y0, x1, y1 = cell
         E.title_bar(sh.p, sh.font, sh.fontname, cell, s['n'], TITLE_R[s['n']], '%s" TO 1\'-0"' % scale)
-        if s['n'] == 7: sh.p.draw_rect(fitz.Rect(x0 + 1.2, y0 + 1.2, x1 - 1.2, y1 - 1.2), color=INK, width=1.6)
+        if s['n'] == 7:
+            sh.p.draw_rect(fitz.Rect(x0 + 1.2, y0 + 1.2, x1 - 1.2, y1 - 1.2), color=INK, width=1.6)
+            _cloud_inside(sh.p, fitz.Rect(x0 + 3, y0 + 19, x1 - 3, y1 - 4))   # rev 1: the owner's pick, delta inside the panel (review 11.09.26)
         y = y0 + 32
         if s['n'] in MARK: mark(sh, x0 + 8, y, MARK[s['n']]); y += 18
         for ln in G.wrap(SHORT[s['n']], NS, w0): sh.text(x0 + 8, y, ln, NS, MID); y += NLH
@@ -430,11 +473,11 @@ READ = [
     ('b', '7: THE FLOOR TO CEILING BOOKSHELF LOOK, KEPT CALM: FEW THICK SHELVES, ONE OPENING EACH SIDE, PAINTED THE WALL COLOR. IT STAYS SIMPLE ONLY IF THE SHELVES ARE LIGHTLY STYLED (VIEW A). FILLED, IT LOOKS LIKE VIEW B. THE TOP HALF IS FOR DISPLAY, REACHED ONLY FROM A ROLLING SCAFFOLD.'),
     ('b', '8: LIKE 7, BEHIND GLASS DOORS (VIEW C). FILLED SHELVES STILL LOOK ORDERLY AND STAY CLEAN. COSTS MORE.'),
     ('b', '9 AND 10: A FULL LIBRARY WITH A ROLLING LADDER. THE BUSIEST LOOK.'),
-    ('h', 'RECOMMENDED'),
-    ('p', '7, IF THE SHELVES WILL BE LIGHTLY STYLED. IF THEY WILL BE FILLED WITH BOOKS, 8. IF NO SHELF SHOULD NEED A SCAFFOLD: 6 KEEPS THE FLOOR TO CEILING BUILT-IN LOOK, 5 SPENDS LESS.'),
-    ('p', 'DECIDE ON GLASS NOW: IT CANNOT BE ADDED TO 7 LATER WITHOUT REBUILDING THE SHELVES.'),
+    ('h', 'OWNER PICK, 11.09.26'),
+    ('p', '7, WITH THREE CHANGES: A SMALL ROLLING LADDER ON A BRASS RAIL ON THE BELT COURSE, MOVED FROM ONE SIDE TO THE OTHER; THE PANEL IN THE 10 FT BAND FROM 8 (VIEW C) IN PLACE OF THE BAND SHELVES; THE CHIMNEY BREAST ONE PLASTER PLANE, NO BELT OR CAP ACROSS IT.'),
+    ('p', 'VIEWS A AND B ARE DRAWN AS PICKED. ID-231 IS REDRAWN WITH THE PICK.'),
     ('h', 'THE SAME IN ALL TEN'),
-    ('p', 'THE GAS FIREPLACE, THE 75" TV AT THE SAME HEIGHT, CLOSED CABINETS 30" HIGH AT THE BOTTOM, AND THE OTHER THREE WALLS. ID-231 AND ID-234 SHOW OPTION 2 TODAY AND ARE REDRAWN WITH THE PICK.')]
+    ('p', 'THE GAS FIREPLACE, THE 75" TV AT THE SAME HEIGHT, CLOSED CABINETS 30" HIGH AT THE BOTTOM, AND THE OTHER THREE WALLS. ID-231 AND ID-234 ARE DRAWN WITH THE PICK.')]
 
 def reading(sh, x0, y, x1):
     for kind, t in READ:
@@ -446,7 +489,7 @@ def reading(sh, x0, y, x1):
         y += 6
     return y
 
-DETAIL_R = {'A': 'OPTION 7 AS RECOMMENDED: THE SHELVES LIGHTLY STYLED, ABOUT A THIRD FULL, PAINTED THE WALL COLOR, CLOSED CABINETS BELOW. ABOUT 95 FEET OF SHELF.',
+DETAIL_R = {'A': 'OPTION 7 AS PICKED: LIGHTLY STYLED, PAINTED THE WALL COLOR, CLOSED CABINETS BELOW, A PANEL IN THE 10 FT BAND, A ROLLING LADDER, THE BREAST ONE PLANE. ABOUT {feet} FEET OF SHELF.',
             'B': 'THE SAME SHELVES FILLED WITH BOOKS. THIS IS HOW 7 LOOKS IF EVERY SHELF IS USED. IF THAT IS THE PLAN, CHOOSE 8 (GLASS) OR 6.',
             'C': 'OPTION 8: FLOOR TO CEILING SHELVES BEHIND GLASS DOORS. FULL SHELVES STAY ORDERLY AND CLEAN. THE CHOICE IF THE SHELVES WILL BE FULL OF BOOKS.'}
 
@@ -454,7 +497,7 @@ def big_view(sh, cell, s, label, title, scale):
     """One option drawn larger with its main dimensions, the text above it, the block centered in the cell."""
     k = E.SCALES[scale]; x0, y0, x1, y1 = cell
     E.title_bar(sh.p, sh.font, sh.fontname, cell, label, title, 'SCALE: %s" TO 1\'-0"' % scale)
-    ln_ = wrap_raw(DETAIL_R[label], TS, x1 - x0 - 20)
+    ln_ = wrap_raw(DETAIL_R[label].replace('{feet}', '%d' % round(s.get('feet') or 0)), TS, x1 - x0 - 20)
     block = len(ln_) * TLH + 24 + H * k + 50                         # text, gap, view, dimension strings
     ty = y0 + 16 + max(16, (y1 - y0 - 16 - block) / 2)
     for t in ln_: sh.text(x0 + 10, ty + 10, t, TS, INK, raw=True); ty += TLH
@@ -481,14 +524,17 @@ def build_review():
     sh = Sheet(doc); sh.frame('FIREPLACE WALL OPTIONS', '', ['FIREPLACE WALL OPTIONS,', 'COMPARISON'], 'ID-236', legend_rule=False)
     xb = fx1 - 400; cw = (xb - fx0) / 3; yv = fy0 + 566
     s7 = next(s for s in V if s['n'] == 7); s8 = next(s for s in V if s['n'] == 8)
-    for i, (sp, lab, ttl) in enumerate(((s7, 'A', 'OPTION 7, LIGHTLY STYLED (RECOMMENDED)'), (STOCKED, 'B', 'OPTION 7, SHELVES FILLED'), (s8, 'C', 'OPTION 8, BEHIND GLASS'))):
+    for i, (sp, lab, ttl) in enumerate(((s7, 'A', 'OPTION 7 AS PICKED, LIGHTLY STYLED'), (STOCKED, 'B', 'OPTION 7, SHELVES FILLED'), (s8, 'C', 'OPTION 8, BEHIND GLASS'))):
         big_view(sh, (fx0 + i * cw, fy0, fx0 + (i + 1) * cw, yv), sp, lab, ttl, '1/4')
     sh.p.draw_rect(fitz.Rect(fx0, yv, xb, fy1), color=LIGHT, width=0.4)
     yg = glance_wide(sh, fx0 + 14, yv + 30, xb - 14, fy1 - 10)
     sh.p.draw_rect(fitz.Rect(xb, fy0, fx1, fy1), color=LIGHT, width=0.4)
     y = reading(sh, xb + 14, fy0 + 24, fx1 - 14)
     y = max(y + 40, fy1 - 80); sh.line((xb, y - 26), (fx1, y - 26), 0.5, INK)
-    sh.text(xb + 14, y, 'OWNER PICK:', 14, serif=True, raw=True); sh.text(xb + 14, y + 34, 'OPTION ________     DATE ________', 14, serif=True, raw=True)
+    sh.text(xb + 14, y, 'OWNER PICK:', 14, serif=True, raw=True); sh.text(xb + 14, y + 34, 'OPTION 7     DATE 11.09.26', 14, serif=True, raw=True)
+    import idd_sheet as _I
+    _I.rev_cloud_pt(sh.p, fitz.Rect(xb + 8, y - 18, fx1 - 10, y + 42))
+    _I.rev_cloud_pt(sh.p, fitz.Rect(fx0 + 4, fy0 + 19, fx0 + 2 * cw - 6, yv - 6))     # views A and B redrawn as picked
     assert y + 34 < fy1 - 6, ('ID-236 right column runs off the sheet', y)
     if hasattr(idd_sheet_mod(), 'finish_scales'): idd_sheet_mod().finish_scales(doc)
     fix_soft_hyphen(doc); doc.save(OUT_REVIEW, garbage=3, deflate=True); print('saved', OUT_REVIEW, 'overview scale', sc, 'reading ends', round(y, 1), 'glance ends', round(yg, 1))

@@ -53,14 +53,22 @@ def chair_rail(v, x0, x1, y, h=None):
     _rect(v, x0, y, x1, y + h, OUTLINE); _line(v, (x0, y + h * 0.45), (x1, y + h * 0.45), FINE, MID); shadow(v, x0, x1, y)
 
 # ---------------------------------------------------------------- openings
-def door_leaf(v, x, w, head, panels=2, swing='L', knob=False, pull='R'):
+def door_leaf(v, x, w, head, panels=2, swing='L', knob=False, pull='R', glass='clear', lites=None):
+    """panels: 2 (two-panel), 1, 'glass' (full lite, divided per the set rule), 'lite_over_panel' (glass over one raised panel,
+    the front door the owner picked 11.09.26: 2 x 2 lites per leaf over a bottom panel). glass: 'clear' or 'hammered'."""
     _rect(v, x, 0, x + w, head, OUTLINE)
     st = 4.5; rail_b = 9; rail_t = 4.5; mid = 4.5
     inner = [(x + st, rail_b), (x + w - st, head - rail_t)]
-    if panels == 'glass':   # full-lite exterior door: one glass panel in a stile-and-rail frame
+    if panels == 'glass':   # full-lite door: one glass panel in a stile-and-rail frame
         _rect(v, x + st, rail_b, x + w - st, head - rail_t, MED); _rect(v, x + st + 0.75, rail_b + 0.75, x + w - st - 0.75, head - rail_t - 0.75, FINE, LIGHT)
-        _line(v, (x + st + 3, head - rail_t - 4), (x + w * 0.45, rail_b + (head - rail_b) * 0.45), FINE, PALE)
-        _line(v, (x + st + 6, head - rail_t - 4), (x + w * 0.55, rail_b + (head - rail_b) * 0.45), FINE, PALE)
+        cr = lites if lites else (None, None)
+        glazing(v, x + st + 0.75, rail_b + 0.75, x + w - st - 0.75, head - rail_t - 0.75, glass=glass, cols=cr[0], rows=cr[1])
+    elif panels == 'lite_over_panel':
+        rail_b = 9.0; lock = 36.0; mid = 5.0          # bottom rail, lock rail top at 36", the glass above it
+        _rect(v, x + st, rail_b, x + w - st, lock - mid, MED); _rect(v, x + st + 1.5, rail_b + 1.5, x + w - st - 1.5, lock - mid - 1.5, FINE, MID)
+        _rect(v, x + st, lock, x + w - st, head - rail_t, MED); _rect(v, x + st + 0.75, lock + 0.75, x + w - st - 0.75, head - rail_t - 0.75, FINE, LIGHT)
+        cr = lites if lites else (2, 2)
+        glazing(v, x + st + 0.75, lock + 0.75, x + w - st - 0.75, head - rail_t - 0.75, glass=glass, cols=cr[0], rows=cr[1])
     elif panels == 2:
         split = rail_b + (head - rail_t - rail_b) * 0.62
         _rect(v, x + st, rail_b, x + w - st, split - mid / 2, MED); _rect(v, x + st + 0.75, rail_b + 0.75, x + w - st - 0.75, split - mid / 2 - 0.75, FINE, MID)
@@ -73,21 +81,75 @@ def door_leaf(v, x, w, head, panels=2, swing='L', knob=False, pull='R'):
     hinge, far = (x, x + w) if swing == 'L' else (x + w, x)
     _line(v, (far, 0), (hinge, head / 2), FINE, MID, '[2 1.5] 0'); _line(v, (far, head), (hinge, head / 2), FINE, MID, '[2 1.5] 0')   # the lines meet at the hinge side
     lever = far - 3 if far > hinge else far + 3
-    if knob: _ellipse(v, lever, 38, 1.4, 1.4, MED); _ellipse(v, lever, 38, 0.6, 0.6, FINE); return
-    _ellipse(v, lever, 38, 0.9, 0.9, FINE); _line(v, (lever, 38), (lever + (-3.5 if far > hinge else 3.5), 38), MED)
+    hy = 33.5 if panels == 'lite_over_panel' else 38      # on the lock rail
+    if knob: _ellipse(v, lever, hy, 1.4, 1.4, MED); _ellipse(v, lever, hy, 0.6, 0.6, FINE); return
+    _ellipse(v, lever, hy, 0.9, 0.9, FINE); _line(v, (lever, hy), (lever + (-3.5 if far > hinge else 3.5), hy), MED)
 def cased_opening(v, x, w, head, beyond=None):
     """Cased opening; `beyond` draws what is seen through it (callable drawing in the opening at a lighter weight)."""
     casing(v, x, w, head)
     if beyond: beyond(v, x, w, head)
-def window(v, x, w, sill, head, lites=2, cs=None, trim=True):
+# ---------------------------------------------------------------- divided lites (owner 11.09.26: "many window panes. all glass doors and
+# windows in house to match"). The pattern follows FOR's front elevation: true divided lites, panes about 10" wide and taller than wide.
+DIVIDED = True
+PANE_W = 10.5          # target pane width, in.
+PANE_ASPECT = 1.55     # pane height / width
+PANE_REDUCE = 0.7      # owner 11.09.26 evening: about 30% fewer panes than the first pass
+def lite_grid(gw, gh, pane_w=None, aspect=None):
+    """(cols, rows) for a glass panel gw x gh in.: the first-pass grid (panes about PANE_W wide, PANE_ASPECT tall) with the pane
+    count cut to PANE_REDUCE, keeping two columns on narrow leaves so the pattern still reads as divided."""
+    pane_w = PANE_W if pane_w is None else pane_w; aspect = PANE_ASPECT if aspect is None else aspect
+    cols = max(1, round(gw / pane_w)); rows = max(1, round(gh / (gw / cols * aspect)))
+    n = cols * rows * PANE_REDUCE
+    c2 = cols if cols <= 2 else max(2, round(cols * 0.85))
+    r2 = max(min(2, rows), round(n / c2))
+    return c2, r2
+def muntins(v, x0, y0, x1, y1, cols=None, rows=None, bar=0.875):
+    """Muntin grid in a glass panel (x0..x1, y0..y1 in.): every bar a pair of lines at one weight, verticals run through,
+    horizontals stop at them (review 11.09.26: no mix of single and double lines)."""
+    x0, x1 = min(x0, x1), max(x0, x1); y0, y1 = min(y0, y1), max(y0, y1)
+    c_, r_ = lite_grid(x1 - x0, y1 - y0)
+    cols = c_ if cols is None else cols; rows = r_ if rows is None else rows
+    W_ = (1, 1, 1)
+    xs = [x0 + (x1 - x0) * i / cols for i in range(1, cols)]; ys = [y0 + (y1 - y0) * j / rows for j in range(1, rows)]
+    for my in ys: _rect(v, x0, my - bar / 2, x1, my + bar / 2, 0.01, W_, fill=W_)
+    for mx in xs: _rect(v, mx - bar / 2, y0, mx + bar / 2, y1, 0.01, W_, fill=W_)
+    for mx in xs:
+        for e in (-bar / 2, bar / 2): _line(v, (mx + e, y0), (mx + e, y1), FINE)
+    stops = [x0] + [e for mx in xs for e in (mx - bar / 2, mx + bar / 2)] + [x1]
+    for my in ys:
+        for e in (-bar / 2, bar / 2):
+            for a_, b_ in zip(stops[0::2], stops[1::2]): _line(v, (a_, my + e), (b_, my + e), FINE)
+def hammered(v, x0, y0, x1, y1, pitch=2.2):
+    """Hammered (obscure) glass: a regular field of short pale arcs, so it reads as textured, not clear (owner 11.09.26)."""
+    x0, x1 = min(x0, x1), max(x0, x1); y0, y1 = min(y0, y1), max(y0, y1)
+    j = 0; y = y0 + pitch * 0.6
+    while y < y1 - pitch * 0.3:
+        x = x0 + pitch * (0.5 if j % 2 else 1.0)
+        while x < x1 - pitch * 0.4:
+            _arc(v, x, y, pitch * 0.28, 200, 340, FINE, PALE); x += pitch
+        y += pitch * 0.85; j += 1
+def glazing(v, x0, y0, x1, y1, divided=None, glass='clear', cols=None, rows=None):
+    """One glass panel: clear (glare lines) or hammered, with divided lites when the set rule is on."""
+    divided = DIVIDED if divided is None else divided
+    if glass == 'hammered': hammered(v, x0, y0, x1, y1)
+    if divided: muntins(v, x0, y0, x1, y1, cols, rows)
+    elif glass != 'hammered':
+        w_ = x1 - x0; h_ = y1 - y0
+        _line(v, (x0 + 2, y1 - 3), (x0 + w_ * 0.45, y0 + h_ * 0.45), FINE, PALE); _line(v, (x0 + 4, y1 - 3), (x0 + w_ * 0.6, y0 + h_ * 0.45), FINE, PALE)
+def rev_cloud(v, x0, y0, x1, y1, tag='1', pad=3.0, tag_at='tr'):
+    """Revision cloud around an elevation region (in., view coordinates), padded `pad` in."""
+    import idd_sheet
+    xa, xb = sorted((v.X(x0 - pad), v.X(x1 + pad))); ya, yb = sorted((v.Y(y0 - pad), v.Y(y1 + pad)))
+    idd_sheet.rev_cloud_pt(v.p, fitz.Rect(xa, ya, xb, yb), tag, tag_at=tag_at)
+
+def window(v, x, w, sill, head, lites=2, cs=None, trim=True, glass='clear'):
     cs = TRIM['casing'] if cs is None else cs
     if trim: casing(v, x, w, head, cs, sill); _rect(v, x - cs, sill - 1.5, x + w + cs + 1, sill, OUTLINE); _rect(v, x - cs + 0.5, sill - 1.5 - TRIM['cap'], x + w + cs - 0.5, sill - 1.5, OUTLINE)   # stool and apron
     else: _rect(v, x - 1, sill - 1, x + w + 1, head + 1, OUTLINE)   # tile return into the jamb, no casing
     _rect(v, x, sill, x + w, head, OUTLINE); lw = w / lites
     for i in range(lites):
         gx = x + i * lw; _rect(v, gx + 1.25, sill + 1.25, gx + lw - 1.25, head - 1.25, MED)
-        _line(v, (gx + 3, head - 3), (gx + lw * 0.45, sill + (head - sill) * 0.45), FINE, PALE)
-        _line(v, (gx + 5, head - 3), (gx + lw * 0.6, sill + (head - sill) * 0.45), FINE, PALE)
+        glazing(v, gx + 1.25, sill + 1.25, gx + lw - 1.25, head - 1.25, glass=glass)
 
 # ---------------------------------------------------------------- bath
 def vanity_furniture(v, x, w, h=34, counter=1.25, legs=True, drawers=3, sink_center=None, doors_center=True, faucet_style='deck'):
@@ -168,10 +230,44 @@ def tub_filler_wall(v, cx, y=30, spread=8.0):
 def glass_edge(v, x, h=84):
     """Frameless glass seen edge-on: a heavy vertical line with the header channel stub."""
     _line(v, (x, 0), (x, h), OUTLINE); _line(v, (x - 0.5, h), (x + 0.5, h), MED)
-def door_pair(v, x, w, head, panels=2):
+def door_pair(v, x, w, head, panels=2, glass='clear', lites=None, cased=True):
     """Pair of swinging doors in a cased opening, each leaf hinged at its jamb."""
-    casing(v, x, w, head)
-    door_leaf(v, x, w / 2, head, panels, swing='L'); door_leaf(v, x + w / 2, w / 2, head, panels, swing='R')
+    if cased: casing(v, x, w, head)
+    door_leaf(v, x, w / 2, head, panels, swing='L', glass=glass, lites=lites); door_leaf(v, x + w / 2, w / 2, head, panels, swing='R', glass=glass, lites=lites)
+def arched_door_pair(v, x, w, spring, panels=1, cased=True, cs=None, hw='lever'):
+    """Pair of swinging leaves under a semicircular arched head (apex = spring + w/2): arched casing, leaves cut to the arch,
+    one raised panel per leaf following the arch (panels=1) or a lower panel under an arched upper panel (panels=2)."""
+    r = w / 2.0; cx = x + r; apex = spring + r
+    cs = TRIM['casing'] if cs is None else cs
+    def top(px, rad=r): return spring + math.sqrt(max(0.0, rad * rad - (px - cx) ** 2))
+    def arc_pts(x0, x1, rad, n=24):            # sampled by angle so the head stays concentric with the casing right down to the spring line
+        a0 = math.acos(max(-1.0, min(1.0, (x0 - cx) / rad))); a1 = math.acos(max(-1.0, min(1.0, (x1 - cx) / rad)))
+        return [(cx + rad * math.cos(a0 + (a1 - a0) * i / n), spring + rad * math.sin(a0 + (a1 - a0) * i / n)) for i in range(n + 1)]
+    if cased:
+        _poly(v, [(x - cs, 0), (x - cs, spring)] + [(cx + (r + cs) * math.cos(math.radians(180 - 180 * i / 36)), spring + (r + cs) * math.sin(math.radians(180 - 180 * i / 36))) for i in range(37)]
+              + [(x + w + cs, spring), (x + w + cs, 0)], OUTLINE, close=False)
+        _line(v, (x, 0), (x, spring), OUTLINE); _line(v, (x + w, 0), (x + w, spring), OUTLINE); _arc(v, cx, spring, r, 0, 180, OUTLINE)
+        _line(v, (x - cs, spring), (x, spring), FINE, MID); _line(v, (x + w, spring), (x + w + cs, spring), FINE, MID)   # leg to arch joint
+        _line(v, (x - cs + 1.0, 0), (x - cs + 1.0, spring), FINE, LIGHT); _line(v, (x + w + cs - 1.0, 0), (x + w + cs - 1.0, spring), FINE, LIGHT)
+        _arc(v, cx, spring, r + cs - 1.0, 0, 180, FINE, LIGHT)                                      # backband
+        _arc(v, cx, spring, r + 0.25, 0, 180, FINE, MID)                                            # reveal to the jamb
+    st, rail_b, rail_t, mid = 4.5, 9.0, 4.5, 4.5
+    for (x0, x1, swing) in ((x, cx, 'L'), (cx, x + w, 'R')):
+        _poly(v, [(x0, 0), (x1, 0)] + arc_pts(x1, x0, r), OUTLINE)
+        px0, px1 = x0 + st, x1 - st; rp = r - rail_t
+        lo = rail_b
+        if panels == 2:
+            split = rail_b + (spring - rail_b) * 0.62
+            _rect(v, px0, rail_b, px1, split - mid / 2, MED); _rect(v, px0 + 0.75, rail_b + 0.75, px1 - 0.75, split - mid / 2 - 0.75, FINE, MID)
+            lo = split + mid / 2
+        _poly(v, [(px0, lo), (px1, lo)] + arc_pts(px1, px0, rp), MED)
+        _poly(v, [(px0 + 0.75, lo + 0.75), (px1 - 0.75, lo + 0.75)] + arc_pts(px1 - 0.75, px0 + 0.75, rp - 0.75), FINE, MID)
+        hinge, far = (x0, x1) if swing == 'L' else (x1, x0)
+        _line(v, (far, 0), (hinge, apex / 2), FINE, MID, '[2 1.5] 0'); _line(v, (far, top(far)), (hinge, apex / 2), FINE, MID, '[2 1.5] 0')
+        lever = far - 3 if far > hinge else far + 3
+        if hw == 'pull': _rect(v, lever - 0.35, 34, lever + 0.35, 46, MED, fill=(1, 1, 1))     # vertical pull, ball catch at the head
+        else: _ellipse(v, lever, 38, 0.9, 0.9, FINE); _line(v, (lever, 38), (lever + (-3.5 if far > hinge else 3.5), 38), MED)
+    return apex
 def cut_wall(v, x, w, H, fill=(0.3, 0.3, 0.3)):
     """A partition seen end-on inside the view (alcove walls): solid poche to the ceiling."""
     _rect(v, x, 0, x + w, H, OUTLINE, fill=fill)

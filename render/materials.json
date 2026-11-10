@@ -158,13 +158,18 @@
   "source": "generic"
  },
  "WD-01": {
-  "name": "WOOD FLOOR (PICK OPEN)",
-  "hex": "#9C7A57",
+  "name": "WOOD FLOOR, LIGHT WHITE OAK (OWNER 11.09.26)",
+  "hex": "#C9AE8C",
   "rough": 0.35,
   "kind": "wood",
   "status": "PLACEHOLDER",
   "source": "species and stain open",
-  "texture": "laminate_floor_02"
+  "texture": "acg/WoodFloor062",
+  "tint": [
+   0.95,
+   0.92,
+   0.88
+  ]
  },
  "BLACK": {
   "name": "TV SCREEN, DARK",
@@ -345,5 +350,366 @@
   "veins": 1.0,
   "status": "PLACEHOLDER",
   "source": "slab open"
+ },
+ "CAL-MONET": {
+  "name": "CALACATTA MONET MARBLE, POLISHED",
+  "hex": "#F4F0E8",
+  "rough": 0.1,
+  "kind": "marble",
+  "vein": "#5C4858",
+  "vein2": "#9A7A44",
+  "veins": 1.0,
+  "status": "PICKED",
+  "source": "owner 11.09.26; creamy white with painterly violet, gold and grey veins"
+ },
+ "CAL-MONET-HONED": {
+  "name": "CALACATTA MONET MARBLE, HONED",
+  "hex": "#F2EEE6",
+  "rough": 0.32,
+  "kind": "marble",
+  "honed": true,
+  "vein": "#5C4858",
+  "vein2": "#9A7A44",
+  "veins": 1.0,
+  "status": "PICKED",
+  "source": "owner 11.09.26"
+ },
+ "CAL-VIOLA": {
+  "name": "CALACATTA VIOLA MARBLE",
+  "hex": "#F3F0EB",
+  "rough": 0.12,
+  "kind": "marble",
+  "vein": "#5E1433",
+  "vein2": "#7B2E58",
+  "veins": 1.0,
+  "status": "PICKED",
+  "source": "owner 11.09.26, powder room"
+ },
+ "BSP-01": {
+  "name": "BACKSPLASH TILE, LIGHT NEUTRAL GLAZED 4x12",
+  "hex": "#EEEAE2",
+  "rough": 0.2,
+  "kind": "tile",
+  "status": "PLACEHOLDER",
+  "source": "owner 11.09.26: neutral and light; product open"
+ },
+ "CAB-01": {
+  "name": "KITCHEN CABINET PAINT (PICK OPEN)",
+  "hex": "#E7E3D9",
+  "rough": 0.38,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "warm white satin stand-in"
+ },
+ "HOOD-PLASTER": {
+  "name": "HOOD, PLASTER",
+  "hex": "#ECE8E0",
+  "rough": 0.75,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "plaster to match walls"
+ },
+ "MW-01": {
+  "name": "CLOSET MILLWORK, WARM GREIGE MATTE",
+  "hex": "#C8BFB1",
+  "rough": 0.5,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "ID-330: color to select"
+ },
+ "MW-02": {
+  "name": "CLOSET DRAWER FRONTS, SHAGREEN-LOOK",
+  "hex": "#B9AE9E",
+  "rough": 0.6,
+  "kind": "fabric",
+  "texture": "acg/Leather027",
+  "status": "PLACEHOLDER",
+  "source": "ID-330"
+ },
+ "BRONZE": {
+  "name": "BRONZE FINISH",
+  "hex": "#7A5B3A",
+  "rough": 0.3,
+  "kind": "metal",
+  "lin": [
+   0.4,
+   0.27,
+   0.15
+  ],
+  "status": "PLACEHOLDER",
+  "source": "GL-01 frames, rods"
+ },
+ "FB-01": {
+  "name": "LINEN BACK PANEL",
+  "hex": "#D8D0C2",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "PLACEHOLDER",
+  "source": "ID-330"
+ },
+ "FAB-HEADBOARD": {
+  "name": "UPHOLSTERY (STAGING)",
+  "hex": "#D2CABC",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "acg/Fabric062",
+  "status": "STAGING",
+  "source": ""
+ },
+ "FAB-BEDDING": {
+  "name": "BEDDING (STAGING)",
+  "hex": "#F2F0EB",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "FAB-SOFA": {
+  "name": "SOFA FABRIC (STAGING)",
+  "hex": "#E3DDD2",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "acg/Fabric086",
+  "status": "STAGING",
+  "source": ""
+ },
+ "FAB-RUG": {
+  "name": "RUG (STAGING)",
+  "hex": "#D7CFC1",
+  "rough": 0.95,
+  "kind": "fabric",
+  "texture": "acg/Carpet016",
+  "status": "STAGING",
+  "source": ""
+ },
+ "WOOD-FURN": {
+  "name": "WOOD FURNITURE (STAGING)",
+  "hex": "#7A5A3E",
+  "rough": 0.4,
+  "kind": "wood",
+  "texture": "oak_veneer_01",
+  "tint": [
+   0.55,
+   0.42,
+   0.3
+  ],
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-0": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#1F1F22",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-1": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#F1EEE7",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-2": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#B9A88E",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-3": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#6B6F75",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-4": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#2E3A4C",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-5": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#D8C3B8",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-6": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#8A7A68",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "GARM-7": {
+  "name": "GARMENT (STAGING)",
+  "hex": "#3A2F2A",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-0": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#2B1E17",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather030",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-1": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#E8DCC8",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather027",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-2": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#111111",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather026",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-3": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#8C5A36",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather030",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-4": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#C9B79C",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather027",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BAG-5": {
+  "name": "HANDBAG (STAGING)",
+  "hex": "#5E1F24",
+  "rough": 0.5,
+  "kind": "fabric",
+  "texture": "acg/Leather030",
+  "status": "STAGING",
+  "source": ""
+ },
+ "WD-HB": {
+  "name": "WOOD FLOOR, HERRINGBONE WHITE OAK (PLACEHOLDER)",
+  "hex": "#C9AE8C",
+  "rough": 0.35,
+  "kind": "wood",
+  "texture": "acg/WoodFloor015",
+  "status": "PLACEHOLDER",
+  "source": "herringbone in the master suite",
+  "tint": [
+   0.85,
+   0.8,
+   0.74
+  ]
+ },
+ "OAK-VENEER": {
+  "name": "RIFT WHITE OAK VENEER, NATURAL (STAIN OPEN)",
+  "hex": "#C2A784",
+  "rough": 0.38,
+  "kind": "wood",
+  "texture": "oak_veneer_01",
+  "tint": [
+   0.86,
+   0.8,
+   0.72
+  ],
+  "status": "PLACEHOLDER",
+  "source": "render plan: north run rift white oak veneer"
+ },
+ "PT-04": {
+  "name": "POWDER ROOM LOWER WALL, DEEP COLOR (T.B.C.)",
+  "hex": "#27312B",
+  "rough": 0.5,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "ID-001: deep color T.B.C."
+ },
+ "CERAMIC-WHITE": {
+  "name": "VITREOUS CHINA",
+  "hex": "#F4F3F0",
+  "rough": 0.08,
+  "kind": "ceramic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "ST-05": {
+  "name": "HONED LIMESTONE, POOL HOUSE FLOOR",
+  "hex": "#DCD3C3",
+  "rough": 0.55,
+  "kind": "stone",
+  "texture": "acg/Travertine009",
+  "tint": [
+   0.95,
+   0.93,
+   0.9
+  ],
+  "status": "PLACEHOLDER",
+  "source": "pool house memo: ST-05 honed limestone throughout"
+ },
+ "PT-05": {
+  "name": "LIMEWASH, POOL HOUSE",
+  "hex": "#E6E0D5",
+  "rough": 0.8,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "pool house memo"
+ },
+ "TV-BLACK": {
+  "name": "TV (STAGING)",
+  "hex": "#0E0E10",
+  "rough": 0.08,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "OAK-STAINED": {
+  "name": "RIFT WHITE OAK VENEER, STAINED A FEW SHADES DARKER THAN THE FLOOR",
+  "hex": "#9C7F60",
+  "rough": 0.38,
+  "kind": "wood",
+  "texture": "oak_veneer_01",
+  "tint": [
+   0.62,
+   0.52,
+   0.42
+  ],
+  "status": "OWNER DIRECTION 11.09.26",
+  "source": "stain sample to pick"
  }
 }

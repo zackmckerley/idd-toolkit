@@ -1,5 +1,5 @@
 """Casa Grove review draft (owner 11.07.26): cover with the front elevation and the sheet index, every sheet in walk-the-house order,
-printed on 11 x 17. Sheets are drawn 17:11 so they print edge to edge. Output: 261107.HD102.ReviewSet.pdf (11 x 17) and 261107.HD102.ReviewSet-FullSize.pdf."""
+printed on 11 x 17. Sheets are drawn 17:11 so they print edge to edge. Output: 261109.HD102.ReviewSet.pdf (11 x 17) and 261109.HD102.ReviewSet-FullSize.pdf."""
 import re, sys
 sys.path.insert(0, '/home/claude/flrwork')
 import pymupdf as fitz
@@ -9,29 +9,28 @@ from idd_std import INK, MID, LIGHT
 from elev_front import draw_front
 
 D = '/home/claude/flrwork/'
-SOURCES = ['261105.HD102.FinishPlans.pdf', '261105.HD102.EntryPowderPilot.pdf', '261105.HD102.LivingRoomPilot.pdf', '261107.HD102.FireplaceWallOptions.pdf', '261105.HD102.KitchenPilot.pdf',
-           '261105.HD102.MudroomPilot.pdf', '261105.HD102.MasterBedroomPilot.pdf', '261105.HD102.MasterBathPilot.pdf',
-           '261106.HD102.Bedrooms.pdf', '261105.HD102.SecondaryBaths.pdf']
+SOURCES = ['261109.HD102.DoorSchedule.pdf', '261105.HD102.FinishPlans.pdf', '261109.HD102.RCP-Lighting.pdf', '261105.HD102.EntryPowderPilot.pdf', '261105.HD102.LivingRoomPilot.pdf', '261105.HD102.KitchenPilot.pdf',
+           '261105.HD102.MudroomPilot.pdf', '261105.HD102.MasterBedroomPilot.pdf', '261105.HD102.MasterBathPilot.pdf', '261109.HD102.MasterCloset.pdf', '261109.HD102.PoolHouse.pdf',
+           '261106.HD102.Bedrooms.pdf', '261105.HD102.SecondaryBaths.pdf', '261109.HD102.Details.pdf']
 # Owner 11.07.26: plans in the 100s, floor 1 rooms in the 200s, floor 2 rooms in the 300s, a block of ten per room (x0 = key plan).
 # The index lists every sheet the set will have; sheets not drawn yet are marked TBD.
 SECTIONS = [('GENERAL', [('0', None)]), ('PLANS', [('1', None)]),
-            ('FLOOR 1', [('21', 'ENTRY AND POWDER ROOM'), ('22', 'OFFICE'), ('23', 'LIVING ROOM, WITH THE FIREPLACE WALL OPTIONS'), ('24', 'KITCHEN, DINING AND PANTRY'),
+            ('FLOOR 1', [('21', 'ENTRY AND POWDER ROOM'), ('22', 'OFFICE'), ('23', 'LIVING ROOM'), ('24', 'KITCHEN, DINING AND PANTRY'),
                          ('25', 'MUDROOM, LAUNDRY AND DOG ROOM'), ('26', 'GUEST BEDROOM AND GUEST BATH'), ('27', 'STAIR AND HALLS')]),
             ('FLOOR 2', [('31', 'MASTER BEDROOM'), ('32', 'MASTER BATH'), ('33', 'MASTER CLOSET'), ('34', 'BEDROOM 2 AND BATH 2'),
                          ('35', 'BEDROOM 3 AND BATH 3'), ('36', 'DEN / PLAYROOM'), ('37', 'UPPER HALL AND LINEN CLOSET')]),
+            ('POOL HOUSE', [('40', None)]),                          # review 11.09.26: no repeated heading on the cover
             ('DETAILS', [('5', None)])]
 TBD = [('ID-001', 'SCHEDULES'),
-       ('ID-121', 'REFLECTED CEILING PLAN FLOOR 1'), ('ID-122', 'REFLECTED CEILING PLAN FLOOR 2'),
-       ('ID-131', 'LIGHTING AND SWITCHING PLAN FLOOR 1'), ('ID-132', 'LIGHTING AND SWITCHING PLAN FLOOR 2'),
        ('ID-141', 'POWER AND DATA PLAN FLOOR 1'), ('ID-142', 'POWER AND DATA PLAN FLOOR 2'),
        ('ID-151', 'FURNITURE PLAN FLOOR 1'), ('ID-152', 'FURNITURE PLAN FLOOR 2'),
        ('ID-220', 'OFFICE ELEVATIONS'), ('ID-270', 'STAIR AND HALLS ELEVATIONS'),
-       ('ID-330', 'MASTER CLOSET ELEVATIONS'), ('ID-360', 'DEN / PLAYROOM ELEVATIONS'), ('ID-370', 'UPPER HALL AND LINEN CLOSET (WASHER AND DRYER)'),
-       ('ID-501', 'DETAILS'),
+       ('ID-360', 'DEN / PLAYROOM ELEVATIONS'), ('ID-370', 'UPPER HALL AND LINEN CLOSET (WASHER AND DRYER)'),
        # renderings sit at x8 and x9 of each room block (owner 11.07.26: prepared, not rendered yet)
        ('ID-218', 'RENDERINGS: ENTRY AND POWDER ROOM'), ('ID-238', 'RENDERINGS: LIVING ROOM'), ('ID-248', 'RENDERINGS: KITCHEN AND PANTRY'),
        ('ID-258', 'RENDERINGS: MUDROOM'), ('ID-268', 'RENDERINGS: GUEST BEDROOM AND BATH'), ('ID-318', 'RENDERINGS: MASTER BEDROOM'),
        ('ID-328', 'RENDERINGS: MASTER BATH'), ('ID-348', 'RENDERINGS: BEDROOM 2 AND BATH 2'), ('ID-358', 'RENDERINGS: BEDROOM 3 AND BATH 3')]
+NEW_SHEETS = ()          # owner comments 11.09.26: new sheets, clouded in the index
 COORD = ['FOR ARCHITECTURE CO., PERMIT SET OF 07.01.26,', 'REVISION 1 OF 10.23.26 (RESPONSE TO BUILDING COMMENTS):',
          'A-201 PROPOSED FIRST FLOOR PLAN', 'A-202 PROPOSED SECOND FLOOR PLAN']
 NOTES = [['FOR\'S DRAWINGS GOVERN CONSTRUCTION. WHERE THESE SHEETS CHANGE FOR\'S PLAN,', 'THE CHANGE IS LISTED ON THAT ROOM\'S KEY PLAN.'],
@@ -70,32 +69,20 @@ def cover(doc, rows):
     """rows: (number, title, drawn) for every sheet in the index, drawn sheets and TBD alike, in number order."""
     sh = Sheet(doc)
     sh.frame('CASA GROVE', '', ['COVER AND', 'SHEET INDEX'], 'ID-000', revisions=(), legend_rule=False)
-    # front elevation
-    er = draw_front(sh.p, fitz.Rect(70, 100, 850, 553))
-    sh.text(er.x0, er.y1 + 22, 'FRONT ELEVATION', 11, serif=True, spacing=1.2, raw=True)
-    sh.text(er.x0, er.y1 + 36, 'AFTER FOR ARCHITECTURE CO.', 8, MID, raw=True)
+    # front elevation (owner 11.09.26: coordinated-with and general notes removed from the cover; the elevation and the
+    # project block take the column, the coordination lives in the title block of every sheet)
+    er = draw_front(sh.p, fitz.Rect(70, 110, 850, 700))
+    sh.text(er.x0, er.y1 + 24, 'FRONT ELEVATION', 11, serif=True, spacing=1.2, raw=True)
+    sh.text(er.x0, er.y1 + 38, 'AFTER FOR ARCHITECTURE CO.', 8, MID, raw=True)
     # project
-    y = 668
+    y = FR.y1 - 190                                    # bottom-aligned with the index column
     sh.text(70, y, 'CASA GROVE', 54, serif=True, spacing=3.0, raw=True)
     sh.text(72, y + 34, '3350 THOMAS AVE, COCONUT GROVE, FLORIDA 33133', 14, raw=True)
     sh.line((72, y + 56), (850, y + 56), 0.6, INK)
     sh.text(72, y + 84, 'INTERIOR DESIGN DRAWINGS', 16, serif=True, spacing=1.5, raw=True)
-    sh.text(72, y + 106, 'REVIEW DRAFT, NOVEMBER 7, 2026', 12, raw=True)
+    sh.text(72, y + 106, 'REVIEW DRAFT, REVISION 2, COORDINATED WITH FOR REV 1, NOVEMBER 9, 2026', 12, raw=True)
     sh.text(72, y + 122, 'NOT FOR CONSTRUCTION', 10, MID, raw=True)
-    # coordinated with, general notes
-    y = 838
-    sh.text(72, y, 'COORDINATED WITH', 9, MID, spacing=1.0, raw=True)
-    for i, t in enumerate(COORD): sh.text(72, y + 18 + 14.5 * i, t, 10.5, raw=True)
-    y = 940
-    sh.text(72, y, 'GENERAL NOTES', 9, MID, spacing=1.0, raw=True)
-    yy = y + 18
-    for n, lines in enumerate(NOTES, 1):
-        sh.text(72, yy, '%d.' % n, 10, raw=True)
-        for t in lines:
-            sz = 10.0
-            while _FR.text_length(t, fontsize=sz) > 850 - 92 and sz > 8: sz -= 0.25
-            sh.text(92, yy, t, sz, raw=True); yy += 14.5
-    assert yy < FR.y1 - 8, ('cover notes run off the sheet', yy)
+    assert y + 122 < FR.y1 - 8, ('cover project block runs off the sheet', y)
     # sheet index: two columns, grouped by floor and room, TBD sheets in grey
     X0 = 900.0; GAP = 34.0; CW = (TB_X - 24 - X0 - GAP) / 2
     sh.line((X0 - 24, 90), (X0 - 24, FR.y1 - 20), 0.4, LIGHT)
@@ -128,6 +115,7 @@ def cover(doc, rows):
                 while _FR.text_length(title, fontsize=sz) > room_w and sz > 6.5: sz -= 0.25
                 sh.text(x0 + 58, y, title, sz, c, raw=True)
                 if not drawn: sh.text(x1, y, 'TBD', 8.5, MID, bold=True, align='r', raw=True)
+                if num in NEW_SHEETS: idd_sheet.rev_cloud_pt(sh.p, fitz.Rect(x0 - 4, y - 9.5, x0 + 58 + _FR.text_length(title, fontsize=sz) + 6, y + 3.5), '1', bump=4.5, tag_at='br')
                 y += 18.5
         assert y < bottom, ('index column runs off the sheet', col, y)
     return sh
@@ -158,7 +146,7 @@ def build():
         toc.append([3 if room else 2, '%s  %s' % (n, t), i])
     full.set_toc(toc)
     meta = {'title': 'Casa Grove, Interior Design Drawings, Review Draft 11.07.26', 'author': 'Helios Development', 'subject': 'HD102, 3350 Thomas Ave'}
-    full.set_metadata(meta); full.subset_fonts(); full.save(D + '261107.HD102.ReviewSet-FullSize.pdf', garbage=4, deflate=True, deflate_fonts=True, use_objstms=1)
+    full.set_metadata(meta); full.subset_fonts(); full.save(D + '261109.HD102.ReviewSet-FullSize.pdf', garbage=4, deflate=True, deflate_fonts=True, use_objstms=1)
     # 11 x 17: each 17:11 sheet scaled to the page, edge to edge
     small = fitz.open(); W, H = 1224.0, 792.0
     for p in full:
@@ -168,7 +156,7 @@ def build():
         pg.show_pdf_page(fitz.Rect((W - tw) / 2, (H - th) / 2, (W + tw) / 2, (H + th) / 2), full, p.number)
     small.set_toc(toc); small.set_metadata(meta)
     small.subset_fonts()                                   # fonts embedded once, subset: the set is small enough to email
-    small.save(D + '261107.HD102.ReviewSet.pdf', garbage=4, deflate=True, deflate_fonts=True, clean=True, use_objstms=1)
+    small.save(D + '261109.HD102.ReviewSet.pdf', garbage=4, deflate=True, deflate_fonts=True, clean=True, use_objstms=1)
     print('saved', len(full), 'sheets,', len(tbd), 'TBD rows')
 
 

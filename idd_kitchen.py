@@ -22,7 +22,7 @@ def frame_opening(v, x0, y0, x1, y1):
     """One inset opening in the face frame: the opening line and the front 1/8 in. inside it."""
     _rect(v, x0, y0, x1, y1, MED); _rect(v, x0 + REVEAL, y0 + REVEAL, x1 - REVEAL, y1 - REVEAL, FINE, MID)
 
-def drawer_stack(v, x, w, n=3, top=BOX_TOP, pull='bar', bottom=TOE):
+def drawer_stack(v, x, w, n=3, top=BOX_TOP, pull='bar', bottom=TOE, depth=24.0):
     """Inset drawer stack: the face frame as a rect with the openings laid out top to bottom (top drawer shallower)."""
     _rect(v, x, bottom, x + w, top, OUTLINE)
     inner = top - bottom - STILE * (n + 1)
@@ -35,8 +35,9 @@ def drawer_stack(v, x, w, n=3, top=BOX_TOP, pull='bar', bottom=TOE):
         elif pull == 'cup': _poly(v, [(x + w / 2 - 2.5, cy + 0.6), (x + w / 2 + 2.5, cy + 0.6), (x + w / 2 + 1.8, cy - 1.0), (x + w / 2 - 1.8, cy - 1.0)], MED)
         y -= h + STILE
 
-def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0):
-    """Inset pair of doors between y0 and y1 (a base sink cabinet, an upper, a tall cabinet)."""
+def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0, depth=24.0):
+    """Inset pair of doors between y0 and y1 (a base sink cabinet, an upper, a tall cabinet). `depth` is the box depth from the wall
+    (not drawn in elevation; recorded for the plan and the 3-D render, 24 in. unless the cabinet is a true 13 in. upper)."""
     _rect(v, x, y0, x + w, y1, OUTLINE)
     dw = (w - 3 * STILE) / 2
     for i in range(2):
@@ -52,7 +53,7 @@ def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0):
             py = (y0 + y1) / 2 if (y1 - y0) < 40 else (y0 + 36 if y1 > 60 else y0 + (y1 - y0) * 0.5)
             _line(v, (px, py - 3), (px, py + 3), OUTLINE)
 
-def single_door_cab(v, x, w, y0, y1, hinge='L', glass=False):
+def single_door_cab(v, x, w, y0, y1, hinge='L', glass=False, depth=24.0):
     _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
     if glass: _rect(v, x + STILE + 2.5, y0 + STILE + 2.5, x + w - STILE - 2.5, y1 - STILE - 2.5, FINE, MID)
     px = x + w - STILE - 2.2 if hinge == 'L' else x + STILE + 2.2
@@ -110,7 +111,7 @@ def pro_range(v, x, w=48.0, h=36.0, burners=6, griddle=True):
     _rect(v, x - 0.5, h - 0.75, x + w + 0.5, h + 0.75, OUTLINE, fill=(1, 1, 1))                 # cooktop rim
     _line(v, (x, h + 0.75), (x + w, h + 0.75), FINE, MID)
 
-def hood_breast(v, x, w, y0, H, style='plaster', crown_drop=8.0):
+def hood_breast(v, x, w, y0, H, style='plaster', crown_drop=8.0, depth=27.0):
     """Concealed hood in a chimney breast from the hood bottom y0 to the crown: a flat plastered or stone breast, 2 in. proud of the splash."""
     _rect(v, x, y0, x + w, H - crown_drop, OUTLINE)
     _rect(v, x + 0.75, y0 + 0.75, x + w - 0.75, H - crown_drop - 0.75, FINE, LIGHT)
@@ -127,6 +128,33 @@ def hood_canopy(v, x, w, y0, H, crown_drop=8.0, mantle=True):
     if mantle:
         _rect(v, x - 2, y0 + body, x + w + 2, y0 + body + 2.5, OUTLINE, fill=(1, 1, 1)); shadow(v, x - 2, x + w + 2, y0 + body)
         for bx in (x + 2, x + w - 6): _poly(v, [(bx, y0 + body), (bx + 4, y0 + body), (bx + 4, y0 + body - 6), (bx, y0 + body - 1.5)], MED)
+
+def veneer_grain(v, x0, y0, x1, y1):
+    """Veneer: three light wavy grain lines across a door."""
+    n = 3; h = y1 - y0
+    for i in range(n):
+        yy = y0 + h * (i + 1) / (n + 1)
+        pts = [(x0 + 1.5 + (x1 - x0 - 3) * t / 12, yy + 0.6 * math.sin(t * 1.3 + i)) for t in range(13)]
+        _poly(v, pts, FINE, PALE, close=False)
+
+def veneer_door(v, x, w, y0, y1, glass=False, pull='bar', hinge='L', depth=24.0):
+    """One inset veneer door in its face frame; glass=True for a glass door with lit shelves behind (recorded for the 3-D render)."""
+    _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
+    if glass: _rect(v, x + STILE + 2.5, y0 + STILE + 2.5, x + w - STILE - 2.5, y1 - STILE - 2.5, FINE, MID); _line(v, (x + 4, y1 - 6), (x + w * 0.45, y0 + 5), FINE, PALE)
+    else: veneer_grain(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
+    px = x + w - STILE - 2.2 if hinge == 'L' else x + STILE + 2.2
+    if pull == 'bar': _line(v, (px, (y0 + y1) / 2 - 3), (px, (y0 + y1) / 2 + 3), OUTLINE)
+    elif pull == 'long': _line(v, (px, 30), (px, 66), OUTLINE); _line(v, (px - 0.6, 30), (px - 0.6, 66), FINE, MID)
+
+def drywall_column(v, x, w, H, crown_drop=8.0, depth=26.0):
+    """A drywall column or pilaster seen face-on, floor to the crown, `depth` deep off the wall (recorded for the plan and the 3-D render)."""
+    _rect(v, x, 0, x + w, H - crown_drop, OUTLINE)
+
+def counter_stool(v, cx, seat=26.0, w=17.0):
+    """Counter stool, N.I.C., dashed: seat, four legs, foot ring."""
+    _rect(v, cx - w / 2, seat - 2.0, cx + w / 2, seat, FINE, LIGHT, dashes='[2 1.5] 0')
+    for lx in (cx - w / 2 + 1.0, cx + w / 2 - 1.0): _line(v, (lx, 0), (lx, seat - 2.0), FINE, LIGHT, '[2 1.5] 0')
+    _line(v, (cx - w / 2 + 1.0, 9.0), (cx + w / 2 - 1.0, 9.0), FINE, LIGHT, '[2 1.5] 0')
 
 def floating_shelf(v, x, w, y, thick=2.0):
     _rect(v, x, y, x + w, y + thick, OUTLINE, fill=(1, 1, 1)); shadow(v, x, x + w, y)

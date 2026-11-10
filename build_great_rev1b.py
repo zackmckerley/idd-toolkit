@@ -14,7 +14,15 @@ import pymupdf as fitz
 import idd_elevations as E, idd_components as C, idd_kitchen as K, idd_std
 from idd_sheet import Sheet, FR, TB_X, HDR_Y, fix_soft_hyphen, FREG
 from idd_std import INK, MID, LIGHT
-from build_kitchen import tag, wrap, para_block
+from build_kitchen import tag as _tag, wrap, para_block
+
+def tag(v, x, y, s, size=5.0, c=MID, box=False):
+    """Label; box=True masks a white field the full height of the printed text (review 11.09.26: the shared tag's mask was
+    sized to the nominal size, so linework crossed the top of the letters)."""
+    if box:
+        sz = _ish.ps(size); w = FREG.text_length(s, fontsize=size)
+        v.rect(v.X(x) - w / 2 - 2.0, v.Y(y) - sz * 0.95, v.X(x) + w / 2 + 2.0, v.Y(y) + 2.2, 0, fill=WHITE)
+    v.text(v.X(x), v.Y(y), s, size, c, align='c')
 
 OUT_STUDY = '/home/claude/flrwork/261105.HD102.LivingRoomStudy.pdf'
 OUT = '/home/claude/flrwork/261105.HD102.LivingRoomPilot.pdf'
@@ -51,15 +59,20 @@ RW = 188.0                                   # 15'-8" E-W: FOR A-201 floor 1 wal
 RD = 194.0                                   # 16'-2" N-S: FOR REV 1 floor 1 string (vectors 16'-1-1/2")
 GFW = 92.0                                   # the west end under floor 2, 7'-8": FOR 626.2 to 764.2 pt, 1'-5" | 4'-10" | 1'-5"
 NL = GFW + RW                                # 280.0, 23'-4": x626.2 to x1046.2
-H = 274.0                                    # 22'-10" (YL views 1 and 4, 22'-8" on view 2, VERIFY)
+H = 272.0                                    # 22'-8", FOR A-403 section 6 / A-301-302 TOP OF CEILING 2ND FLOOR (coordination 11.09.26)
+BAND = 268.0; BAND_W = 12.0                  # FOR: the 22'-4" perimeter band at the window wall (embedded lights, 5" curtain pocket); width VERIFY
+SLOPE0 = 108.0; SLOPE_RUN = 20.0              # FOR A-411 sec 04: the south end's ceiling 9'-0" at the walls rising to 10'-8" (run INFERRED)
+HALL_C = 154.0 + 114.0                       # FOR A-206 / A-411: floor 2 hall ceiling 9'-6" above floor 2 (22'-4")
+COVE = 4.0                                   # owner 11.09.26: crown held 4" below the ceiling with an LED strip on its top (FOR's L14 cove)
 SOFFIT = 128.0; FF2 = 154.0                  # YL id 04: gallery soffit 10'-8" (the ceilings under it), finished floor 2 12'-10" (VERIFY with FOR)
-BELT0, BELT1 = 120.0, 128.0                  # belt course: the band between the slider head and the clerestory sill, its top the soffit line
+BELT0, BELT1 = 117.0, 124.0                  # belt course: FOR's slider D03 head 9'-9" to clerestory G sill 10'-4" (the HSS beam in the band)
 GUARD = 42.0; GT = FF2 + GUARD               # 3'-6" guard (FBC R312 minimum 36 in.)
 CRG = 12.0; CR10 = 8.0; BASE = 8.5           # great room crown (built up, low end of the 14 ft row), the 10 ft rooms' crown, house base
+CROWN_B = H - COVE - CRG                     # the great room crown's bottom: its top 4" under the ceiling, the LED cove above it
 SL_X0 = 28.0; SL_W = 132.0                   # FOR A-201 slider jambs x806.2 and x1004.5: 2'-4" | 11'-0" | 2'-4", centered
 ARCH = (17.0, 58.0)                          # FOR's kitchen arch in the west end's north wall: 1'-5" pier, 4'-10"
 R2_HALL_N = (48.25, 53.0)                    # floor 2 hall west wall face 698.5, bedroom 3 door leaf 705.7 to 756.7 (2'-10"), from the west end's west wall (626.2)
-SL_HEAD = 120.0; CL_SILL = BELT1; CL_HEAD = 250.0  # YL's window wall: slider to 10'-0", clerestory from the belt to 20'-10" (VERIFY)
+SL_HEAD = 117.0; CL_SILL = BELT1; CL_HEAD = 250.0  # FOR A-600: slider D03 11'-0" x 9'-9", clerestory G 11'-0" x 10'-6", 10'-4" to 20'-10"
 BW = 84.0; BD = 24.0                         # breast 7'-0" x 2'-0" (FOR 6'-0" x 1'-6"): a 75 in. TV with 8-7/8 in. each side, a listed DV unit
 B0 = (RD - BW) / 2; B1 = B0 + BW; CX = RD / 2   # 54.875, 138.875, 96.875 from the north wall face
 BI_D = 14.0; CAB_H = 30.0; TOP_T = 1.25      # built-ins 14 in. deep (FOR: the slider is centered on the wall to their face)
@@ -97,6 +110,16 @@ def poche(v, x0, x1, y0, y1): C._rect(v, x0, y0, x1, y1, C.OUTLINE, INK, fill=PO
 def section(v, x0, x1, y0, y1): C._rect(v, x0, y0, x1, y1, C.OUTLINE, INK, fill=SEC)
 def floor_line(v, x0, x1): v.line((v.X(x0) - 8, v.Y(0)), (v.X(x1) + 8, v.Y(0)), 1.2)
 def ceiling(v, x0, x1, y=H): C._line(v, (x0, y), (x1, y), C.HEAVY)
+
+def crown_cove(v, x0, x1, ceil=H):
+    """CM-02 crown held COVE below the ceiling with a concealed LED strip on its top washing the ceiling (owner 11.09.26, FOR's L14 cove)."""
+    C.crown(v, x0, x1, ceil - COVE, drop=CRG)
+    C._rect(v, x0 + 0.5, ceil - COVE, x1 - 0.5, ceil - COVE + 0.6, C.FINE, C.MID)                     # the LED channel on the crown top
+    C._line(v, (x0, ceil - COVE + 2.6), (x1, ceil - COVE + 2.6), C.FINE, C.LIGHT, '[1.5 1.5] 0')    # the light line, ceiling wash
+
+def band_end(v, x0, x1):
+    """FOR's 22'-4" perimeter band at the window wall, seen in section at the end of a side wall (4" drop, width VERIFY)."""
+    C._rect(v, x0, BAND, x1, H, C.OUTLINE, INK, fill=SEC)
 
 def belt(v, x0, x1):
     """Belt course, 10'-0" to 10'-8": the band between the slider head and the clerestory sill carried around the solid walls and across
@@ -143,8 +166,7 @@ def glazed_unit(v, x0, w, y0, y1, n, operable=False):
     for i in range(n):
         px = x0 + i * pw
         C._rect(v, px, y0 + 0.5, px + pw, y1, C.OUTLINE); C._rect(v, px + 2.5, y0 + 3, px + pw - 2.5, y1 - 2.5, C.MED)
-        C._line(v, (px + 5, y1 - 8), (px + pw * 0.45, y0 + (y1 - y0) * 0.4), C.FINE, C.PALE)
-        C._line(v, (px + 9, y1 - 8), (px + pw * 0.55, y0 + (y1 - y0) * 0.4), C.FINE, C.PALE)
+        C.glazing(v, px + 2.5, y0 + 3, px + pw - 2.5, y1 - 2.5)          # owner 11.09.26: divided lites, every window and glass door in the house
     if operable:   # three panels on three tracks: pulls on the two sliding panels' leading stiles
         for px in (x0 + pw - 3.0, x0 + 2 * pw - 3.0): C._rect(v, px, 38, px + 1.2, 46, C.MED)
 
@@ -217,14 +239,14 @@ def east_wall(v, opt='B', study=False):
     L = RD
     floor_line(v, 0, L)
     if opt == 'C':
-        C.stone_slab(v, B0, B1, 0, H - CRG, seams=(CX,)); C._line(v, (B0, BELT0), (B1, BELT0), C.FINE, C.MID)   # four slabs, book-matched in pairs, seam at 10'-0"
+        C.stone_slab(v, B0, B1, 0, CROWN_B, seams=(CX,)); C._line(v, (B0, BELT0), (B1, BELT0), C.FINE, C.MID)   # four slabs, book-matched in pairs, seam at 10'-0"
         belt(v, 0, B0); belt(v, B1, L); cap(v, 0, B0); cap(v, B1, L)
     else:
         belt(v, 0, L); cap(v, 0, L)
         C.base(v, B0, CX - FB_W / 2 - LEG); C.base(v, CX + FB_W / 2 + LEG, B1)
-    C.crown(v, 0, L, H, drop=CRG); ceiling(v, 0, L)
-    for x in (B0, B1): C._line(v, (x, 0), (x, H - CRG), C.OUTLINE)
-    C._line(v, (B1 - 0.75, 0), (B1 - 0.75, H - CRG), C.FINE, LIGHT)     # shade line on the breast's south return
+    crown_cove(v, 0, L); ceiling(v, 0, L)
+    for x in (B0, B1): C._line(v, (x, 0), (x, CROWN_B), C.OUTLINE)
+    C._line(v, (B1 - 0.75, 0), (B1 - 0.75, CROWN_B), C.FINE, LIGHT)     # shade line on the breast's south return
     flank(v, 0, B0, opt); flank(v, B1, L, opt)
     mantel(v, CX, opt); tv_niche(v, CX)
     if opt in ('A', 'B'): C.art(v, CX, ART_B + ART_H / 2, ART_W, ART_H)
@@ -242,15 +264,62 @@ def east_wall(v, opt='B', study=False):
     tag(v, B0 / 2, 75, 'WP-01', 5.0, MID); tag(v, (B1 + L) / 2, 75, 'WP-01', 5.0, MID)
     tag(v, B0 / 2, 200, 'WP-01', 5.0, MID); tag(v, (B1 + L) / 2, 200, 'WP-01', 5.0, MID)
     tag(v, B0 / 2, BELT0 + 2.4, 'BELT COURSE', 5.0, MID); tag(v, B0 / 2, FF2 + 1.0, 'GALLERY CAP AT FLOOR 2', 5.0, MID)
-    tag(v, L / 2, H - CRG / 2 - 2, 'CM-02 CROWN', 5.0, MID, box=True)
+    tag(v, L / 2, CROWN_B + CRG / 2 - 2, 'CM-02 CROWN', 5.0, MID, box=True)
     y1 = v.Y(0) + 16; y2 = y1 + 27
     dim_h(v, 0, L, y1, E.snap_points([0, B0, CX - FB_W / 2 - LEG, CX - FB_W / 2, CX + FB_W / 2, CX + FB_W / 2 + LEG, B1, L]))
     dim_h(v, 0, L, y2, E.snap_points([0, B0, B1, L]))
     dim_h(v, 0, L, y2 + 27, [0, L], total=' OVERALL, NORTH WALL TO GALLERY LINE')
-    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, FB_B, FB_T, SHELF_T, N_B, TV_B, TV_T, N_T, BELT0, BELT1, FF2, ART_B, ART_B + ART_H, H - CRG, H]))
+    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, FB_B, FB_T, SHELF_T, N_B, TV_B, TV_T, N_T, BELT0, BELT1, FF2, ART_B, ART_B + ART_H, CROWN_B, H]))
     dim_v(v, 0, H, v.X(L) + 74, E.snap_points([0, CAB_H + TOP_T, BELT0, BELT1, FF2, BOX_TOP, H]))
     return ('PLASTER BREAST PT-02, 7\'-0" x 2\'-0", FLOOR TO CEILING. LISTED DIRECT-VENT GAS FIREPLACE, 42" OPENING, FLUSH ST-01 HEARTH. WS-01 SURROUND, 6" SHELF AT 4\'-0". '
             '75" TV FLUSH IN A 4" NICHE, POWER AND DATA IN THE NICHE. BUILT-INS PT-01 WITH WS-01 TOPS, WP-01 PANELING, CM-02 CROWN.')
+
+PICK_PITCH = 18.0; PICK_THICK = 2.0                  # option 7: 2 in. shelves about 18 in. on center, one bay each side
+def east_wall_pick(v):
+    """Owner pick 11.09.26 (ID-235 option 7 with his changes): floor to ceiling open shelves each side, one bay, painted; the closed band
+    from the belt to the gallery cap carries one panel each side (the wainscot break of option 8, ID-236 view C); a brass rail on the belt
+    course with a small rolling ladder that moves along it and lifts off to the other side; the chimney breast one plaster plane from the
+    floor to the crown, nothing crossing it."""
+    import build_great_s2 as S
+    L = RD; CT = S.CASE_TOP
+    floor_line(v, 0, L)
+    C.base(v, B0, CX - FB_W / 2 - LEG); C.base(v, CX + FB_W / 2 + LEG, B1)
+    crown_cove(v, 0, L); ceiling(v, 0, L)
+    for x in (B0, B1): C._line(v, (x, 0), (x, CROWN_B), C.OUTLINE)
+    C._line(v, (B1 - 0.75, 0), (B1 - 0.75, CROWN_B), C.FINE, LIGHT)     # shade line on the breast's south return
+    for i, (a, b) in enumerate(((0, B0), (B1, L))):
+        S.base_cab(v, a, b)
+        S.case(v, a, b, CAB_H + TOP_T, BELT0, 1, PICK_PITCH, PICK_THICK, 0.35, 23 + 7 * i)
+        belt(v, a, b)
+        box(v, a + 4, b - 4, BELT1 + 4, FF2 - 5.5)                     # the wainscot break: one painted panel in the band
+        cap(v, a, b)
+        S.case(v, a, b, FF2, CT, 1, PICK_PITCH, PICK_THICK, 0.35, 28 + 7 * i)
+    mantel(v, CX, 'B'); tv_niche(v, CX)
+    S.ladder(v, rail_y=(BELT0 + BELT1) / 2 - 0.625, shelf_pitch=PICK_PITCH, shelf_thick=PICK_THICK)   # the rail centered on the 9'-9" to 10'-4" belt
+    band_end(v, 0, BAND_W)                                                 # FOR's 22'-4" band at the window wall, cut
+    poche(v, -4, 0, 0, H); poche(v, L, L + 4, 0, SOFFIT); poche(v, L, L + 4, SOFFIT, FF2)
+    guard_end(v, L - POST / 2)
+    tag(v, CX, FB_B + 22, 'GAS FIREPLACE', 5.0, WHITE)
+    tag(v, CX, SHELF_T + 2.5, 'WS-01 MANTEL', 5.0, MID, box=True)
+    tag(v, CX, TV_C - 1, '75 IN. ART-MODE TV IN A 4 IN. NICHE', 5.0, MID, box=True)
+    tag(v, CX, 150, 'PLASTER BREAST, PT-02,', 5.0, MID); tag(v, CX, 142, 'ONE PLANE FLOOR TO CEILING', 5.0, MID)
+    tag(v, B0 * 0.62, 8.5, 'BUILT-IN', 5.0, MID, box=True); tag(v, B1 + (L - B1) * 0.75, 8.5, 'BUILT-IN', 5.0, MID, box=True)
+    tag(v, (B1 + L) / 2, BELT0 + 2.0, 'BELT COURSE, BRASS RAIL', 5.0, MID, box=True)
+    tag(v, B0 / 2, (BELT1 + FF2) / 2 - 1.5, 'PANEL', 5.0, MID); tag(v, (B1 + L) / 2, (BELT1 + FF2) / 2 - 1.5, 'PANEL', 5.0, MID)
+    tag(v, (B1 + L) / 2, S.CASE_TOP + 4.0, 'OPEN SHELVES PT-01', 5.0, MID)
+    tag(v, 38.0, 92.5, 'ROLLING LADDER', 5.0, MID, box=True)
+    tag(v, L / 2, CROWN_B + CRG / 2 - 2, 'CM-02 CROWN, LED COVE ABOVE', 5.0, MID, box=True)
+    C.rev_cloud(v, 0, 0.5, L, H, pad=1.0)                               # rev 1: the wall redrawn as the owner's pick
+    y1 = v.Y(0) + 16; y2 = y1 + 27
+    dim_h(v, 0, L, y1, E.snap_points([0, B0, CX - FB_W / 2 - LEG, CX - FB_W / 2, CX + FB_W / 2, CX + FB_W / 2 + LEG, B1, L]))
+    dim_h(v, 0, L, y2, E.snap_points([0, B0, B1, L]))
+    dim_h(v, 0, L, y2 + 27, [0, L], total=' OVERALL, NORTH WALL TO GALLERY LINE')
+    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, FB_B, FB_T, SHELF_T, N_B, TV_B, TV_T, N_T, BELT0, BELT1, FF2, CROWN_B, H - COVE, H]))
+    dim_v(v, 0, H, v.X(L) + 74, E.snap_points([0, CAB_H + TOP_T, BELT0, BELT1, FF2, CT, H]))
+    return ('PLASTER BREAST PT-02, 7\'-0" x 2\'-0", ONE PLANE FLOOR TO CEILING, NO BELT OR CAP ACROSS IT. LISTED DIRECT-VENT GAS FIREPLACE, 42" OPENING, FLUSH ST-01 HEARTH. '
+            'WS-01 SURROUND, 6" SHELF AT 4\'-0". 75" TV FLUSH IN A 4" NICHE, POWER AND DATA IN THE NICHE. BUILT-INS PT-01: 30" CABINETS, WS-01 TOPS, OPEN SHELVES ONE BAY EACH SIDE, 2" SHELVES ABOUT 18" O.C. '
+            'WITH STEEL FLATS, A PAINTED PANEL IN THE %s TO 12\'-10" BAND, SHELVES TO %s. BRASS RAIL ON THE BELT COURSE, ROLLING LADDER 18" WIDE, MOVES ALONG THE SHELVES AND LIFTS OFF '
+            'TO THE OTHER SIDE. CEILING 22\'-8" (FOR), 22\'-4" BAND AT THE WINDOW WALL. CM-02 CROWN 4" BELOW THE CEILING WITH AN LED COVE ON ITS TOP, SEE 4/ID-502.' % (E.ftin(BELT1), E.ftin(CT)))
 
 # ================================================================== FOR REV 1 PLAN block (11.05.26): FOR A-201 / A-202 REV 1 sheet points, 1.5 pt per inch.
 # Floor 1 and floor 2 register on FOR's sheets (east wall face 1045.8 and north wall face 555.8 on both).
@@ -277,9 +346,9 @@ R2_D18 = (713.3, 765.5)       # door 18 to the master bedroom (A-DOOR jambs), hi
 R2_D22 = (862.6, 911.8)       # door 22 to the linen closet, hinged east, swings north into the hall
 R2_TF = (930.7, 980.2)        # top flight: top riser at floor 2, bottom riser at the northeast landing (4 risers)
 R2_STW = 980.0                # the stairwell's west edge on floor 2 (the hall outline)
-R_RISER = 7.0                 # 22 risers (lower 7, east flight 11, top 4) to floor 2 at 12'-10" (YL, VERIFY)
-LAND_SE = 7 * R_RISER         # 4'-1"
-LAND_NE = 18 * R_RISER        # 10'-6"
+R_RISER = 7.3125              # FOR A-411: 21 risers at 7-5/16" (lower 7, east flight 10, top 4) to floor 2 at 12'-10" (FOR's total is 7/16" short)
+LAND_SE = 7 * R_RISER         # 4'-3-5/16" (FOR LOWER LANDING)
+LAND_NE = 17 * R_RISER        # 10'-4-5/16" (FOR UPPER LANDING 10'-4-11/16" as printed)
 STRUCT = 12.0                 # landing and flight structure under the nosing line (VERIFY)
 GUARD_NOTE = ('STEEL GUARD TO RESIST 200 LB AT THE TOP RAIL AND 50 LB ON 1 SQ FT AT THE INFILL (FBC R301.5), POSTS AND THEIR CONNECTION TO THE GALLERY FRAMING '
               'DESIGNED AND SEALED BY THE ENGINEER, PAINTED PT-01 OR AS SELECTED')
@@ -319,6 +388,9 @@ def dim_v(v, y0i, y1i, x_pt, pts_i, side='r'):
     for (cy, h, lab), c in zip(out, _pack([(cy, h) for cy, h, _ in out])):
         v.line((x_pt + 3.5, cy), (x_pt + 6.0, cy), 0.3); v.line((x_pt + 6.0, cy), (x_pt + 9.0, c), 0.3)
         v.text(x_pt + 16.0, c, lab, 5.5, align='c', rotate=90)
+    if len(pts_i) > 2 and pts_i[-1] - pts_i[0] >= 90:      # review 11.09.26: overall floor-to-ceiling string outside the chain
+        xo = x_pt + 26.0; _ticks_v(v, xo, [v.Y(pts_i[0]), v.Y(pts_i[-1])])
+        v.text(xo - 2.5, (v.Y(pts_i[0]) + v.Y(pts_i[-1])) / 2, E.ftin(pts_i[-1] - pts_i[0]), 5.5, align='c', rotate=90)
 
 def dim_h(v, x0i, x1i, y_pt, pts_i, total=None):
     """Horizontal string: labels that fit above the line, the rest below it on leaders, packed so none touches a tick or another label."""
@@ -385,37 +457,43 @@ def west_wall(v):
     L = q((WS - WN) / FIN)                                   # 16'-1-5/8" on this wall (FOR's vectors)
     def Y(y): return (WS - y) / FIN                          # plan y to view x (south at the left)
     lx = q((WS - 796.68) / FIN)                              # FOR's door 16 leaf 742.68 to 796.68: 2'-9-1/4" south of it, 10'-4-3/8" north
+    global ART_WX; ART_WX = q((lx + 36 + L) / 2)             # the art centered on the open wall north of the door
     n1 = q(L - (R2_DEN[0] - R1_N) / FIN); n0 = n1 - 120.0     # the den opening on floor 2, FOR 10'-0"
     g0 = q(Y(R1_GLASS_S))                                     # the glass corner
     floor_line(v, 0, L)
     with beyond():   # floor 1: the west end's west wall 7'-8-5/8" behind the gallery line, its 10'-8" ceiling and CM-01
-        C.base(v, 0, lx - 5.0); C.base(v, lx + 36 + 5.0, L)
+        C.base(v, 0, L)                                       # owner 11.09.26: door 16 a recessed hidden door, base and crown run across it
         C.crown(v, 0, L, SOFFIT, drop=CR10)
-        C.casing(v, lx, 36.0, 96.0); C.door_leaf(v, lx, 36.0, 96.0, panels=2, swing='L')
+        C.jib_door(v, lx, 36.0, 96.0)
+        C.art(v, ART_WX, 62.0, 60.0, 42.0)                    # owner 11.09.26: one piece of art on this wall
         C.outlet(v, L - 54.0, 18.0)                               # 4'-6" from the north corner: 5'-11" to the arch jamb around the 1'-5" pier (NEC 210.52(A))
         # floor 2: the hall's west wall 3'-8-5/8" behind the gallery line, the den open to the hall between its returns
         C._line(v, (0, FF2), (L, FF2), C.MED)
         u = up(v)
-        for x in (n0, n1): C._line(v, (x, FF2), (x, H), C.MED)
-        C.crown(v, n1, L, H, drop=CRG)
+        for x in (n0, n1): C._line(v, (x, FF2), (x, HALL_C), C.MED)
+        C._line(v, (0, HALL_C), (L, HALL_C), C.MED)                        # the floor 2 hall ceiling beyond, 9'-6" (FOR)
+        C.crown(v, n1, L, HALL_C, drop=CR10)
         C._line(v, (n0 + 18.0, FF2), (n1 - 18.0, FF2), C.FINE)                  # the den floor beyond
     ceiling(v, 0, L)
+    band_end(v, L - BAND_W, L)                                               # FOR's 22'-4" band at the window wall, cut
     fascia_flat(v, 0, L)
     bay = metal_guard(v, g0, L)                                              # the corner post at g0 carries the south run, end on
     poche(v, -5, 0, 0, SOFFIT); poche(v, -4, 0, SOFFIT, FF2)                 # the laundry wall and the south gallery fascia, cut (4", as view 1)
     poche(v, L, L + 5, 0, H)                                                 # the north wall, cut
-    tag(v, lx + 18, 106, 'GUEST BEDROOM', 5.0, GREY); tag(v, 150, 60, 'WEST END OF THE LIVING ROOM BEYOND, PT-02, CM-01', 5.0, GREY, box=True)
+    tag(v, lx + 18, 106, 'HIDDEN DOOR 16', 5.0, GREY); tag(v, ART_WX, 104, 'WEST END OF THE LIVING ROOM BEYOND, PT-02, CM-01', 5.0, GREY, box=True)
+    C.rev_cloud(v, lx - 4, 1.5, L - 6, 112, pad=1.0)                                        # rev 1: hidden door, art
     tag(v, (n0 + n1) / 2, FF2 + 70, 'DEN BEYOND, OPEN TO THE HALL', 5.0, GREY, box=True)
     tag(v, (n1 + L) / 2, FF2 + 100, 'HALL WALL', 5.0, GREY)
     tag(v, (n0 + n1) / 2, GT + 5, 'STEEL PICKET GUARD 3\'-6"', 5.0, MID, box=True)
     tag(v, L / 2, SOFFIT + 5, 'GALLERY FASCIA', 5.0, MID)
     y1 = v.Y(0) + 16; y2 = y1 + 27
-    dim_h(v, 0, L, y1, E.snap_points([0, lx, lx + 36, L]))
+    dim_h(v, 0, L, y1, E.snap_points([0, lx, lx + 36, ART_WX, L]))
     dim_h(v, 0, L, y2, E.snap_points([0, n0, n1, L]))
     dim_h(v, 0, L, y2 + 27, [0, L], total=' OVERALL, LAUNDRY WALL TO NORTH WALL (FOR)')
-    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, 96, SOFFIT, FF2, GT, H]))
+    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, 96, SOFFIT, FF2, GT, HALL_C, H]))
     return ('GALLERY FASCIA PT-01. PAINTED STEEL GUARD 3\'-6" ABOVE FLOOR 2: 3/4" PICKETS, 3-3/4" CLEAR (4" SPHERE MAX), 2" POSTS AT %s O.C. MAX. '
-            'GUARD TO RESIST 200 LB AT THE TOP RAIL AND 50 LB AT THE INFILL, POSTS AND CONNECTION BY THE ENGINEER. BEYOND: DOOR 16, THE DEN OPEN TO THE HALL.' % E.ftin(q(bay)))
+            'GUARD TO RESIST 200 LB AT THE TOP RAIL AND 50 LB AT THE INFILL, POSTS AND CONNECTION BY THE ENGINEER. BEYOND: DOOR 16 A RECESSED HIDDEN DOOR (FLUSH LEAF, CONCEALED HINGES, TOUCH LATCH, NO CASING, BASE AND CROWN ACROSS), '
+            'ONE ARTWORK 5\'-0" x 3\'-6" CENTERED ON THE OPEN WALL AT 5\'-2", THE DEN OPEN TO THE HALL. CEILINGS (FOR): LIVING 22\'-8" WITH A 22\'-4" BAND AT THE WINDOW WALL, WEST END 10\'-8", FLOOR 2 HALL 9\'-6".' % E.ftin(q(bay)))
 
 def north_wall(v):
     L = NL
@@ -437,34 +515,40 @@ def north_wall(v):
         hd0 = R2_HALL_N[1]
         C.base(u, HALL_W, hd0 - 5); C.base(u, hd0 + 34 + 5, GX)
         C.casing(u, hd0, 34.0, 96.0); C.door_leaf(u, hd0, 34.0, 96.0, panels=2, swing='R')
-        C.crown(v, HALL_W, GX, H, drop=CRG)
-        tag(v, hd0 + 17, FF2 + 104, 'BEDROOM 3 DOOR', 5.0, GREY)
+        C.crown(v, HALL_W, GX, HALL_C, drop=CR10)                        # the floor 2 hall, 9'-6" (FOR)
+        tag(v, hd0 + 17, FF2 + 30, 'BEDROOM 3 DOOR', 5.0, GREY, box=True)
     guard_end(v, GX + POST / 2)                                         # the west steel guard, end on at the north wall
     # the double-height window wall: FOR's three-panel slider, the belt as the band between, FOR's three-lite clerestory over it
     C.base(v, S1 + 1, BIF)
     glazed_unit(v, S0, SL_W, 0, SL_HEAD, 3, operable=True)
     glazed_unit(v, S0, SL_W, CL_SILL, CL_HEAD, 3)
-    belt(v, GX, L); cap(v, GX, S0 - 1); cap(v, S1 + 1, L)
-    C.crown(v, GX, L, H, drop=CRG)
-    ceiling(v, HALL_W, L)
-    C._rect(v, S0 - 14 - 1, H - 0.5, S1 + 14 + 1, H + 3.5, C.FINE, MID, dashes='[2 1.5] 0')   # drapery pocket in the ceiling, 14 in. off the wall
+    C.rev_cloud(v, S0 + 1, 1.5, S1 - 1, CL_HEAD, pad=1.5)                                    # rev 1: divided lites
+    C.rev_cloud(v, GX + 12, BELT0 - 3, S0 - 4, FF2 + 3, pad=1.0, tag_at='tl')                 # rev 1: belt and cap removed either side
+    C.rev_cloud(v, S1 + 4, BELT0 - 3, BIF - 2, FF2 + 3, pad=1.0, tag_at='tr')                                  # rev 1: divided lites, belt and cap removed either side
+    belt(v, S0 - 1, S1 + 1)                    # owner 11.09.26: the band only between the slider and the clerestory, no belt or cap on the wall either side
+    PK0, PK1 = S0 - 15, S1 + 15                 # FOR's 5" drapery pocket, 14" past each jamb
+    for a_, b_ in ((GX, PK0), (PK1, L)):        # CM-02 held 4" under the band with the LED cove (as ID-231), stopping at the pocket ends so the drape drops clear
+        crown_cove(v, a_, b_, ceil=BAND)
+    for x_ in (PK0, PK1): C._line(v, (x_, BAND - COVE - CRG), (x_, BAND - COVE), C.MED)   # crown returns into the band at the pocket
+    ceiling(v, HALL_W, GX, y=HALL_C); C._line(v, (GX, HALL_C), (GX, H), C.HEAVY); ceiling(v, GX, L)
+    C._rect(v, GX, BAND, L, H, C.MED, fill=WHITE)                           # FOR's 22'-4" band at the window wall, its face seen
+    C._rect(v, S0 - 14 - 1, BAND - 0.5, S1 + 14 + 1, H - 0.25, C.FINE, MID, dashes='[2 1.5] 0')   # 5" drapery pocket up into the band (FOR C-1)
     section(v, BIF, L, 0, CAB_H + TOP_T); C._line(v, (BIF, CAB_H), (L, CAB_H), C.FINE, INK)
-    C._line(v, (L - 1.0, CAB_H + TOP_T), (L - 1.0, BELT0), C.FINE, INK); C._line(v, (L - 1.0, FF2), (L - 1.0, H - CRG), C.FINE, INK)
+    C._line(v, (L - 1.0, CAB_H + TOP_T), (L - 1.0, BELT0), C.FINE, INK); C._line(v, (L - 1.0, FF2), (L - 1.0, CROWN_B), C.FINE, INK)
     poche(v, -5, 0, 0, SOFFIT); poche(v, L, L + 5, 0, H)
     tag(v, ax0 + aw / 2, 64, 'ARCHED OPENING', 5.0, MID)
     tag(v, (S0 + S1) / 2, 24, 'FOR SLIDER, 3 PANELS', 5.0, MID, box=True)
     tag(v, (S0 + S1) / 2, CL_SILL + 22, 'FOR CLERESTORY, 3 LITES', 5.0, MID, box=True)
-    tag(v, (S0 + S1) / 2, H + 6, 'DRAPERY POCKET', 5.0, MID)
-    tag(v, (BIF + S1) / 2 + 2, BELT0 + 2.4, 'BELT', 5.0, MID); tag(v, (BIF + S1) / 2 + 2, FF2 + 1.0, 'CAP', 5.0, MID)
+    tag(v, (S0 + S1) / 2, H + 6, '22\'-4" BAND, 5" DRAPERY POCKET (FOR)', 5.0, MID)
     tag(v, GX / 2, SOFFIT - CR10 / 2 - 2, 'CM-01', 5.0, MID, box=True)
     tag(v, (GX + S0) / 2, 60, 'PT-02', 5.0, MID)
     y1 = v.Y(0) + 16; y2 = y1 + 27
-    C._line(v, (GX + POST, GT - 4.0), (GX + 6.0, GT + 6.0), C.FINE, MID); v.text(v.X(GX + 6.5), v.Y(GT + 10.0), 'END POST', 5.0, MID, align='l')   # the end post, tagged in the clear bay beside it
+    C._line(v, (GX + POST, GT - 4.0), (GX + 6.0, GT + 6.0), C.FINE, MID); v.rect(v.X(GX + 5.5), v.Y(GT + 10.0) - _ish.ps(5.0) * 0.95, v.X(GX + 5.5) + FREG.text_length('END POST', fontsize=5.0) + 3.0, v.Y(GT + 10.0) + 2.2, 0, fill=WHITE); v.text(v.X(GX + 6.5), v.Y(GT + 10.0), 'END POST', 5.0, MID, align='l')   # the end post, tagged in the clear bay beside it
     dim_h(v, 0, L, y1, E.snap_points([0, ax0, ax0 + aw, GX, S0, S1, BIF, L]))
     dim_h(v, 0, L, y2, E.snap_points([0, GX, L]))
-    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, SL_HEAD, CL_SILL, FF2, CL_HEAD, H - CRG, H]))
-    return ('FOR\'S 3-PANEL SLIDER %s WIDE, FIXED CLERESTORY ABOVE IN 3 LITES, DRYWALL RETURNS, NO CASING. BELT COURSE 10\'-0" TO 10\'-8". '
-            'DRAPERY POCKET IN THE CEILING WITH POWER. ARCHED OPENING TO THE KITCHEN AT THE LEFT.' % E.ftin(SL_W))
+    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, SL_HEAD, CL_SILL, FF2, CL_HEAD, BAND - COVE - CRG, BAND - COVE, BAND, H]))
+    return ('FOR\'S 3-PANEL SLIDER D03 %s x 9\'-9", FIXED CLERESTORY G ABOVE, 11\'-0" x 10\'-6" FROM 10\'-4" TO 20\'-10", DIVIDED LITES, DRYWALL RETURNS, NO CASING. 9\'-9" TO 10\'-4" BAND (FOR\'S HSS BEAM) BETWEEN THE SLIDER AND THE CLERESTORY ONLY, NO BELT OR CAP ON THE WALL EITHER SIDE. '
+            'CEILING 22\'-8" WITH FOR\'S 22\'-4" BAND AT THIS WALL: 5" DRAPERY POCKET IN THE BAND WITH POWER. CM-02 CROWN 4" BELOW THE BAND WITH AN LED COVE ON ITS TOP, SEE 4/ID-502, STOPPING AT THE POCKET ENDS SO THE DRAPERY DROPS CLEAR. FLOOR 2 HALL 9\'-6". ARCHED OPENING TO THE KITCHEN AT THE LEFT.' % E.ftin(SL_W))
 
 def south_wall(v):
     L = NL                                                    # 23'-3-1/2", the east wall face to the west end's west wall
@@ -478,18 +562,22 @@ def south_wall(v):
     E0, E1 = X(R1_ENT[1]), X(R1_ENT[0])                       # the cased opening to the entry beyond
     D22 = (X(R2_D22[1]), X(R2_D22[0])); D18 = (X(R2_D18[1]), X(R2_D18[0]))
     l22 = q((D22[0] + D22[1]) / 2 - 17.0); l18 = q((D18[0] + D18[1]) / 2 - 18.0)   # FOR leaves: door 22 2'-10", door 18 3'-0"
-    def nose_tf(x): return LAND_NE + 7.0 + (x - T0) * R_RISER / 11.0         # the top flight's nosing line
+    def nose_tf(x): return LAND_NE + R_RISER + (x - T0) * R_RISER / 11.0         # the top flight's nosing line
     def nose_lf(x): return R_RISER + (LF1 - x) * (LAND_SE - R_RISER) / (LF1 - LF0)   # the lower flight's nosing line
     FUR = q(nose_tf(PX) - STRUCT)                             # the flight's underside at the closet wall, 10'-4-3/8"
-    FUR_X = q(T0 + (SOFFIT + STRUCT - LAND_NE - 7.0) * 11.0 / R_RISER)          # where the underside meets the 10'-8" head
+    FUR_X = q(T0 + (SOFFIT + STRUCT - LAND_NE - R_RISER) * 11.0 / R_RISER)          # where the underside meets the 10'-8" head
     floor_line(v, 0, L)
     # floor 1 at the gallery line: the built-in end cut, closet 27's north wall, the open south end, the laundry wall under the west end
     C.base(v, BI_D, PX); C.outlet(v, (BI_D + PX) / 2, 18.0)
     C._line(v, (PX, 0), (PX, FUR), C.OUTLINE); C._line(v, (GX, 0), (GX, SOFFIT), C.OUTLINE)
     C._rect(v, PX, FUR, FUR_X, SOFFIT, C.OUTLINE, fill=WHITE)                 # the top flight's underside, furred down past the closet wall
     C.base(v, GX, L); C.crown(v, GX, L, SOFFIT, drop=CR10); C.outlet(v, L - 36.0, 18.0)   # 3'-0" from the west corner: 5'-9-1/4" to door 16 around it
-    with beyond():   # the south end beyond: the lower flight's half wall, the entry wall with its cased opening, CM-01 at 10'-8"
-        C.crown(v, PX, GX, SOFFIT, drop=CR10)
+    C.art(v, (GX + L) / 2, 60.0, 54.0, 40.0)                                               # owner 11.09.26: artwork on this wall
+    C.rev_cloud(v, GX + 4, 34, L - 4, 86, pad=3.0)
+    with beyond():   # the south end beyond: FOR's sloped ceiling (A-411 sec 04: 9'-0" at the walls up to a 10'-8" flat center), no crown
+        C._line(v, (K1, SLOPE0), (GX, SLOPE0), C.MED)                         # the entry wall's top, 9'-0"
+        C._line(v, (GX, SLOPE0), (GX - SLOPE_RUN, SOFFIT), C.FINE)          # the hip at the southwest corner, rising to the flat center
+        C._line(v, (K1, SLOPE0), (K1 + SLOPE_RUN, SOFFIT), C.FINE)           # and at the half wall end
         kt0, kt1 = nose_lf(K0) + 42.0, nose_lf(K1) + 42.0
         C._poly(v, [(K0, 0), (K0, kt0), (K1, kt1), (K1, 0)], C.MED, fill=WHITE)
         C._poly(v, [(K0, kt0), (K0, kt0 + 1.5), (K1, kt1 + 1.5), (K1, kt1)], C.MED, fill=WHITE)   # cap
@@ -500,8 +588,10 @@ def south_wall(v):
         C._line(v, (xm_, nose_lf(xm_) + 17.0), (xm_, nose_lf(xm_) + 35.5), C.FINE, GREY)
         tag(v, xm_, nose_lf(xm_) + 13.5, 'HANDRAIL (HIDDEN)', 5.0, GREY)
         C.base(v, K1, E0 - 5.0); C.base(v, E1 + 5.0, GX)
-        C.casing(v, E0, E1 - E0, 96.0)
-        tag(v, (E0 + E1) / 2, 50, 'ENTRY BEYOND', 5.0, GREY)
+        ew = E1 - E0; er = ew * 0.62                          # owner 11.09.26: arched, the same arch as the kitchen opening (top at 8'-4-3/4")
+        arched_cased_opening(v, E0, ew, 100.75 - er + math.sqrt(er ** 2 - (ew / 2) ** 2), er)
+        tag(v, (E0 + E1) / 2, 50, 'ARCHED OPENING, ENTRY BEYOND', 5.0, GREY)
+        C.rev_cloud(v, E0 - 6, 1.5, E1 + 6, 104, pad=1.0)
         tag(v, (K0 + K1) / 2, 24, 'STAIR UP BEHIND THE HALF WALL', 5.0, GREY)
         # floor 2 beyond the glass: the hall's south wall with the linen closet door 22 and the master bedroom door 18, the stairwell over the landing
         C._line(v, (T1, FF2), (GX, FF2), C.MED)
@@ -509,7 +599,7 @@ def south_wall(v):
         C.casing(u, l22, 34.0, 96.0); C.door_leaf(u, l22, 34.0, 96.0, panels=2, swing=None, pull='R')
         C.casing(u, l18, 36.0, 96.0); C.door_leaf(u, l18, 36.0, 96.0, panels=2, swing=None, pull='L')
         C._line(v, (X(R2_STW), GT + 0.75), (X(R2_STW), H), C.MED)              # the stairwell's west edge, above the guard
-        C.crown(v, X(R2_STW), HALL_W, H, drop=CRG)
+        C.crown(v, X(R2_STW), HALL_W, HALL_C, drop=CR10)                    # the floor 2 hall's south wall, 9'-6" (FOR)
         tag(v, l22 + 17.0, FF2 + 102, 'LINEN CLOSET', 5.0, GREY); tag(v, l18 + 18.0, FF2 + 102, 'MASTER BEDROOM', 5.0, GREY)
         tag(v, T0 / 2, FF2 + 70, 'STAIR DN', 5.0, GREY)
     poche(v, GX, L, SOFFIT, FF2)                                              # the floor 2 slab over the west end, cut
@@ -525,20 +615,22 @@ def south_wall(v):
     hid(v, (T0, LAND_NE - STRUCT), (T0, nose_tf(T0) - STRUCT))
     hid(v, (FUR_X, SOFFIT), (T1, nose_tf(T1) - STRUCT))
     metal_guard(v, 0, GX)
-    ceiling(v, 0, HALL_W)
-    section(v, 0, BI_D, 0, CAB_H + TOP_T); C._line(v, (1.0, CAB_H + TOP_T), (1.0, BELT0), C.FINE, INK); C._line(v, (1.0, FF2), (1.0, H - CRG), C.FINE, INK)
+    ceiling(v, 0, GX); C._line(v, (GX, H), (GX, HALL_C), C.HEAVY); ceiling(v, GX, HALL_W, y=HALL_C)   # the void at 22'-8", the hall over the west end at 9'-6"
+    section(v, 0, BI_D, 0, CAB_H + TOP_T); C._line(v, (1.0, CAB_H + TOP_T), (1.0, BELT0), C.FINE, INK); C._line(v, (1.0, FF2), (1.0, CROWN_B), C.FINE, INK)
     poche(v, -5, 0, 0, H); poche(v, L, L + 5, 0, SOFFIT)
-    tag(v, (PX + GX) / 2 + 30, SOFFIT - 6, 'OPEN TO THE SOUTH END OF THE LIVING ROOM', 5.0, MID, box=True)
+    tag(v, (E0 + GX) / 2 - 6.0, SOFFIT - 9, 'OPEN TO THE SOUTH END', 5.0, MID, box=True)   # kept between the slope lines (review 11.09.26)
+    tag(v, (E0 + GX) / 2 - 6.0, SOFFIT - 17, 'SLOPED CEILING 9\'-0" TO 10\'-8" (FOR)', 5.0, GREY, box=True)
     tag(v, PX / 2 + 8, 70, 'CLOSET 27 WALL', 5.0, MID)
-    tag(v, (GX + L) / 2, 60, 'PT-02', 5.0, MID); tag(v, (GX + L) / 2, SOFFIT - CR10 / 2 - 2, 'CM-01', 5.0, MID, box=True)
+    tag(v, (GX + L) / 2, 100, 'PT-02', 5.0, MID); tag(v, (GX + L) / 2, SOFFIT - CR10 / 2 - 2, 'CM-01', 5.0, MID, box=True)
     tag(v, (GX + l22 + 40.0) / 2, GT + 5, 'STEEL PICKET GUARD 3\'-6", LEVEL', 5.0, MID, box=True)
     tag(v, GX / 2 + 40, SOFFIT + 5, 'GALLERY FASCIA, CARRIED ACROSS THE STAIR', 5.0, MID)
     y1 = v.Y(0) + 16; y2 = y1 + 27
     dim_h(v, 0, L, y1, E.snap_points([0, BI_D, PX, GX, L]))
     dim_h(v, 0, L, y2, E.snap_points([0, T0, T1, GX, L]))
-    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, 96, SOFFIT, FF2, GT, H]))
-    return ('CLOSET 27 WALL, THEN OPEN TO THE SOUTH END UNDER THE GALLERY BEAM (HEAD 10\'-8", DRYWALL RETURNS). FASCIA CARRIED ACROSS THE STAIR TOP, STEEL PICKET GUARD ON IT, LEVEL AT 3\'-6". '
-            'HANDRAILS 1-1/2" ROUND, 3\'-0" ABOVE THE NOSINGS, EVERY FLIGHT. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s.' % E.ftin(FUR))
+    dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, 96, SOFFIT, FF2, GT, HALL_C, H]))
+    return ('CLOSET 27 WALL, THEN OPEN TO THE SOUTH END UNDER THE GALLERY BEAM (HEAD 10\'-8", DRYWALL RETURNS). ARCHED CASED OPENING TO THE ENTRY, AS THE KITCHEN ARCH. ART ON THE WEST END WALL. FASCIA CARRIED ACROSS THE STAIR TOP, STEEL PICKET GUARD ON IT, LEVEL AT 3\'-6". '
+            'HANDRAILS 1-1/2" ROUND, 3\'-0" ABOVE THE NOSINGS, EVERY FLIGHT. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s. STAIR PER FOR A-411: 21 RISERS AT 7-5/16". '
+            'SOUTH END CEILING SLOPES FROM 9\'-0" AT THE WALLS TO 10\'-8" (FOR A-411), NO CROWN; THE ARCH CASING STOPS 2-1/4" UNDER THE 9\'-0" LINE.' % E.ftin(FUR))
 
 OFF5 = B0 - 6.0
 
@@ -550,9 +642,12 @@ def stack_elev(v):
     for x in (B0, B1): C._line(sv, (x, 0), (x, BELT1), C.OUTLINE)
     with beyond():   # the built-ins each side, 4 in. behind the breast face
         for a, b in ((OFF5, B0), (B1, B1 + 6)):
-            C._rect(sv, a, 0, b, CAB_H + TOP_T, C.MED); C._rect(sv, a, CAB_H + TOP_T + 4, b, BELT0 - 4, C.FINE)
+            C._rect(sv, a, 0, b, CAB_H + TOP_T, C.MED)
+            n = max(1, int(round((BELT0 - CAB_H - TOP_T) / PICK_PITCH)))
+            for j in range(1, n): yy = CAB_H + TOP_T + j * (BELT0 - CAB_H - TOP_T) / n; C._rect(sv, a, yy, b, yy + PICK_THICK, C.FINE)   # the open shelves (owner pick)
     mantel(sv, CX, 'B'); tv_niche(sv, CX)
-    belt(sv, OFF5, B1 + 6)
+    belt(sv, OFF5, B0); belt(sv, B1, B1 + 6)                            # owner 11.09.26: the belt stops at the breast, the breast is one plane
+    C.rev_cloud(sv, B0 + 2, BELT0 - 4, B1 - 2, BELT1 - 1.5, pad=1.0)
     C._rect(sv, CX - 4, N_B + 6, CX + 4, N_B + 14, C.FINE, MID, dashes='[2 1.5] 0'); tag(sv, CX, N_B + 16, 'POWER, DATA, CONDUIT BEHIND', 5.0, MID)
     C._rect(sv, CX - FB_W / 2 - HEARTH_S, -0.01, CX + FB_W / 2 + HEARTH_S, 0.01, C.HEAVY)
     tag(sv, CX, FB_B + 22, 'GAS FIREPLACE', 5.0, WHITE)
@@ -585,7 +680,7 @@ def stack_section(v):
     C._rect(v, RF + 0.5, TV_B, RF + 0.5 + TV_D, TV_T, C.OUTLINE, fill=(0.5, 0.5, 0.5))   # the TV, face 1/2 in. behind the breast face
     C._rect(v, RF + 2.4, TV_B + 10, RF + NICHE_D, TV_B + 20, C.FINE)
     C._line(v, (RF + 3.0, N_B), (RF + 3.0, 44.0), C.FINE, MID, '[2 1.5] 0'); v.text(v.X(1), v.Y(62), '2 IN. CONDUIT', 5.0, MID); C._line(v, (17.0, 61.0), (RF + 3.0, 50.0), C.FINE, MID); v.text(v.X(1), v.Y(57.5), 'DOWN THE CHASE', 5.0, MID); v.text(v.X(1), v.Y(53), 'BESIDE THE UNIT', 5.0, MID)
-    C._rect(v, RF - 1.5, BELT0, RF, BELT1, C.OUTLINE, fill=SEC)       # the belt course on the breast face
+    C.rev_cloud(v, RF - 5, BELT0 - 5, RF + 5, BELT1 - 1.5, pad=1.0)        # rev 1: no belt course on the breast face (owner 11.09.26)
     C._rect(v, RF - HEARTH_D, -1.5, RF, 0, C.OUTLINE, fill=SEC); tag(v, RF - HEARTH_D / 2, 2.5, 'ST-01 HEARTH', 5.0, MID)
     y0s = TV_C - (TV_C - EYE) * RF / SEAT                              # the sight line's last 2'-6", from the eye
     y1 = v.Y(0) + 24; y2 = y1 + 27
@@ -701,18 +796,24 @@ def key_plans(sh):
     # the gallery line, the volume and the parts of the room under floor 2
     line(0, 0, 0, RD, 0.5, MID, '[4 2] 0'); line(0, RD, RW, RD, 0.5, MID, '[4 2] 0')
     text(RW / 2 - 6, RD / 2 - 22, 'LIVING ROOM', 9.0, INK, bg=True)          # below marker 3 (r=24), on a white ground over FOR's X
-    text(RW / 2 - 6, RD / 2 - 13, 'OPEN TO ABOVE, 22\'-10"', 5.5, MID, bg=True)
+    text(RW / 2 - 6, RD / 2 - 13, 'OPEN TO ABOVE, 22\'-8"', 5.5, MID, bg=True)
     # the west end is in the section (views 3 and 4 run 23'-4" across it); the south end, the stair and the baths are not
     ftext(696, 700, 'WEST END', 6.0, MID); ftext(696, 709, 'FLOOR 2 ABOVE', 5.5, MID)
     text(RW / 2 + 30, RD - 6, 'OPEN TO THE SOUTH END', 5.5, MID, bg=True)
-    # FOR's door 16 (3'-0", hinged at the south jamb, swings west into the guest bedroom): leaf and swing
+    # FOR's door 16 (3'-0", hinged at the south jamb, swings west into the guest bedroom): leaf and swing.
+    # Owner 11.09.26: a recessed hidden jib door, so FOR's jamb stops come out and the wall runs flush to the leaf.
     hx, hy, r_ = 619.2, 796.7, 54.0
     sh.line(F(hx, hy), F(hx - r_, hy), 0.7, INK)
     pts = [F(hx - r_ * math.sin(math.radians(a)), hy - r_ * math.cos(math.radians(a))) for a in range(0, 91, 5)]
     for a_, b_ in zip(pts, pts[1:]): sh.line(a_, b_, 0.3, INK)
     # FOR's head line over the arched opening to the kitchen in the west end's north wall
     for yh in (540.4, 555.6): sh.line(F(651.7, yh), F(738.7, yh), 0.4, INK, '[3 2] 0')
-    ftext(604, 770, 'DOOR 16', 5.0, MID, align='r')
+    ftext(604, 764, 'HIDDEN JIB', 5.0, INK, align='r'); ftext(604, 771, 'DOOR 16,', 5.0, INK, align='r'); ftext(604, 778, 'SEE ID-231', 5.0, INK, align='r')
+    for _a, _b in ((739.0, 744.0), (795.4, 801.8)):                     # FOR's stop and jamb blocks, inside the opening only
+        _p0, _p1 = F(618.85, _a), F(626.8, _b)
+        sh.p.draw_rect(fitz.Rect(min(_p0[0], _p1[0]), min(_p0[1], _p1[1]), max(_p0[0], _p1[0]), max(_p0[1], _p1[1])), color=None, fill=WHITE, width=0)
+    _c0, _c1 = F(560.0, 735.0), F(632.0, 805.0)
+    _ish.rev_cloud_pt(sh.p, fitz.Rect(min(_c0[0], _c1[0]), min(_c0[1], _c1[1]), max(_c0[0], _c1[0]), max(_c0[1], _c1[1])), '1', tag_at='tl')   # owner 11.09.26: hidden jib door 16
     # dimensions
     def dim(x0, y0, x1, y1, label, side=1, at=0.5):
         a, b = D(x0, y0), D(x1, y1); sh.line(a, b, 0.4, INK)
@@ -843,18 +944,22 @@ def build():
     t1, t2 = key_plans(sh)
     cw_ = (TB_X - 14 - t2.x0 - 20) / 2
     cols = [(t2.x0, t2.y1 + 118, cw_ + 60), (t2.x0 + cw_ + 80, t2.y1 + 118, cw_ - 60)]          # under floor 2's scale bar, 30 pt clear
-    FUR = q(LAND_NE + 7.0 + 5.0 * R_RISER / 11.0 - STRUCT); FUR_X = q(44.0 + (SOFFIT + STRUCT - LAND_NE - 7.0) * 11.0 / R_RISER)   # as on ID-754
+    FUR = q(LAND_NE + R_RISER + 5.0 * R_RISER / 11.0 - STRUCT); FUR_X = q(44.0 + (SOFFIT + STRUCT - LAND_NE - R_RISER) * 11.0 / R_RISER)   # as on ID-754
     paras = [
         [(True, 'CHANGES FROM FOR\'S PLAN'),
-         '1. FIREPLACE BREAST 7\'-0" x 2\'-0", FLOOR TO CEILING, CENTERED.',
+         '1. FIREPLACE BREAST 7\'-0" x 2\'-0", FLOOR TO CEILING, CENTERED, ONE PLANE (OWNER PICK, OPTION 7).',
          '2. FLUSH ST-01 HEARTH 5\'-6" x 1\'-8" IN THE FLOOR.',
          '3. GALLERY GUARD PAINTED STEEL PICKETS, 3\'-6" ABOVE FLOOR 2.',
          '4. FASCIA AND GUARD CARRIED LEVEL ACROSS THE STAIR TOP.',
          '5. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s FOR %s WEST OF CLOSET 27.' % (E.ftin(FUR), E.ftin(FUR_X - 49.0)),
-         '6. CEILING OVER THE SOUTHEAST LANDING 10\'-10" MIN. (6\'-8" HEADROOM).',
+         '6. CEILING OVER THE SOUTHEAST LANDING %s MIN. (6\'-8" HEADROOM).' % E.ftin(q(LAND_SE + 80.0)),
          '7. 5" WALL AT THE LOWER FLIGHT A HALF WALL, CAP 3\'-6" ABOVE THE NOSINGS.'],
         [(True, 'LEGEND'),
-         'BI  BUILT-IN, 14" DEEP, 30" CLOSED BASE CABINETS WITH WS-01 TOPS, EACH SIDE OF THE FIREPLACE BREAST.']]
+         'BI  BUILT-IN, 14" DEEP, 30" CLOSED BASE CABINETS WITH WS-01 TOPS, OPEN SHELVES TO %s, EACH SIDE OF THE FIREPLACE BREAST.' % E.ftin(CL_HEAD), '',
+         (True, 'COORDINATED WITH FOR REV 1 (11.09.26)'),
+         'CEILINGS: LIVING 22\'-8" WITH A 22\'-4" BAND AT THE WINDOW WALL; WEST END 10\'-8"; SOUTH END SLOPED 9\'-0" TO 10\'-8"; FLOOR 2 HALL 9\'-6".',
+         'SLIDER D03 11\'-0" x 9\'-9", CLERESTORY G 10\'-4" TO 20\'-10". STAIR 21 RISERS AT 7-5/16".',
+         'CM-02 CROWN HELD 4" BELOW THE CEILING, LED COVE ON ITS TOP (FOR L14), SEE 4/ID-502.']]
     for (cx, cy, cw), pp in zip(cols, paras):
         yend = para_block(sh, cx, cy, pp, cw, lh=NOTE_LH)
         assert yend < FR.y1 - 8, ('key plan notes run off the sheet', yend)
@@ -866,7 +971,7 @@ def build():
         sh = Sheet(doc); sh.frame('LIVING ROOM ELEVATIONS', 'SCALE: %s" TO 1\'-0"' % sc, titles, no, revisions=rev, legend_rule=False)
         draw_views(sh, cells, views, scale=sc, side=side, inset=inset)
     sheet_views('ID-752', ['INTERIOR ELEVATIONS', 'LIVING ROOM'], E.layout_cells(FRAME, 2, 1),
-                [(1, 'EAST ELEVATION - FIREPLACE WALL', RD, H, lambda v: east_wall(v, 'B')), (2, 'WEST ELEVATION - THE GALLERY', RD, H, west_wall)])
+                [(1, 'EAST ELEVATION - FIREPLACE WALL', RD, H, east_wall_pick), (2, 'WEST ELEVATION - THE GALLERY', RD, H, west_wall)])
     # ---- ID-753 north, ID-754 south: one tall view each, notes in a column at the right
     sheet_views('ID-753', ['INTERIOR ELEVATIONS', 'LIVING ROOM'], [FRAME], [(3, 'NORTH ELEVATION - THE WINDOW WALL', NL, H, north_wall)], side=520.0,
                 inset=lambda sh_, x, y, w: wall_inset(sh_, x, y, w, 'N'))

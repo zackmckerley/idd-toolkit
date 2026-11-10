@@ -12,8 +12,15 @@ from idd_std import INK, MID, LIGHT, TRIM
 import base_rev1 as BR
 
 OUT = '/home/claude/flrwork/261105.HD102.MasterBedroomPilot.pdf'
-H = 120.0; HEAD = 96.0
-CS = TRIM['casing']; BASE = TRIM['base']; CAP = TRIM['dado']; M = TRIM['margin']; OUT_CL = 18.0; SW = 48.0; SILL = 18.0   # outlets vertical in the dado boxes; tall windows (Zack: nearly floor to ceiling), stool 1'-6", VERIFY with FOR   # trim block, 10 ft ceiling
+H = 118.0; HEAD = 96.0
+# Coordination with FOR Rev 1 (11.09.26): FOR's ceilings. Main room 9'-10" (A-401 sec 2; no CLG tag on A-206) inside an L-shaped
+# LED cove (L12); the window wall is a 9'-6" band with the 5" curtain pocket; the nook (FOR's vestibule to D08) is 9'-6".
+# Owner: crown stays with an LED cove on top of it, held 4" down from the ceiling (CH = crown top). Set per view in draw_view.
+COVE = 4.0; CH = H - COVE
+VIEW_H = {'north': (118.0, 114.0), 'niche': (118.0, 114.0), 'east': (118.0, 114.0), 'west': (118.0, 114.0),
+          'south': (114.0, 114.0), 'nook_north': (114.0, 114.0), 'nook_east': (114.0, 114.0), 'nook_south': (114.0, 114.0), 'nook_west': (114.0, 114.0)}
+POCKET_D = 5.0     # FOR's motorized curtain pocket, 5" (A-403 detail, A-206 note C-1)
+CS = TRIM['casing']; BASE = TRIM['base']; CAP = TRIM['dado']; M = TRIM['margin']; OUT_CL = 18.0; SW = 48.0; SILL = 36.0   # FOR's window E: 5'-0" x 5'-0" casement, sill 3'-0", head 8'-0" (A-600, ID-003; coordination 11.09.26)   # trim block, 10 ft ceiling
 WHITE = (1, 1, 1); BEYOND = (0.55, 0.55, 0.55)
 IN = 1.5                               # FOR pt per inch (A-202 at 1/4" = 1'-0")
 
@@ -48,7 +55,9 @@ STRIP_D = inch(N_MAIN - REC_N)         # 36.6
 def shell(v, L, crown=(), base=(), cut_left=True, cut_right=True):
     X0, X1, Y0, Y1 = v.X(0), v.X(L), v.Y(0), v.Y(H)
     for a, b in base: C.base(v, a, b)
-    for a, b in crown: C.crown(v, a, b, H)
+    for a, b in crown:
+        C.crown(v, a, b, CH)
+        if CH < H - 0.5: C._line(v, (a, CH + 0.9), (b, CH + 0.9), C.FINE, MID, '[1 1] 0')   # LED strip on the crown top, cove gap above
     v.line((X0 - 8, Y0), (X1 + 8, Y0), 1.2); v.line((X0, Y1), (X1, Y1), 0.9)
     if cut_left: v.rect(X0 - 4, Y0, X0, Y1, 0.6, fill=(0.3, 0.3, 0.3))
     if cut_right: v.rect(X1, Y0, X1 + 4, Y1, 0.6, fill=(0.3, 0.3, 0.3))
@@ -79,9 +88,33 @@ def recess_jambs(v, a, b, top=H):
         C._line(v, (x, 0), (x, top), C.HEAVY); C._line(v, (x + 0.6 * side, 0), (x + 0.6 * side, top), C.FINE, LIGHT)
 
 def tag(v, x, y, s): v.text(v.X(x), v.Y(y), s, 5.2, MID, align='c')
+def tag_masked(v, x, y, s):
+    """A tag on a white backing, for labels that must sit over grey beyond linework (review 11.09.26)."""
+    w = fitz.get_text_length(s, fontname='helv', fontsize=5.2) * 1.08 + 4
+    sh_ = v.p.new_shape(); sh_.draw_rect(fitz.Rect(v.X(x) - w / 2, v.Y(y) - 5.6, v.X(x) + w / 2, v.Y(y) + 1.8)); sh_.finish(color=None, fill=(1, 1, 1)); sh_.commit()
+    tag(v, x, y, s)
 
 # ================================================================== main room
-def panels(v, x0, x1, openings=(), single=(), centered=None): C.panel_wall(v, x0, x1, H, openings=openings, single=single, centered=centered)
+def panels(v, x0, x1, openings=(), single=(), centered=None): C.panel_wall(v, x0, x1, CH, openings=openings, single=single, centered=centered)
+
+def aligned_boxes(v, bays, upper=True, dado=True):
+    """Upper and dado boxes on the same x extents (owner 11.09.26: the wainscot below matches the layout above). The cap comes from
+    C.panel_wall(..., upper=False, dado=False); this draws the boxes with the same molding as C.panel_wall."""
+    mold = TRIM['panel_mold']; m = TRIM['margin']; cap = TRIM['cap']; cap_top = TRIM['dado']; crown_b = CH - TRIM['crown']
+    lo = (BASE + m, cap_top - cap - m); hi = (cap_top + m, crown_b - m)
+    for a, b in bays:
+        for (y0, y1), on in ((hi, upper), (lo, dado)):
+            if not on: continue
+            C._rect(v, a, y0, b, y1, C.MED); C._rect(v, a + mold, y0 + mold, b - mold, y1 - mold, C.FINE, MID)
+    return list(bays)
+
+def even_boxes(a, b, ma=None, mb=None, target=32.0):
+    """The box layout C.panel_wall uses on a plain segment (equal boxes near the target width, margins between)."""
+    m = TRIM['margin']; ma = m if ma is None else ma; mb = m if mb is None else mb
+    inner = b - a - ma - mb
+    if inner < target * 0.5: return []
+    n = max(1, int(round((inner + m) / (target + m)))); w = (inner - m * (n - 1)) / n
+    return [(a + ma + i * (w + m), a + ma + i * (w + m) + w) for i in range(n)]
 
 def north(v):
     """Looking north, west at the left: the entry recess (door 18 from the hall, beyond), then the north wall in one plane (the linen
@@ -92,19 +125,19 @@ def north(v):
     nib = strip[1] - entry[1] - CS
     sw_x = (entry[1] + CS + strip[1]) / 2                 # the 3-way on the 4-3/8" of recess back wall at the latch side
     def far():
-        C.base(v, 0, entry[0] - CS); C.base(v, entry[1] + CS, strip[1]); C.crown(v, 0, strip[1], H)
+        C.base(v, 0, entry[0] - CS); C.base(v, entry[1] + CS, strip[1]); C.crown(v, 0, strip[1], CH)
         C.casing(v, entry[0], entry[1] - entry[0], HEAD); leaf_toward(v, entry[0], entry[1] - entry[0], HEAD, panels=1, swing='L')   # door 18 swings into the recess, toward the viewer
         C.switch(v, sw_x, SW, 'S3')
     beyond(far)
     shell(v, L, crown=[(strip[1], L)], base=[(strip[1], L)])
     recess_jambs(v, strip[1], strip[1])
-    db = C.panel_wall(v, strip[1], L, H, centered=(strip[1] + L) / 2)
+    db = C.panel_wall(v, strip[1], L, CH, centered=(strip[1] + L) / 2)
     oxs = [(a + b) / 2 for a, b in (db[0], db[-1])]         # outlets centered in the outer dado boxes
     for ox in oxs: C.outlet(v, ox)
-    tag(v, strip[1] / 2, 110, 'ENTRY RECESS BEYOND, %s DEEP' % E.ftin(round(STRIP_D * 8) / 8))
+    tag(v, strip[1] / 2, 102.2, 'ENTRY RECESS BEYOND, %s DEEP' % E.ftin(round(STRIP_D * 8) / 8))
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, entry[0], entry[1], strip[1]] + oxs + [L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, SW, HEAD, HEAD + CS, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, SW, HEAD, HEAD + CS, CH - TRIM['crown'], CH, H]))
     return ['LOOKING NORTH, WEST AT THE LEFT. ENTRY RECESS %s WIDE x %s DEEP (FOR REV 1) WITH FOR\'S 3\'-0" x 8\'-0" DOOR 18 FROM THE HALL, CENTERED IN THE RECESS' % (E.ftin(round(strip[1] * 8) / 8), E.ftin(round(STRIP_D * 8) / 8)),
             'AS FOR DRAWS IT, SINGLE PANEL, HINGED WEST, PRIVACY SET. S3 ON THE %s OF RECESS BACK WALL AT THE LATCH SIDE, CL 4\'-0", SINGLE GANG: ROOM CEILING LIGHTS, WITH THE S4 AT THE BED AND THE S3 AT DOOR 19.' % E.ftin(nib),
             'FOR\'S 1\'-4" x 2\'-8" MILLWORK NICHE OPENS WEST OFF THE RECESS EAST SIDE, EDGE-ON IN THIS VIEW: SEE VIEW 1A. NO DEVICES ON THE NICHE WALL.',
@@ -129,7 +162,7 @@ def niche(v):
     tag(v, nw / 2, 102, 'MILLWORK NICHE')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, nw, L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, CAP - 3, CAP, head, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, CAP - 3, CAP, head, CH - TRIM['crown'], CH, H]))
     v.dim_v(sill, head, v.X(0) - 14, E.snap_points([sill, sill + 0.75] + [y for y0 in shelf_y for y in (y0, y0 + 0.75)] + [head - 0.75, head], tol=0.5))   # the three equal openings
     return ['RECESS EAST SIDE, LOOKING EAST, NORTH AT THE LEFT. FOR\'S MILLWORK NICHE',
             '%s WIDE x 1\'-4" DEEP, FLUSH TO THE RECESS BACK WALL, %s NIB' % (E.ftin(round(nw * 8) / 8), E.ftin(round((L - nw) * 8) / 8)),
@@ -148,13 +181,16 @@ def east(v):
     ns_w = 18.0; clear = (L - hb_w - 2 * ns_w) / 2          # 2.7
     EM = 6.0                                                # end margins 6 in. so the bedside switch clears the corner
     shell(v, L, crown=[(0, L)], base=[(0, L)])
-    C.panel_wall(v, 0, L, H, centered=bc, end_margin=EM)
+    C.panel_wall(v, 0, L, CH, upper=False, dado=False)          # the cap only
+    NW = 14.0                                               # owner 11.09.26: narrow | wide | narrow, upper and dado aligned; the narrow boxes carry the sconces
+    bays = [(EM, EM + NW), (EM + NW + M, L - EM - NW - M), (L - EM - NW, L - EM)]
+    aligned_boxes(v, bays)
+    C.rev_cloud(v, EM - 2, BASE + 1, L - EM + 2, CH - TRIM['crown'] - 1, pad=1.0, tag_at='tl')
     C.bed_king(v, bc, hb_w, hb_h)
     ns_h = 26.0
     C.nightstand(v, 0, ns_w, h=ns_h); C.nightstand(v, L - ns_w, ns_w, h=ns_h)
     sc_y = hb_h + 6
-    sx_ = EM + TRIM['panel_mold'] + 1.0 + 3.75                 # shade edge 1" inside the molding: 13" from each corner
-    sx_ = round(sx_)
+    sx_ = EM + NW / 2                                        # centered in the narrow box: 13" from each corner
     for sx in (sx_, L - sx_): C.sconce(v, sx, sc_y, 'shade')
     for ox in (ns_w / 2, L - ns_w / 2):
         v.rect(v.X(ox - 1.4), v.Y(OUT_CL + 2.25), v.X(ox + 1.4), v.Y(OUT_CL - 2.25), 0.45, INK, None, '[1.0 0.7] 0')   # behind the nightstand: dashed
@@ -164,7 +200,7 @@ def east(v):
     tag(v, bc, hb_h - 9, 'KING BED, HEADBOARD 6\'-4" x 4\'-6", N.I.C.')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, ns_w, bc - hb_w / 2, bc, bc + hb_w / 2, L - ns_w, L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, ns_h, 32, CAP, hb_h, sc_y, H - TRIM['crown'] - M, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, ns_h, 32, CAP, hb_h, sc_y, CH - TRIM['crown'] - M, CH - TRIM['crown'], CH, H]))
     return ['HEADBOARD WALL, LOOKING EAST, NORTH AT THE LEFT. FOR REV 1 DEEPENS THE LINEN CLOSET, SO THE WALL IS %s (WAS 10\'-5"). A KING (76" MATTRESS) WITH TWO 18"' % E.ftin(round(L * 8) / 8),
             'NIGHTSTANDS (OWNER 11.06.26) LEAVES %s EACH SIDE OF THE HEADBOARD. THE BED IS CENTERED ON THE WALL, THE HEADBOARD THE MATTRESS WIDTH, 4\'-6" HIGH, THE' % E.ftin(round(clear * 8) / 8),
             'NIGHTSTANDS 18" WIDE x 26" HIGH IN THE CORNERS. UPPER AND DADO BOXES SET OUT FROM THE BED AXIS, 6" END MARGINS. SWING-ARM SCONCES CL 5\'-0" AFF (6" ABOVE THE',
@@ -180,19 +216,21 @@ def south(v):
     wc = (win[0] + win[1]) / 2
     shell(v, L, crown=[(0, L)], base=[(0, L)], cut_left=False)
     recess_jambs(v, 0, 0)
-    C.window(v, win[0], win[1] - win[0], SILL, HEAD, lites=3)
-    db = C.panel_wall(v, 0, L, H, openings=[(win[0] - CS, win[1] + CS)], centered=wc)
-    C._rect(v, 0, H - 4, L, H, C.FINE, MID, dashes='[2 1.5] 0')   # drapery pocket, drapery itself not drawn
+    db = C.panel_wall(v, 0, L, CH, openings=[(win[0] - CS, win[1] + CS)], centered=wc)
+    C.window(v, win[0], win[1] - win[0], SILL, HEAD, lites=3)           # divided lites, set rule (owner 11.09.26)
+    ap = SILL - 1.5 - TRIM['cap']                                       # under the apron: one dado box, aligned with the casing
+    C._rect(v, win[0] - CS + M, BASE + M, win[1] + CS - M, ap - M, C.MED); C._rect(v, win[0] - CS + M + 0.75, BASE + M + 0.75, win[1] + CS - M - 0.75, ap - M - 0.75, C.FINE, MID)
+    C._rect(v, 0, H - POCKET_D, L, H, C.FINE, MID, dashes='[2 1.5] 0')   # FOR's 5" curtain pocket in the 9'-6" band, drapery itself not drawn
     oxs = [(a + b) / 2 for a, b in (db[0], db[-1])]
     for ox in oxs: C.outlet(v, ox)
-    tag(v, wc, 108, 'DRAPERY POCKET 4", FULL WIDTH')
+    tag(v, wc, 104, 'CURTAIN POCKET 5", FULL WIDTH (FOR)')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, oxs[0], win[0] - CS, win[0], wc, win[1], win[1] + CS, oxs[1], L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, HEAD, HEAD + CS, H - TRIM['crown'], H - 4, H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, SILL, HEAD, HEAD + CS, CH - TRIM['crown'], H - POCKET_D, H]))
     return ['LOOKING SOUTH, EAST AT THE LEFT. THE WALL RUNS %s FROM THE OUTSIDE CORNER WHERE THE READING NOOK OPENS OFF THE ROOM (ID-737, NOT DRAWN) TO THE WEST WALL.' % E.ftin(round(L * 8) / 8),
-            'FOR\'S 5\'-0" WINDOW, %s FROM THE CORNER, TALL: STOOL 1\'-6", HEAD 8\'-0", 6\'-6" OF GLASS (OWNER: NEARLY FLOOR TO CEILING, FOR TO CONFIRM THE SILL). IMPACT-RATED,' % E.ftin(round(win[0] * 8) / 8),
-            'CASED 5" WITH STOOL AND APRON, THE BASE RUNS THROUGH BELOW THE APRON. THE CAP AND THE BOXES STOP AT THE CASING EACH SIDE. THE WINDOW IS %s OFF THE WALL CENTER, SO THE' % E.ftin(round(abs(wc - L / 2) * 8) / 8),
-            'BOXES BESIDE IT DIFFER. DRAPERY: 4" CEILING POCKET FULL WIDTH, TRAVERSE TRACK, SHEER AND BLACKOUT, STACKS 14" EACH SIDE OF THE CASING (N.I.C., NOT DRAWN).',
+            'FOR\'S WINDOW E, %s FROM THE CORNER: 5\'-0" x 5\'-0" CASEMENT, SILL 3\'-0", HEAD 8\'-0" (A-600). IMPACT-RATED,' % E.ftin(round(win[0] * 8) / 8),
+            'CASED 5" WITH STOOL AND APRON, ONE DADO BOX UNDER THE APRON, THE BASE RUNS THROUGH. THE CAP AND THE BOXES STOP AT THE CASING EACH SIDE. THE WINDOW IS %s OFF THE WALL CENTER, SO THE' % E.ftin(round(abs(wc - L / 2) * 8) / 8),
+            'BOXES BESIDE IT DIFFER. DRAPERY: FOR\'S 5" CEILING POCKET FULL WIDTH, TRAVERSE TRACK, SHEER AND BLACKOUT, STACKS 14" EACH SIDE OF THE CASING (N.I.C., NOT DRAWN).',
             'DUPLEX OUTLETS VERTICAL, CENTERED IN THE DADO BOX EACH SIDE OF THE WINDOW, CL 1\'-6". PT-02, CROWN CM-01, BASE.']
 
 def west(v):
@@ -207,31 +245,32 @@ def west(v):
     tv_b = CAP + M + M; tv_cy = tv_b + tv_h / 2              # set one margin above the box bottom: CL 5'-1-1/2"
     half = tvc - (pd[1] + CS + M)                            # the big box runs from the pocket door casing margin and is centered on the TV
     bay = (tvc - half, tvc + half)
-    pl_y = tv_b + tv_h + 6                                   # one 30" picture light over the set, J-box at the TV CL, north of the pocket
     strip = (inch(S_FACE - N_MAIN), L)
     sw = (pd[0] - CS) / 2                                    # the latch-side wall south of the casing
     shell(v, L, crown=[(0, L)], base=[(0, pd[0] - CS), (pd[1] + CS, L)])
     C.casing(v, pd[0], pd[1] - pd[0], HEAD); C.door_leaf(v, pd[0], pd[1] - pd[0], HEAD, panels=1, swing=None, pull='L')
     C._rect(v, pd[1], 0, pocket_end, HEAD, C.FINE, LIGHT, dashes='[2 1.5] 0')   # the pocket, hidden
-    db = C.panel_wall(v, 0, L, H, openings=[(pd[0] - CS, pd[1] + CS)], single=[bay], centered=tvc)
+    C.panel_wall(v, 0, L, CH, openings=[(pd[0] - CS, pd[1] + CS)], single=[bay], centered=tvc, dado=False)
+    db = [bay] + even_boxes(bay[1], L, mb=M)                 # owner 11.09.26: one wide dado box under the TV box, the rest under the upper boxes
+    aligned_boxes(v, db, upper=False)
+    C.rev_cloud(v, bay[0], BASE, bay[1], tv_b + tv_h + 9)
     C._rect(v, tvc - tv_w / 2, tv_cy - tv_h / 2, tvc + tv_w / 2, tv_cy + tv_h / 2, C.OUTLINE, fill=(1, 1, 1))
     C._rect(v, tvc - tv_w / 2 + 0.6, tv_cy - tv_h / 2 + 0.6, tvc + tv_w / 2 - 0.6, tv_cy + tv_h / 2 - 0.6, C.FINE, MID)
-    C.picture_light(v, tvc, pl_y, 30)
     pwr = (blk + 3.0, blk + 9.0)                             # duplex and data jack behind the set, north of the pocket
     C.outlet(v, pwr[0], tv_cy - 4, horizontal=False); C.data_jack(v, pwr[1], tv_cy - 4)
     v.text(v.X(tvc), v.Y(tv_cy - 10), 'POWER AND DATA BEHIND THE SET', 5.0, MID, align='c')
-    C.switch(v, sw - 1.75, SW, 'S3'); C.switch(v, sw + 1.75, SW, 'D')
-    oxs = [sw] + [(a + b) / 2 for a, b in db if a >= bay[1] - M - 0.5][:1]   # the latch-side wall below the 2-gang, and the first dado box north of the TV
+    C.switch(v, sw, SW, 'S3')                                # no picture light (owner 11.09.26), so no dimmer
+    oxs = [sw] + [(a + b) / 2 for a, b in db if a >= bay[1] - 0.5][:1]   # the latch-side wall below the 2-gang, and the first dado box north of the TV
     for ox in oxs: C.outlet(v, ox)
-    tag(v, tvc, tv_cy + 6, '55" TV, ARTICULATING BRACKET'); tag(v, tvc + 11, pl_y + 6.5, '30" PICTURE LIGHT')   # right of the hidden pocket line
+    tag(v, tvc, tv_cy + 6, '55" TV, ARTICULATING BRACKET')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, oxs[0], pd[0], pd[1], bay[0], tvc - tv_w / 2, tvc, tvc + tv_w / 2, bay[1]] + oxs[1:] + [strip[0], L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, SW, tv_b - M, tv_b, tv_cy, tv_b + tv_h, pl_y, HEAD, HEAD + CS, H - TRIM['crown'] - M, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, SW, tv_cy, tv_b + tv_h, HEAD, HEAD + CS, CH - TRIM['crown'], CH, H]))
     return ['LOOKING WEST, SOUTH AT THE LEFT. FOR\'S 3\'-0" x 8\'-0" POCKET DOOR 19 TO THE MASTER BATH, %s FROM THE SOUTH WALL, POCKET NORTH (DASHED), SINGLE PANEL, CASED,' % E.ftin(pd[0]),
             'RECESSED PULL AT THE SOUTH (LATCH) EDGE. 2-GANG ON THE %s OF WALL SOUTH OF THE CASING, CL 4\'-0": S3 ROOM CEILING LIGHTS (WITH THE ENTRY S3 AND THE BED S4),' % E.ftin(pd[0] - CS),
-            'D DIMMER FOR THE PICTURE LIGHT. 55" TV (48" x 27") ON AN ARTICULATING BRACKET, CENTERED ON THE BED AXIS (%s NORTH OF THE WALL\'S CENTER), CL %s AFF, IN ONE TALL BOX' % (E.ftin(round((tvc - L / 2) * 8) / 8), E.ftin(tv_cy)),
+            '55" TV (48" x 27") ON AN ARTICULATING BRACKET, CENTERED ON THE BED AXIS (%s NORTH OF THE WALL\'S CENTER), CL %s AFF, IN ONE TALL BOX' % (E.ftin(round((tvc - L / 2) * 8) / 8), E.ftin(tv_cy)),
             '(%s x 5\'-4"). BRACKET BLOCKING AND THE POWER BOX ONLY NORTH OF %s FROM THE SOUTH WALL, CLEAR OF THE POCKET (IT ENDS AT %s). THE BOX BEHIND THE SET IS A DUPLEX' % (E.ftin(bay[1] - bay[0]), E.ftin(blk), E.ftin(pocket_end)),
-            'CL %s AFF (BELOW 5\'-6") WITH A DATA JACK, CONDUIT TO THE DADO OUTLET. NO SCONCES (A SOUTH SCONCE WOULD LAND ON THE POCKET): ONE 30" PICTURE LIGHT CENTERED 6" OVER THE SET, ITS J-BOX AT THE TV CL. PANELS CONTINUE' % E.ftin(tv_cy - 4),
+            'CL %s AFF (BELOW 5\'-6") WITH A DATA JACK, CONDUIT TO THE DADO OUTLET. NO SCONCES (A SOUTH SCONCE WOULD LAND ON THE POCKET), NO PICTURE LIGHT (OWNER 11.09.26). ONE WIDE DADO BOX UNDER THE TV BOX. PANELS CONTINUE' % E.ftin(tv_cy - 4),
             'INTO THE ENTRY RECESS (SAME PLANE). DUPLEX OUTLETS VERTICAL, CL 1\'-6": BELOW THE 2-GANG, AND CENTERED IN THE FIRST DADO BOX NORTH OF THE TV. PT-02, CROWN CM-01, BASE.']
 
 # ================================================================== reading nook (ID-737)
@@ -245,33 +284,34 @@ def nook_north(v):
     shift = jib[0] - inch(JIB[0] - NOOK_W)                    # west of FOR's location
     shell(v, L, crown=[face], base=[face], cut_left=False)
     recess_jambs(v, opn[1], opn[1])
-    C.panel_wall(v, face[0], face[1], H, single=[(jib[0] + M, jib[1] - M)], centered=(jib[0] + jib[1]) / 2)
+    C.panel_wall(v, face[0], face[1], CH, single=[(jib[0] + M, jib[1] - M)], centered=(jib[0] + jib[1]) / 2)
     leaf_away(C.jib_door, v, jib[0], jib[1] - jib[0], HEAD)                  # swings into the safe closet, away from the viewer
     tag(v, opn[1] / 2, 110, 'OPEN TO THE BEDROOM')
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, opn[1], jib[0], (jib[0] + jib[1]) / 2, jib[1], L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, CAP, HEAD, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, CAP, HEAD, CH - TRIM['crown'], CH, H]))
     return ['NOOK NORTH WALL, LOOKING NORTH. OPEN TO THE BEDROOM AT THE LEFT (NO WALL). THE PAINTED SURFACE IS ONE PLANE %s WIDE: THE EAST WALL\'S END FACE AND THE' % E.ftin(round((face[1] - face[0]) * 8) / 8),
             'SAFE WALL. FOR\'S 2\'-8" x 8\'-0" HIDDEN DOOR 21 AS A JIB DOOR CENTERED ON THAT SURFACE (%s WEST, %s EAST, %s WEST OF FOR\'S LOCATION, FOR TO CONFIRM THE SAFE BEHIND IT): FLUSH LEAF, PANELS, CAP,' % (E.ftin(jib[0] - face[0]), E.ftin(face[1] - jib[1]), f16(abs(shift))),
-            'BASE AND CROWN RUN ACROSS IT UNBROKEN, NO CASING, NO FACE HARDWARE, CONCEALED PIVOT HINGES, TOUCH LATCH WITH MAGNETIC CATCH, 3/16" REVEAL AT THE EDGES HIDDEN',
+            'BASE AND CROWN RUN ACROSS IT UNBROKEN, NO CASING, NO FACE HARDWARE, CONCEALED HINGES, TOUCH LATCH WITH MAGNETIC CATCH, 3/16" REVEAL AT THE EDGES HIDDEN',
             'IN THE 4" MARGINS. ONE UPPER BOX AND ONE DADO BOX ON THE DOOR, THE MARGINS EITHER SIDE ARE PLAIN WALL. NO DEVICES ON THIS WALL. PT-02, CROWN CM-01, BASE.']
 
 def nook_east(v):
     """Exterior wall, looking east: the settee wall, left open to the bedroom side per Zack (no cut wall drawn)."""
     L = inch(NOOK_S - NOOK_N)                                 # 93.8
-    ac = L / 2; art_w, art_h = 48.0, 36.0
-    bay = (M, L - M)                                        # one upper box the full wall, art and picture light inside it
+    ac = L / 2
+    bw = (L - 3 * M) / 2                                    # owner 11.09.26: no art, no picture light; two upper and two dado boxes, aligned
+    bays = [(M, M + bw), (L - M - bw, L - M)]
     shell(v, L, crown=[(0, L)], base=[(0, L)], cut_left=False)
-    db = C.panel_wall(v, 0, L, H, single=[bay], centered=ac)
-    C.art(v, ac, 70, art_w, art_h); C.picture_light(v, ac, 70 + art_h / 2 + 6, 30)
-    oxs = [(a + b) / 2 for a, b in (db[0], db[-1])]
+    C.panel_wall(v, 0, L, CH, upper=False, dado=False)
+    db = aligned_boxes(v, bays)
+    C.rev_cloud(v, M - 2, BASE + 1, L - M + 2, CH - TRIM['crown'] - 1, pad=1.0, tag_at='tl')
+    oxs = [(a + b) / 2 for a, b in db]
     for ox in oxs: C.outlet(v, ox)
-    v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, bay[0], oxs[0], ac, oxs[1], bay[1], L]))
+    v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, bays[0][0], oxs[0], bays[0][1], ac, bays[1][0], oxs[1], bays[1][1], L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, 70 - art_h / 2, 70 + art_h / 2, 70 + art_h / 2 + 6, H - TRIM['crown'], H]))
-    return ['NOOK EAST WALL (EXTERIOR), LOOKING EAST, NORTH AT THE LEFT. A SETTEE GOES HERE LATER (N.I.C., NOT DRAWN). THE UPPER BOX IS SET OUT FROM THE WALL CENTER',
-            'FOR A 48" x 36" PIECE OF ART CENTERED AT 5\'-10" AFF WITH A 30" HARDWIRED PICTURE LIGHT ABOVE IT, INTEGRAL SWITCH. DUPLEX OUTLETS VERTICAL, CL 1\'-6",',
-            'CENTERED IN THE OUTER DADO BOXES, FOR TABLE LAMPS. ONE UPPER BOX THE FULL WALL (%s x 5\'-4"), THREE DADO BOXES. PT-02, CROWN CM-01, BASE. CAP AT 3\'-4" CONTINUOUS.' % E.ftin(bay[1] - bay[0])]
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, CAP, CH - TRIM['crown'], CH, H]))
+    return ['NOOK EAST WALL (EXTERIOR), LOOKING EAST, NORTH AT THE LEFT. A SETTEE GOES HERE LATER (N.I.C., NOT DRAWN). NO ART, NO PICTURE LIGHT (OWNER 11.09.26).',
+            'TWO UPPER AND TWO DADO BOXES, %s WIDE, ALIGNED. DUPLEX OUTLETS VERTICAL, CL 1\'-6", CENTERED IN THE DADO BOXES, FOR TABLE LAMPS. PT-02, CROWN CM-01, BASE.' % E.ftin(round(bw * 8) / 8)]
 
 def nook_south(v):
     """Terrace doors, looking south, east at the left. The bookcase on the nook west wall stands 4" off this wall and is seen at the right;
@@ -282,24 +322,27 @@ def nook_south(v):
     st = bk - (fd[1] + CS)                                      # 5": the stacks, the same both sides
     stack = (fd[0] - CS - st, fd[1] + CS + st)
     shell(v, L, crown=[(0, L)], base=[(0, fd[0] - CS), (fd[1] + CS, L)])
-    leaf_away(C.door_pair, v, fd[0], fd[1] - fd[0], HEAD, panels='glass')        # the terrace pair swings out, away from the viewer
+    C.casing(v, fd[0], fd[1] - fd[0], HEAD)
+    leaf_away(C.door_pair, v, fd[0], fd[1] - fd[0], HEAD - 2.0, panels='glass', cased=False)   # FOR's 8'-0" is the frame: leaves 7'-10" under a 2" head (review 11.09.26)
+    C._rect(v, fd[0], HEAD - 2.0, fd[1], HEAD, C.OUTLINE)                          # frame head
+    C.rev_cloud(v, fd[0] - CS, 1.5, fd[1] + CS, HEAD + CS, pad=1.5)
     C._rect(v, fd[0] - CS, 0, fd[1] + CS, 0.75, C.OUTLINE)   # threshold
-    C.panel_wall(v, 0, L, H, openings=[(fd[0] - CS, fd[1] + CS)])
-    C._rect(v, 0, H - 4, bk, H, C.FINE, MID, dashes='[2 1.5] 0')   # drapery pocket, east wall to the bookcase side
+    C.panel_wall(v, 0, L, CH, openings=[(fd[0] - CS, fd[1] + CS)])
+    C._rect(v, 0, H - POCKET_D, bk, H, C.FINE, MID, dashes='[2 1.5] 0')   # FOR's 5" curtain pocket, east wall to the bookcase side
     C.switch(v, stack[0] / 2, SW, 'S')                         # open side of the east casing, clear of the stack
     C.outlet(v, fd[1] + CS + st / 2)                            # west of the casing, between it and the bookcase side
     C._rect(v, bk, 0, L, H, C.OUTLINE, fill=WHITE)             # bookcase side panel, in front of the wall, to the ceiling
-    C.base(v, bk, L); C.crown(v, bk, L, H)
+    C.base(v, bk, L); C.crown(v, bk, L, CH)
     C._line(v, (bk, 31.25), (L, 31.25), C.FINE, MID)           # stone top line behind the side, for reference
-    tag(v, (fd[0] + fd[1]) / 2, 108, 'DRAPERY POCKET 4"')
+    pass   # pocket noted in the view note (the rev 1 cloud runs where a tag would sit)
     v.text(v.X((bk + L) / 2) + 2.5, v.Y(60), 'BOOKCASE SIDE', 5.2, MID, align='c', rotate=90)
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, stack[0], fd[0] - CS, fd[0], (fd[0] + fd[1]) / 2, fd[1], fd[1] + CS, bk, L]))
     v.dim_h(0, L, v.Y(0) + 27, [0, L])
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, 40, SW, HEAD, HEAD + CS, H - TRIM['crown'], H - 4, H]))
-    return ['TERRACE DOORS, LOOKING SOUTH, EAST AT THE LEFT. FOR\'S PAIR OF 2\'-4" FULL-LITE EXTERIOR DOORS IN A 5\'-0" FRAME, 8\'-0" HEAD, CENTERED ON THE NOOK AS FOR DRAWS THEM,',
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, OUT_CL, BASE, 40, SW, HEAD, HEAD + CS, CH - TRIM['crown'], H]))
+    return ['TERRACE DOORS, LOOKING SOUTH, EAST AT THE LEFT. FOR\'S DOOR 08: PAIR OF 2\'-4" x 7\'-10" FULL-LITE LEAVES IN A 5\'-0" x 8\'-0" FRAME, CENTERED ON THE NOOK AS FOR DRAWS THEM,',
             'SWING OUT, IMPACT-RATED LAMINATED GLASS, ALUMINUM OR FIBERGLASS FRAME, FLUSH ADA THRESHOLD 3/4", LEVER HANDLES CL 3\'-4", MULTIPOINT LOCK ON THE ACTIVE (WEST) LEAF,',
             'FLUSH BOLTS ON THE INACTIVE. CASED INSIDE, 5" WITH BACKBAND. PLAIN WALL EACH SIDE OF THE CASING, CAP, BASE AND CROWN RETURNING. THE BOOKCASE (VIEW 4) STANDS 4" OFF',
-            'THIS WALL AT THE RIGHT: IT IS NARROWED TO 12" DEEP (WAS 14") AND THE WEST STACK STOPS AT ITS SIDE. DRAPERY: 4" CEILING POCKET FROM THE EAST WALL TO THE BOOKCASE,',
+            'THIS WALL AT THE RIGHT: IT IS NARROWED TO 12" DEEP (WAS 14") AND THE WEST STACK STOPS AT ITS SIDE. DRAPERY: FOR\'S 5" CEILING POCKET FROM THE EAST WALL TO THE BOOKCASE,',
             'TRAVERSE TRACK, SHEER AND BLACKOUT, STACKS OVER THE CASING AND %s BEYOND EACH SIDE (N.I.C., NOT DRAWN). S: TERRACE LIGHTS, ON THE OPEN WALL EAST OF THE STACK, CL 4\'-0".' % E.ftin(st),
             'DUPLEX VERTICAL, CL 1\'-6", ON THE %s OF WALL WEST OF THE CASING (NEC 210.52 WALL SPACE, NOT IN THE BUILT-IN). PT-02, CROWN CM-01.' % E.ftin(st)]
 
@@ -312,14 +355,14 @@ def nook_west(v):
     pd = (inch(S_FACE - POCKET[1]), inch(S_FACE - POCKET[0]))  # door 19 in ID-736 view 4 terms (0 at the bedroom south wall)
     def B(x): return Lw + x                                    # ID-736 view 4 x to this view: the same direction, the south wall at Lw
     def far():                                                 # the bedroom west wall seen through the opening (ID-736 view 4, its south end)
-        C.base(v, Lw, B(pd[0] - CS)); C.crown(v, Lw, L, H)
+        C.base(v, Lw, B(pd[0] - CS)); C.crown(v, Lw, L, CH)
         C._rect(v, Lw, CAP - 3, B(pd[0] - CS), CAP, C.OUTLINE)  # cap on the latch-side wall
         C._rect(v, B(pd[0] - CS), 0, B(pd[0]), HEAD + CS, C.OUTLINE); C._rect(v, B(pd[0] - CS), HEAD, L, HEAD + CS, C.OUTLINE)   # casing, cut at the opening
         C._line(v, (B(pd[0]), 0), (B(pd[0]), HEAD), C.OUTLINE); C._line(v, (B(pd[0]), HEAD), (L, HEAD), C.OUTLINE)   # door 19 leaf, runs on past the opening
         C._line(v, (B(pd[0]) + 4.5, 9), (B(pd[0]) + 4.5, HEAD - 4.5), C.MED); C._line(v, (B(pd[0]) + 4.5, 9), (L, 9), C.MED); C._line(v, (B(pd[0]) + 4.5, HEAD - 4.5), (L, HEAD - 4.5), C.MED)
         C._rect(v, B(pd[0]) + 2.3, 36, B(pd[0]) + 3.5, 40, C.OUTLINE)   # recessed pull at the south (latch) edge
         sw = (pd[0] - CS) / 2
-        C.switch(v, B(sw) - 1.75, SW, 'S3'); C.switch(v, B(sw) + 1.75, SW, 'D'); C.outlet(v, B(sw))
+        C.switch(v, B(sw), SW, 'S3'); C.outlet(v, B(sw))
     beyond(far)
     shell(v, Lw, crown=[(0, Lw)], base=[(0, bx), (bx + bw, Lw)], cut_right=False)
     C._line(v, (Lw, 0), (Lw, H), C.HEAVY); C._line(v, (Lw + 0.6, 0), (Lw + 0.6, H), C.FINE, LIGHT)   # outside corner of the nook wall
@@ -330,14 +373,14 @@ def nook_west(v):
     C.shelves(v, bx + 1.5, bw - 3, top + stone, spring + 4, n=3)
     C._line(v, (bx + 1.5, spring + 4), (bx + bw - 1.5, spring + 4), C.FINE, LIGHT, '[1.5 1.5] 0')   # LED under the head
     C.outlet(v, bx + bw / 2, top + stone + 4.5, horizontal=True)   # on the back panel above the stone top, centered
-    C.panel_wall(v, 0, Lw, H, openings=[(bx - M, bx + bw + M)])
-    tag(v, (Lw + L) / 2, 109, 'OPEN TO THE BEDROOM'); tag(v, (Lw + L) / 2, 105.5, 'WEST WALL BEYOND, SEE ID-736')
+    C.panel_wall(v, 0, Lw, CH, openings=[(bx - M, bx + bw + M)])
+    tag(v, (Lw + L) / 2, 102.2, 'OPEN TO THE BEDROOM')     # the wall beyond is called out in the view note (review 11.09.26: the second label crossed the grey linework)
     sh = [top + stone + (spring + 4 - top - stone) * (i + 1) / 4 for i in range(3)]
     v.dim_h(0, L, v.Y(0) + 14, E.snap_points([0, bx, bx + bw, Lw, L]))
     v.dim_h(0, L, v.Y(0) + 27, E.snap_points([0, Lw, L]))
-    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, top + stone, top + stone + 4.5] + sh + [spring + 4, spring, spring + bw / 2, H - TRIM['crown'], H]))
+    v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, BASE, top + stone, top + stone + 4.5] + sh + [spring + 4, spring, spring + bw / 2, CH - TRIM['crown'], CH, H]))
     return ['NOOK WEST WALL: THE BOOKCASE, LOOKING WEST, SOUTH AT THE LEFT. THE NOOK WALL IS %s LONG AND ENDS AT AN OUTSIDE CORNER. RIGHT OF IT THE NOOK IS OPEN TO THE' % E.ftin(round(Lw * 8) / 8),
-            'BEDROOM, AND THE BEDROOM\'S WEST WALL (ID-736 VIEW 4) IS SEEN %s BEYOND, DRAWN GREY: THE DUPLEX AND 2-GANG, THE CASING AND DOOR 19.' % E.ftin(round(inch(NOOK_W - W_FACE) * 8) / 8),
+            'BEDROOM, AND THE BEDROOM\'S WEST WALL (ID-736 VIEW 4) IS SEEN %s BEYOND, DRAWN GREY: THE DUPLEX AND SWITCH, THE CASING AND DOOR 19.' % E.ftin(round(inch(NOOK_W - W_FACE) * 8) / 8),
             'ARCHED BUILT-IN 3\'-6" WIDE, CENTERED, 4" FROM EACH END, 12" DEEP (EXTERIOR WALL BEHIND, NO RECESS). 30" LOWER CABINET, TWO FLUSH DOORS ON TOUCH LATCHES (NO PULLS),',
             'ONE ADJUSTABLE SHELF INSIDE. 1-1/4" STONE TOP TO MATCH THE BATH, FLUSH WITH THE JAMBS. DUPLEX OUTLET HORIZONTAL ON THE BACK PANEL 4-1/2" ABOVE THE STONE, CENTERED',
             '(CHARGING, IN ADDITION TO THE WALL DUPLEX ON VIEW 3). THREE 1" ADJUSTABLE SHELVES ON 32 MM PINS AT EQUAL SPACING, 3/4" BACK PANEL, SPRING LINE 6\'-8", SEMICIRCULAR HEAD',
@@ -393,7 +436,7 @@ def key_plan(sh):
     sh.text(*O(969.0, 712.0), 'READING NOOK', 13.0, INK, align='c'); sh.text(*O(962.0, 606.0), 'SAFE CLOSET', 8.0, MID, align='c')
     NOTES_K = ['1. TV ON AN ARTICULATING BRACKET, WEST WALL, ON THE BED AXIS.', '2. ARCHED BOOKCASE, 12" DEEP, ON THE NOOK WEST WALL.',
                '3. KING BED WITH 18" NIGHTSTANDS, CENTERED ON THE HEADBOARD WALL.', '4. HIDDEN DOOR 21 IS A JIB DOOR, CENTERED ON THE NOOK NORTH WALL.',
-               '5. ROOM LIGHTS SWITCHED AT THE ENTRY, THE BED AND DOOR 19.', '6. DRAPERY POCKETS AT THE WINDOW AND THE TERRACE DOORS.', '7. WINDOW STOOL AT 1\'-6".']
+               '5. ROOM LIGHTS SWITCHED AT THE ENTRY, THE BED AND DOOR 19.', '6. DRAPERY POCKETS AT THE WINDOW AND THE TERRACE DOORS.', '7. WINDOW E PER FOR: 5\'-0" x 5\'-0", SILL 3\'-0", HEAD 8\'-0".']
     NS, NL = 8.0, 15.0                                             # note size and pitch
     notes_k = wrap_note(sh.font, NOTES_K, NCOL, NS)
     VH = 120 * 4.5 + 58 + 16 + NOTE_LH * 3 + 16 + 30                 # view 1A cell at 3/4"
@@ -475,19 +518,19 @@ E.ElevationView.dim_h = _dim_h; E.ElevationView.dim_v = _dim_v
 # 11 x 17 review draft (11.07.26): build information only, two short lines per view
 PRINT_NOTES = {
  'north': ['ENTRY RECESS, DOOR 18 3\'-0" x 8\'-0" CENTERED. S3 AT THE LATCH SIDE, CL 4\'-0" (ROOM LIGHTS, WITH S4 AT THE BED AND S3 AT DOOR 19).',
-           'PICTURE-FRAME PANELS WP-02 (PAINTED PT-02), CAP AT 3\'-4", CROWN CM-01, BASE. OUTLETS VERTICAL IN THE DADO BOXES, CL 1\'-6".', 'NICHE: SEE VIEW 1A ON ID-734.'],
+           'PICTURE-FRAME PANELS WP-02 (PAINTED PT-02), CAP AT 3\'-4", BASE. CEILING 9\'-10" (FOR): CROWN CM-01 HELD 4" DOWN, LED COVE ABOVE, SEE 4/ID-502. OUTLETS VERTICAL IN THE DADO BOXES, CL 1\'-6".', 'NICHE: SEE VIEW 1A ON ID-734.'],
  'niche': ['MILLWORK NICHE 1\'-4" DEEP, OPENING 3\'-4" TO 7\'-11-7/8".', 'TWO 3/4" FIXED SHELVES, EQUAL OPENINGS, PT-02.'],
- 'east': ['KING BED CENTERED, 18" NIGHTSTANDS 26" HIGH. SWING-ARM SCONCES CL 5\'-0", 1\'-1" FROM EACH CORNER, IN THE PANEL.',
-          'DUPLEX WITH USB BEHIND EACH NIGHTSTAND, CL 1\'-6". S4 IN THE END MARGIN, CL 2\'-8". PANELS WP-02 (PAINTED PT-02), CROWN CM-01, BASE.'],
- 'south': ['WINDOW 5\'-0" WIDE, STOOL 1\'-6", HEAD 8\'-0", IMPACT-RATED, CASED 5" WITH STOOL AND APRON. DRAPERY IN A 4" CEILING POCKET, FULL WIDTH.',
+ 'east': ['KING BED CENTERED, 18" NIGHTSTANDS 26" HIGH. SWING-ARM SCONCES CL 5\'-0", CENTERED IN THE NARROW PANELS. PANELS NARROW, WIDE, NARROW, ALIGNED, THE WIDE ONE ON THE BED.',
+          'DUPLEX WITH USB BEHIND EACH NIGHTSTAND, CL 1\'-6". S4 IN THE END MARGIN, CL 2\'-8". PANELS WP-02, CROWN CM-01 WITH LED COVE, SEE 4/ID-502.'],
+ 'south': ['FOR\'S WINDOW E, 5\'-0" x 5\'-0" CASEMENT, DIVIDED LITES, SILL 3\'-0", HEAD 8\'-0", IMPACT-RATED, CASED 5", ONE DADO BOX UNDER THE APRON. 9\'-6" CEILING BAND WITH FOR\'S 5" CURTAIN POCKET, FULL WIDTH.',
            'OUTLETS VERTICAL IN THE DADO BOX EACH SIDE OF THE WINDOW, CL 1\'-6". PANELS WP-02 (PAINTED PT-02), CROWN CM-01, BASE.'],
- 'west': ['POCKET DOOR 19, 3\'-0" x 8\'-0", CASED, PULL AT THE SOUTH EDGE. 2-GANG S3 + D SOUTH OF THE CASING, CL 4\'-0".',
-          '55" TV ON AN ARTICULATING BRACKET ON THE BED AXIS, DUPLEX AND DATA BEHIND IT, 30" PICTURE LIGHT ABOVE. PANELS WP-02 (PAINTED PT-02), CROWN CM-01.'],
+ 'west': ['POCKET DOOR 19, 3\'-0" x 8\'-0", CASED, PULL AT THE SOUTH EDGE. S3 SOUTH OF THE CASING, CL 4\'-0".',
+          '55" TV ON AN ARTICULATING BRACKET ON THE BED AXIS, DUPLEX AND DATA BEHIND IT, NO PICTURE LIGHT. ONE WIDE DADO BOX UNDER THE TV BOX, THE OTHERS ALIGNED. PANELS WP-02, CROWN CM-01 WITH LED COVE, SEE 4/ID-502.'],
  'nook_north': ['HIDDEN DOOR 21, 2\'-8" x 8\'-0", JIB DOOR: FLUSH LEAF, PANELS, CAP, BASE AND CROWN RUN ACROSS IT.',
-                'CONCEALED PIVOTS, TOUCH LATCH, NO CASING. NO DEVICES. PANELS WP-02 (PAINTED PT-02), CROWN CM-01.'],
- 'nook_east': ['ART 48" x 36" CENTERED AT 5\'-10", 30" PICTURE LIGHT ABOVE.', 'OUTLETS VERTICAL IN THE OUTER DADO BOXES, CL 1\'-6". PANELS WP-02 (PAINTED PT-02), CROWN CM-01, BASE.'],
- 'nook_south': ['PAIR OF 2\'-4" FULL-LITE TERRACE DOORS, 8\'-0" HEAD, SWING OUT, IMPACT-RATED, TEMPERED. CASED 5".',
-                'S TERRACE LIGHTS CL 4\'-0", DUPLEX CL 1\'-6". DRAPERY IN A 4" CEILING POCKET. PANELS WP-02 (PAINTED PT-02), CROWN CM-01.'],
+                'CONCEALED HINGES, TOUCH LATCH, NO CASING. NO DEVICES. PANELS WP-02 (PAINTED PT-02), CROWN CM-01.'],
+ 'nook_east': ['NO ART, NO PICTURE LIGHT. TWO UPPER AND TWO DADO BOXES, ALIGNED.', 'OUTLETS VERTICAL CENTERED IN THE DADO BOXES, CL 1\'-6". PANELS WP-02 (PAINTED PT-02), CROWN CM-01, BASE.'],
+ 'nook_south': ['FOR\'S DOOR 08: PAIR OF 2\'-4" x 7\'-10" FULL-LITE LEAVES IN AN 8\'-0" FRAME, DIVIDED LITES, SWING OUT, IMPACT-RATED, TEMPERED. CASED 5". CEILING 9\'-6" (FOR).',
+                'S TERRACE LIGHTS CL 4\'-0", DUPLEX CL 1\'-6". DRAPERY IN FOR\'S 5" CEILING POCKET. PANELS WP-02 (PAINTED PT-02), CROWN CM-01.'],
  'nook_west': ['ARCHED BOOKCASE 3\'-6" x 12" DEEP, 30" CABINET, STONE TOP, THREE SHELVES, LED UNDER THE ARCH.',
                'DUPLEX ON THE BACK PANEL ABOVE THE STONE. BOOKCASE PAINTED PT-02. BEDROOM WALL BEYOND IN GREY (ID-736 VIEW 4).'],
 }
@@ -509,6 +552,8 @@ def wrap_note(font, lines, width, size):
 def draw_view(sh, cell, view, sc, with_notes=True):
     """One elevation in its cell: title bar, the drawing with its dimension strings, the notes under it, the group centered below the title."""
     n, title, L, fn = view; k = E.SCALES[sc]
+    global H, CH
+    H, CH = VIEW_H.get(fn.__name__, (118.0, 114.0))
     E.title_bar(sh.p, sh.font, sh.fontname, cell, n, title, 'SCALE: %s" = 1\'-0"' % sc)
     spec = {'room': 'MASTER BEDROOM', 'view': title, 'length': L, 'ceiling': H}
     ox = cell[0] + (cell[2] - cell[0] - L * k - ML - MR) / 2 + ML
@@ -518,6 +563,8 @@ def draw_view(sh, cell, view, sc, with_notes=True):
     assert ox - ML >= cell[0] - 0.5 and ox + L * k + MR <= cell[2] + 0.5 and top + blk <= cell[3] - 6, ('view does not fit its cell', title)
     v = E.ElevationView(sh.p, sh.font, sh.fontname, (ox, oy), k, spec)
     fn(v)
+    if fn.__name__ == 'niche': v.dim_v(0, H, v.X(spec['length']) + 30, [0, H])   # niche: the left side carries the shelf string, so the overall goes outside the right string
+    else: v.dim_v(0, H, v.X(0) - 20, [0, H], side='l')                               # overall, at the left, finish floor to ceiling (review 11.09.26)
     v.text(v.X(0) - 6, v.Y(0) - 2.5, 'FIN. FLR.', 5.0, MID, align='r')
     ny = oy + 58 + 16
     for ln in notes: sh.text(ox, ny, ln, NOTE_SZ, MID); ny += NOTE_LH
@@ -594,7 +641,7 @@ def build():
     key_plan(s0)
     for sheet in ('ID-735', 'ID-736'):                               # two walls a sheet at 3/4", side by side (two rows of 10'-0" walls need 3/4" x 2 = 1,216 pt), the key plan and notes under them
         sh = Sheet(doc); sh.frame('MASTER BEDROOM ELEVATIONS', 'SCALE: 3/4" TO 1\'-0"', ['INTERIOR ELEVATIONS', 'MASTER BEDROOM'], sheet, legend_rule=False)
-        CH = 16 + 18 + H * 4.5 + 58 + 16 + 8
+        CH = 16 + 18 + 118.0 * 4.5 + 58 + 16 + 8   # tallest view (9'-10")
         draw_row(sh, VIEWS[sheet], '3/4', Y0, Y0 + CH, X0, X1, with_notes=False)
         b0, b1 = Y0 + CH + 14, Y1; ih = CLIP.height + 26
         t = key_inset(sh, X0 + 24, b0 + (b1 - b0 - ih) / 2, sheet)
