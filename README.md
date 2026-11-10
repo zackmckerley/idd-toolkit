@@ -31,6 +31,7 @@ The input files (the architect's plans, base PDFs) are not stored here. They com
 | A room to design | a study sheet (`build_study.py` pattern), the owner picks, then a room generator (`build_*_rev1.py` pattern) using `idd_components` / `idd_kitchen` | the designed room sheets (key plan, elevations, compartments) |
 | Designed sheets | `build_review_set.py` | the owner review set, full size and 11x17 |
 | A designed room | `render/capture_run.py ROOM views.json`, then `render/photoreal.py views.json IDX out.png` | photoreal rendered elevations (`--preview` for a quick look) |
+| Rooms that see each other | register both in `render/plan_rooms.json` (offset from a shared opening), save each with `PR_SAVEROOM=KEY` and its own command, then render with `--context KEY[,KEY]` | the neighbouring rooms seen through every door and cased opening, not a painted wall behind it |
 | An inspiration image | `render/inspiration.py IMAGE OUT --neutral x,y,w,h --neutral-is HEX --source "..."` | palette, Sherwin-Williams and Benjamin Moore candidates by CIEDE2000, LRV, confidence, the design-read template |
 
 ## Checks

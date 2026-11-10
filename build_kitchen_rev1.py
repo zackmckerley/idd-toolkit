@@ -251,20 +251,8 @@ def north_wall(v):
             'THE RUN IS SOLID ON FOR REV 1 (STORAGE ROOMS NORTH OF IT, NO WINDOWS). APPLIANCE OUTLETS BEHIND THE REFRIGERATOR AND FREEZER, NOTHING ELSE ON THIS WALL. '
             'THE RANGE WALL RUN IS CUT (GREY) IN FRONT OF THE COLUMN.')
 
-def arched_cased_opening(v, x, w, spring, r):
-    """Cased opening with a segmental arched head: leg casings to the spring line, inner and outer arcs sharing one center."""
-    import math
-    cs = CS; cx = x + w / 2; cy = spring - math.sqrt(r ** 2 - (w / 2) ** 2)
-    def arc(rr, xa, xb):
-        a0 = math.atan2(math.sqrt(rr ** 2 - (xa - cx) ** 2), xa - cx); a1 = math.atan2(math.sqrt(rr ** 2 - (xb - cx) ** 2), xb - cx)
-        return [(cx + rr * math.cos(a0 + (a1 - a0) * i / 30), cy + rr * math.sin(a0 + (a1 - a0) * i / 30)) for i in range(31)]
-    inner = arc(r, x, x + w); outer = arc(r + cs, x - cs, x + w + cs)
-    sp_out = cy + math.sqrt((r + cs) ** 2 - (w / 2 + cs) ** 2)
-    C._rect(v, x - cs, 0, x, sp_out, C.OUTLINE); C._rect(v, x + w, 0, x + w + cs, sp_out, C.OUTLINE)
-    C._poly(v, [(x, 0), (x, spring)] + inner + [(x + w, spring), (x + w, 0)], C.OUTLINE, close=False)
-    C._poly(v, outer, C.OUTLINE, close=False)
-    C._poly(v, arc(r + cs - 1.0, x - cs + 1.0, x + w + cs - 1.0), C.FINE, LIGHT, close=False)   # backband line
-    C._line(v, (x - cs + 1.0, 0), (x - cs + 1.0, sp_out), C.FINE, LIGHT); C._line(v, (x + w + cs - 1.0, 0), (x + w + cs - 1.0, sp_out), C.FINE, LIGHT)
+def arched_cased_opening(v, x, w, spring, r):   # now a component (idd_components), so the render sees through it
+    C.arched_cased_opening(v, x, w, spring, r, cs=CS)
 
 # ================================================================== south wall (looking south, east at the left): pier, arch, pier, tall cabinets, shelving, swing doors, column
 def fake_leaf(v, x, w, hinge):  # x, w: the leaf in view inches

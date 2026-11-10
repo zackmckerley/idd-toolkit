@@ -93,6 +93,18 @@
     "ctx": [
      "window"
     ]
+   },
+   {
+    "kind": "opening",
+    "x0": 49.3,
+    "x1": 187.8,
+    "y0": 0,
+    "y1": 128.0,
+    "ctx": [
+     "opening"
+    ],
+    "beyond": false,
+    "note": "REV 1: open to the south end under the gallery beam (head 10'-8\"), world X 92.2..230.7; stage_living builds the south end, stair and entry arch behind it"
    }
   ]
  },

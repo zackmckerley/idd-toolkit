@@ -1,0 +1,9 @@
+{
+ "_doc": "Where each rendered room's own world sits on its floor, so a render can load the rooms it sees through its openings (--context). offset_in: the room's world origin (its west and south wall faces) in floor inches, x east, y north. Register a room by a shared opening seen from both sides (the kitchen arch is living X 17 to 75 and kitchen X 197 to 255; the wall between is 6 in.). blend: written by running the room's own render command with PR_SAVEROOM=KEY. cmd: that command.",
+ "floor1": {
+  "living": {"offset_in": [0.0, 0.0], "model_room": "GREAT ROOM",
+             "cmd": "render/living_shell_views.json 0 OUT --walls N=0,E=1,S=2,W=3 --dims 280,194 --persp 100,97.125,62,280,97.125,136 --lens 22 --res 1600,2000 --clip 10 --stage living --sun 28,45,10 --envrot 108"},
+  "kitchen": {"offset_in": [-180.0, 200.0], "model_room": "KITCHEN & DINING AREA",
+              "cmd": "render/kitchen_views.json 0 OUT --walls N=1,E=3,S=2,W=0 --dims 272,244.9375 --shift EAST=-24 --persp 262,122.5,64,0,122.5,50 --lens 19 --res 2400,1500 --clip 10 --stage kitchen --lightplan render/kitchen_lights.json --lights"}
+ }
+}

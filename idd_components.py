@@ -608,3 +608,21 @@ def shower_door_end(v, x, w, h=96, door_w=26, door_at='L'):
     px = lx - 3.4 if door_at == 'L' else lx + 2.2
     _rect(v, px, 36, px + 1.2, 48, OUTLINE)
     for i in range(2): _line(v, (fx0 + 4 + i * 2.5, h - 6), (fx0 + 4 + i * 2.5 + 8, h - 16), FINE, PALE)
+
+
+def arched_cased_opening(v, x, w, spring, r, cs=5.0):
+    """Cased opening with a segmental arched head: leg casings to the spring line, inner and outer arcs sharing one center. A component,
+    so the capture records it as an opening up to the apex and the renderer cuts the wall, builds the spandrels and the casing, and a
+    render with --context sees the next room through it (owner 11.10.26)."""
+    import math
+    cx = x + w / 2; cy = spring - math.sqrt(r ** 2 - (w / 2) ** 2)
+    def arc(rr, xa, xb):
+        a0 = math.atan2(math.sqrt(rr ** 2 - (xa - cx) ** 2), xa - cx); a1 = math.atan2(math.sqrt(rr ** 2 - (xb - cx) ** 2), xb - cx)
+        return [(cx + rr * math.cos(a0 + (a1 - a0) * i / 30), cy + rr * math.sin(a0 + (a1 - a0) * i / 30)) for i in range(31)]
+    inner = arc(r, x, x + w); outer = arc(r + cs, x - cs, x + w + cs)
+    sp_out = cy + math.sqrt((r + cs) ** 2 - (w / 2 + cs) ** 2)
+    _rect(v, x - cs, 0, x, sp_out, OUTLINE); _rect(v, x + w, 0, x + w + cs, sp_out, OUTLINE)
+    _poly(v, [(x, 0), (x, spring)] + inner + [(x + w, spring), (x + w, 0)], OUTLINE, close=False)
+    _poly(v, outer, OUTLINE, close=False)
+    _poly(v, arc(r + cs - 1.0, x - cs + 1.0, x + w + cs - 1.0), FINE, LIGHT, close=False)   # backband line
+    _line(v, (x - cs + 1.0, 0), (x - cs + 1.0, sp_out), FINE, LIGHT); _line(v, (x + w + cs - 1.0, 0), (x + w + cs - 1.0, sp_out), FINE, LIGHT)

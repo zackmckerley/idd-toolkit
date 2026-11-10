@@ -1087,7 +1087,7 @@ def build_wall(vi, M, front_room_depth):
     PORTALS.clear()
     glass_doors = [c['args'] for c in V.get('calls', []) if c['comp'] == 'door_leaf' and c.get('args', {}).get('panels') == 'glass']
     for o in V['openings']:
-        if 'x0' in o and o.get('ctx', [''])[0] == o['kind'] and o['kind'] not in ('niche', 'window'):
+        if 'x0' in o and o.get('ctx', [''])[0] == o['kind'] and o['kind'] not in ('niche', 'window') and o.get('beyond', True):   # beyond:false = the stage models the room behind it
             ext = any(g['x'] - 1 <= o['x0'] and o['x1'] <= g['x'] + g['w'] + 1 for g in glass_doors)
             if ext:   # a full-lite door is a terrace door (the generators draw interior doors paneled): outside is beyond it
                 PORTALS.append((o['x0'] + 2, o['x1'] - 2, 9.0, o['y1'] - 5, -3.0))
@@ -1297,10 +1297,70 @@ def stage_bath():
         soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb + 1.0, y_ + 0.2, y_ + 1.1, tw, 0.45, 'hand_towel_fold')
 
 
+def load_context(keys):
+    """The rooms this view sees through its openings (owner 11.10.26: 'if there's a door opening, you can't see into the other
+    room'). Each is loaded from render/rooms/KEY.blend (that room's own build, staging and lights) and moved by the difference of
+    the two rooms' offsets in render/plan_rooms.json. Dropped from the loaded room: its cameras, sun, daylight portals and the plain
+    'beyond' walls behind its openings; any piece mostly inside this room's own walls (the shared wall is this room's). Dropped from
+    this room: its 'beyond' walls and floors, which stood where the neighbour now is. A room not yet saved is reported, not faked."""
+    from mathutils import Vector as _V4
+    reg = json.load(open(os.path.join(HERE, 'plan_rooms.json')))
+    fl = next((f for f, rr in reg.items() if not f.startswith('_') and SELF_ROOM in rr), None)
+    if fl is None: print('CONTEXT: room', SELF_ROOM, 'not in plan_rooms.json; nothing loaded'); return
+    me_off = reg[fl][SELF_ROOM]['offset_in']
+    def bbox(o):
+        bb = [o.matrix_world @ _V4(c) for c in o.bound_box]
+        return [min(getattr(p_, a_) for p_ in bb) for a_ in 'xyz'], [max(getattr(p_, a_) for p_ in bb) for a_ in 'xyz']
+    mine = [bbox(o) for o in bpy.data.objects if o.type == 'MESH' and not o.hide_render and o.name.split('.')[0] in ('wall', 'wall_column', 'arch_spandrel')]   # the shared wall, as this room built it
+    loaded_bb = []
+    for k in keys:
+        if k not in reg[fl]: print('CONTEXT: no room', k, 'on', fl); continue
+        path = os.path.join(HERE, 'rooms', k + '.blend')
+        if not os.path.exists(path):
+            print('CONTEXT MISSING: %s; save it with PR_SAVEROOM=%s and its cmd in plan_rooms.json' % (path, k)); continue
+        d = [(reg[fl][k]['offset_in'][i] - me_off[i]) * IN for i in (0, 1)]
+        with bpy.data.libraries.load(path, link=False) as (src, dst):
+            dst.objects = [n for n in src.objects]
+        n_in = 0
+        for o in dst.objects:
+            if o is None: continue
+            nm = o.name.split('.')[0]
+            if o.type not in ('MESH', 'LIGHT') or nm.startswith(('beyond', 'portal', 'cam')): continue
+            if o.type == 'LIGHT' and o.data.type == 'SUN': continue
+            bpy.context.collection.objects.link(o)
+            if o.parent is None: o.location = (o.location[0] + d[0], o.location[1] + d[1], o.location[2])
+            n_in += 1
+        bpy.context.view_layer.update()
+        for o in dst.objects:
+            if o is None or o.name not in bpy.context.collection.objects or o.type != 'MESH': continue
+            lo, hi = bbox(o); vol = max(1e-9, (hi[0] - lo[0]) * (hi[1] - lo[1]) * (hi[2] - lo[2]))
+            loaded_bb.append((lo, hi))
+            ovs = 0.0
+            for mlo, mhi in mine:   # summed over our wall pieces (ours is split round its openings)
+                ov = 1.0
+                for a_ in range(3): ov *= max(0.0, min(hi[a_], mhi[a_]) - max(lo[a_], mlo[a_]))
+                ovs += ov
+            if ovs > 0.3 * vol or (o.name.split('.')[0] in ('wall', 'wall_column', 'arch_spandrel') and ovs > IN ** 3):
+                o.hide_render = True; continue   # the shared wall is ours: its pieces that touch our wall go, the plane you look through
+            if o.name.split('.')[0] == 'floor': o.location[2] -= 0.02 * IN   # its floor runs under our threshold: 0.02 in. down, no shared face
+        bpy.context.view_layer.update()
+        print('CONTEXT: loaded', k, n_in, 'objects, moved', [round(v / IN, 2) for v in d])
+    if loaded_bb:   # this room's plain stand-ins behind its openings go where a neighbour now stands
+        for o in bpy.data.objects:
+            if o.type == 'MESH' and o.name.split('.')[0] in ('beyond', 'beyond_floor') and not o.hide_render: o.hide_render = True
+
+CONTEXT = [t for t in args[args.index('--context') + 1].split(',') if t] if '--context' in args else []   # rooms seen through the openings
+SELF_ROOM = args[args.index('--room') + 1] if '--room' in args else STAGE
 exec(open(os.path.join(HERE, 'stages.py')).read())
 if PERSP:
     if STAGE == 'bath' and ROOM_MODE: stage_bath()
     elif STAGE in STAGES: STAGES[STAGE]()
+    if os.environ.get('PR_SAVEROOM'):
+        # this room, built and staged with its lights, saved for other rooms' renders to load through their openings (--context)
+        os.makedirs(os.path.join(HERE, 'rooms'), exist_ok=True)
+        dst_ = os.path.join(HERE, 'rooms', os.environ['PR_SAVEROOM'] + '.blend')
+        bpy.ops.wm.save_as_mainfile(filepath=dst_, copy=True); print('saved room', dst_); sys.exit(0)
+    if CONTEXT: load_context(CONTEXT)
     if ROOM_MODE: joint_report(out + '.joints.txt')   # again with the staging (island, built-ins) in, so its duplicates are caught too
     if os.environ.get('PR_STAGECHECK'): print('stage built, objects', len(bpy.data.objects)); sys.exit(0)   # build-only check
     if os.environ.get('PR_DUMP'):   # the same dump, with the staging built

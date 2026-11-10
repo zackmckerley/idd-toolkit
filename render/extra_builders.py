@@ -432,7 +432,33 @@ def b_undercounter_appliance(a, ctx):
         _bar_pull(x + w / 2, top - S - 4.5, min(8.0, w * 0.5), False, D + 0.31)
 
 
-EXTRA_BUILDERS = {'undercounter_appliance': b_undercounter_appliance, 'soffit': b_soffit, 'filler_panel': b_filler_panel, 'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
+
+def b_arched_cased_opening(a, *_):
+    """The wall is cut to the apex (the capture records the opening so); this fills the spandrels back to the arc through the wall's
+    6 in. and lays the 5 in. casing 3/4 in. proud on the room face, legs to the floor (owner 11.10.26: openings are seen through)."""
+    import math
+    x, w, sp, r, cs = a['x'], a['w'], a['spring'], a['r'], a.get('cs', 5.0)
+    cx = x + w / 2; cy = sp - math.sqrt(r ** 2 - (w / 2) ** 2); apex = cy + r
+    def arc(rr, xa, xb, k=36):
+        a0 = math.atan2(math.sqrt(max(rr ** 2 - (xa - cx) ** 2, 0)), xa - cx); a1 = math.atan2(math.sqrt(max(rr ** 2 - (xb - cx) ** 2, 0)), xb - cx)
+        return [(cx + rr * math.cos(a0 + (a1 - a0) * i / k), cy + rr * math.sin(a0 + (a1 - a0) * i / k)) for i in range(k + 1)]
+    def prism(pts, d0, d1, mat, name):
+        n = len(pts); verts = [(px, py, d1) for px, py in pts] + [(px, py, d0) for px, py in pts]
+        faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+        o = obj_from(verts, faces, mat, name)
+        import bmesh as _bm
+        bm = _bm.new(); bm.from_mesh(o.data); _bm.ops.recalc_face_normals(bm, faces=bm.faces)
+        _bm.ops.triangulate(bm, faces=[f_ for f_ in bm.faces if len(f_.verts) > 4]); bm.to_mesh(o.data); bm.free()
+        return o
+    inner = arc(r, x, x + w)
+    top = apex + 1.0   # the capture cuts the hole 1 in. over the apex
+    prism([(x, top), (x + w, top)] + inner[::-1], -6.0, 0.0, wall_mat(), 'arch_spandrel')
+    sp_out = cy + math.sqrt((r + cs) ** 2 - (w / 2 + cs) ** 2)
+    outer = arc(r + cs, x - cs, x + w + cs)
+    prism([(x - cs, 0.0)] + outer + [(x + w + cs, 0.0), (x + w, 0.0)] + inner[::-1] + [(x, 0.0)], 0.0, 0.75, trim_mat(), 'arch_casing')
+
+
+EXTRA_BUILDERS = {'arched_cased_opening': b_arched_cased_opening, 'undercounter_appliance': b_undercounter_appliance, 'soffit': b_soffit, 'filler_panel': b_filler_panel, 'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
                   'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
                   'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
                   'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,

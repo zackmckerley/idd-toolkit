@@ -19,7 +19,9 @@ def wprism_xz(pts, y0, y1, mat, name='prism'):
     n = len(pts); v = [(x_ * IN, y0 * IN, z_ * IN) for x_, z_ in pts] + [(x_ * IN, y1 * IN, z_ * IN) for x_, z_ in pts]
     f = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
     me = bpy.data.meshes.new(name); me.from_pydata(v, [], f); me.update()
-    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(me); bm.free()
+    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bmesh.ops.triangulate(bm, faces=[f_ for f_ in bm.faces if len(f_.verts) > 4])   # ear-clipped caps: a concave n-gon left a hole by the apex
+    bm.to_mesh(me); bm.free()
     o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
 
 
@@ -84,7 +86,9 @@ def wcyl(X, Y, Z, r, length, axis, mat, name='cyl', n=32):
         j = (i + 1) % n; faces.append((i, j, n + j, n + i))
     faces.append(tuple(range(n - 1, -1, -1))); faces.append(tuple(range(n, 2 * n)))
     me = bpy.data.meshes.new(name); me.from_pydata([(a_ * IN, b_ * IN, c_ * IN) for a_, b_, c_ in verts], [], faces); me.update()
-    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(me); bm.free()
+    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bmesh.ops.triangulate(bm, faces=[f_ for f_ in bm.faces if len(f_.verts) > 4])   # ear-clipped caps: a concave n-gon left a hole by the apex
+    bm.to_mesh(me); bm.free()
     for pg in me.polygons: pg.use_smooth = True
     o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
 
@@ -120,7 +124,9 @@ def _garment(axis, p, t, c, ztop, zbot, depth, mat, rnd):
             verts.append((p + s_, c + u, z) if axis == 'x' else (c + u, p + s_, z))
     faces = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
     me = bpy.data.meshes.new('garment'); me.from_pydata([(a_ * IN, b_ * IN, z_ * IN) for a_, b_, z_ in verts], [], faces); me.update()
-    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(me); bm.free()
+    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bmesh.ops.triangulate(bm, faces=[f_ for f_ in bm.faces if len(f_.verts) > 4])   # ear-clipped caps: a concave n-gon left a hole by the apex
+    bm.to_mesh(me); bm.free()
     o = bpy.data.objects.new('garment', me); bpy.context.collection.objects.link(o); o.data.materials.append(mat)
     bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = min(0.45, t / 2.2) * IN; bv.segments = 3; bv.limit_method = 'NONE'
     for pg in me.polygons: pg.use_smooth = True
@@ -460,6 +466,106 @@ STAGES = {'pool': stage_pool, 'closet': stage_closet, 'kitchen': stage_kitchen, 
 
 
 # ================================================================== living room (ID-230 to ID-234, owner's pick 11.09.26)
+def wbox_abs(x0, x1, y0, y1, z0, z1, mat, name):
+    """A box whose object coordinates are world coordinates, like the room floor: a board floor continues across the seam."""
+    v = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0), (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+    me = bpy.data.meshes.new(name); me.from_pydata([(a_ * IN, b_ * IN, c_ * IN) for a_, b_, c_ in v], [], [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)])
+    o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
+
+
+def arch_xz(ax_, aw_, asp, top, yw0, yw1, yc0, yc1, wallm, trim, cs=5.0):
+    """The arched cased opening (arched_cased_opening): radius 0.62 x width, springing at asp. Spandrels fill the wall (yw0..yw1)
+    from `top` down to the arc; the casing (yc0..yc1, on the room face) follows the arc and runs to the floor."""
+    ar_ = aw_ * 0.62; acx = ax_ + aw_ / 2; acz = asp - _m.sqrt(ar_ ** 2 - (aw_ / 2) ** 2)
+    def arc(rr, xa, xb, k=36):
+        a0 = _m.atan2(_m.sqrt(max(rr ** 2 - (xa - acx) ** 2, 0)), xa - acx); a1 = _m.atan2(_m.sqrt(max(rr ** 2 - (xb - acx) ** 2, 0)), xb - acx)
+        return [(acx + rr * _m.cos(a0 + (a1 - a0) * i / k), acz + rr * _m.sin(a0 + (a1 - a0) * i / k)) for i in range(k + 1)]
+    inner_ = arc(ar_, ax_, ax_ + aw_)
+    wprism_xz([(ax_, top), (ax_ + aw_, top)] + inner_[::-1], yw0, yw1, wallm, 'arch_spandrel')
+    outer_ = arc(ar_ + cs, ax_ - cs, ax_ + aw_ + cs)
+    wprism_xz([(ax_ - cs, 0.0)] + outer_ + [(ax_ + aw_ + cs, 0.0), (ax_ + aw_, 0.0)] + inner_[::-1] + [(ax_, 0.0)], yc0, yc1, trim, 'arch_casing')
+    return acz + ar_
+
+
+def door_in_x_wall(xf, side, y0, y1, head, trim, leafm, cs=3.5):
+    """A closed two-panel door in a wall whose face is the plane X = xf, the room on the `side` (+1 east, -1 west): the leaf set
+    1 in. back in the jamb, raised panels, a knob at the latch, 3-1/2 in. casing on the face. The wall's hole is the caller's."""
+    lf0, lf1 = sorted((xf - side * 1.0, xf - side * 2.75))
+    wbox(lf0, lf1, y0, y1, 0.0, head, leafm, 'door_leaf', soft=0.06)
+    pf0, pf1 = sorted((xf - side * 1.0, xf - side * 0.8))
+    for z0_, z1_ in ((8.0, head * 0.42), (head * 0.42 + 5.0, head - 5.0)):
+        wbox(pf0, pf1, y0 + 5.0, y1 - 5.0, z0_, z1_, leafm, 'door_panel', soft=0.12)
+    kx0, kx1 = sorted((xf - side * 0.8, xf + side * 1.4))
+    wbox(kx0, kx1, y0 + 2.0, y0 + 4.2, 35.0, 37.2, material('STEEL-SS'), 'knob', soft=0.5)
+    c0, c1 = sorted((xf, xf + side * 0.75))
+    wbox(c0, c1, y0 - cs, y0, 0.0, head + cs, trim, 'door_casing', soft=0.1)
+    wbox(c0, c1, y1, y1 + cs, 0.0, head + cs, trim, 'door_casing', soft=0.1)
+    wbox(c0, c1, y0, y1, head, head + cs, trim, 'door_casing', soft=0.1)
+
+
+def south_end(wallm, trim, pt1):
+    """The south end under floor 2 (build_great_rev1b south_wall: OPEN TO THE SOUTH END UNDER THE GALLERY BEAM, HEAD 10'-8"),
+    modelled so the living room sees into it (owner 11.10.26: through a door opening you must see the other room). World X east,
+    Y north from the gallery line; the plan's numbers converted with X = (x_pt - 626.2) / 1.5, Y = (844.5 - y_pt) / 1.5:
+    west wall face 92.2 with back hall door 12; closet 27's wall face 230.7 (door at Y -88..-59); south wall face -196.7 with the
+    entry's arched cased opening (X 103.0..155.3, apex 8'-4-3/4", the kitchen arch's language); the lower stair flight along the
+    south wall behind a raking half wall (7 risers at 7-5/16 in. to the SE landing). Ceiling 10'-8" (the gallery soffit)."""
+    CH = 128.0; ys = -196.7; wd = material(R('floor', 'WD-01')); leafm = material('PT-01-SATIN')
+    MATS.setdefault('STEEL-SS', {'hex': '#B8B5AE', 'rough': 0.3, 'kind': 'metal'})
+    # floor: the living room's boards continue (world coordinates, same material: no seam); the foyer's checkerboard past the arch
+    wbox_abs(86.2, 268.0, ys - 6.0, -12.0, -2.0, 0.0, wd, 'south_floor')
+    wbox_abs(80.2, 206.0, -296.0, ys - 6.0, -2.0, 0.0, material(R('floor', 'TL-01')), 'foyer_floor')
+    # west wall with door 12
+    for y0_, y1_, z0_ in ((ys - 6.0, -122.0, 0.0), (-89.0, -6.0, 0.0), (-122.0, -89.0, 96.0)):
+        wbox(86.2, 92.2, y0_, y1_, z0_, CH, wallm, 'se_wall_w')
+    door_in_x_wall(92.2, 1, -122.0, -89.0, 96.0, trim, leafm)
+    # closet 27's wall (its face toward the room is west) with its door; the landing's north wall closes the upper flight off
+    for y0_, y1_, z0_ in ((-148.0, -88.0, 0.0), (-59.0, -6.0, 0.0), (-88.0, -59.0, 96.0)):
+        wbox(230.7, 236.7, y0_, y1_, z0_, CH, wallm, 'se_wall_closet')
+    door_in_x_wall(230.7, -1, -88.0, -59.0, 96.0, trim, leafm)
+    wbox(236.7, 262.0, -148.0, -142.0, 51.2, CH, wallm, 'se_wall_landing')
+    wbox(262.0, 268.0, ys - 6.0, -142.0, 0.0, CH, wallm, 'se_wall_stair_e')
+    # south wall with the entry arch; the foyer beyond it
+    AX, AW, AP = 103.0, 52.3, 100.75
+    asp = AP - AW * 0.62 + _m.sqrt((AW * 0.62) ** 2 - (AW / 2) ** 2)
+    for x0_, x1_, z0_ in ((86.2, AX, 0.0), (AX + AW, 262.0, 0.0), (AX, AX + AW, AP + 1.0)):
+        wbox(x0_, x1_, ys - 6.0, ys, z0_, CH, wallm, 'se_wall_s')
+    arch_xz(AX, AW, asp, AP + 1.0, ys - 6.0, ys, ys, ys + 0.75, wallm, trim)
+    wbox(80.2, 86.2, -296.0, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_w'); wbox(206.0, 212.0, -296.0, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_e')
+    wbox(80.2, 212.0, -302.0, -296.0, 0.0, CH, wallm, 'foyer_wall_s')
+    wbox(80.2, 212.0, -302.0, ys - 6.0, CH, CH + 4.0, pt1, 'foyer_ceiling')
+    # the lower flight: oak treads stepping up east to the landing, a raking half wall on its north side, its top 36 in. over
+    # the nosings, a wood cap
+    RS, n_, x_b, x_t = 7.3125, 7, 169.3, 235.3
+    run = (x_t - x_b) / (n_ - 1)
+    for k in range(1, n_):
+        x0_ = x_b + (k - 1) * run
+        wbox(x0_, min(x0_ + run + 0.5, x_t), ys, -153.0, 0.0, k * RS, wd, 'stair_step')
+        wbox(x0_ - 0.75, x0_ + run, ys, -153.0, k * RS - 1.0, k * RS, wd, 'tread')
+    wbox(x_t, 262.0, ys, -148.0, 0.0, n_ * RS, wd, 'landing')
+    hw = [(165.9, 0.0), (235.9, 0.0), (235.9, n_ * RS + 36.0), (x_b, RS + 36.0), (165.9, RS + 36.0)]
+    wprism_xz(hw, -153.0, -148.0, wallm, 'half_wall')
+    wprism_xz([(165.4, RS + 36.0), (x_b, RS + 36.0), (236.4, n_ * RS + 36.0), (236.4, n_ * RS + 37.25), (x_b, RS + 37.25), (165.4, RS + 37.25)],
+              -153.5, -147.5, material('WD-SHELF'), 'half_wall_cap')
+    # base: stopped at every casing, none on the stair side
+    B_ = lambda x0_, x1_, y0_, y1_: wbox(x0_, x1_, y0_, y1_, 0.0, 8.5, trim, 'se_base', soft=0.15)
+    B_(92.2, 92.8, ys, -125.5); B_(92.2, 92.8, -85.5, -6.0)
+    B_(230.1, 230.7, -148.0, -91.5); B_(230.1, 230.7, -55.5, -6.0)
+    B_(92.8, AX - 5.0, ys, ys + 0.6); B_(AX + AW + 5.0, 165.9, ys, ys + 0.6)
+    B_(165.9, 230.1, -148.0, -147.4)
+    # lights: the plan's recessed cans at the 10'-8" ceiling, two in the south end and one in the foyer
+    MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'}); MATS.setdefault('LENS', {'kind': 'lamp', 'emit': 6.0})
+    for X_, Y_ in ((126.0, -70.0), (196.0, -70.0), (126.0, -150.0), (146.0, -250.0)):
+        ld = bpy.data.lights.new('downlight', 'SPOT'); ld.energy = 4.0; ld.spot_size = _m.radians(75); ld.spot_blend = 0.55
+        ld.shadow_soft_size = 1.25 * IN; ld.use_nodes = True
+        bb = ld.node_tree.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3500
+        ld.node_tree.links.new(bb.outputs['Color'], ld.node_tree.nodes['Emission'].inputs['Color'])
+        o = bpy.data.objects.new('downlight', ld); bpy.context.collection.objects.link(o); o.location = (X_ * IN, Y_ * IN, (CH - 0.5) * IN)
+        o.visible_glossy = False
+        wbox_abs(X_ - 2.0, X_ + 2.0, Y_ - 2.0, Y_ + 2.0, CH - 0.05, CH, material('TRIM-RING'), 'trim_ring')
+        wbox_abs(X_ - 1.6, X_ + 1.6, Y_ - 1.6, Y_ + 1.6, CH - 0.08, CH - 0.04, material('LENS'), 'downlight_lens')
+
+
 def stage_living():
     """The living room from build_great_rev1b's numbers: the fireplace wall (ID-231 view 1: plaster breast, WS-01 surround, flush
     hearth, the art-mode TV in its niche, open bookcases each side with 30 in. base cabinets, belt course with the brass rail and
@@ -633,7 +739,8 @@ def stage_living():
     # no crown on the window wall: the pocket runs 14 in. past each jamb, leaving 13 in. west and none east (R6: a corbel)
     for (a_, b_) in ((G['GFW'], G['SL0']), (G['SL1'], IF)):
         wbox(a_, b_, RD - 0.6, RD, 0.0, 8.5, trim, 'base', soft=0.15)
-    wbox(4.0, IF, 0.0, 0.6, 0.0, 8.5, trim, 'base_s', soft=0.15)   # the south wall under the gallery (R6)
+    for (a_, b_) in ((4.0, 92.2), (230.7, IF)):   # the south wall under the gallery (R6), stopped at the open south end's jambs
+        wbox(a_, b_, 0.0, 0.6, 0.0, 8.5, trim, 'base_s', soft=0.15)
     # ---- the kitchen's arched opening in the west end's north wall (build_great_rev1b ARCH, arched_cased_opening): 1'-5" pier,
     # 4'-10" wide, the arc meeting the jambs at 7'-2", radius 0.62 x width, apex 8'-4-3/4"; the shell's hole runs to 101.5, the
     # spandrels fill it back to the arc through the wall's 6 in., and the 5 in. casing follows the arc on the room face
@@ -650,13 +757,14 @@ def stage_living():
     # ---- galleries: floor 2 over the west end and the south end, the fascia, cap and steel picket guard
     pt1 = material(R('ceiling', 'PT-01'))
     wbox(0.0, G['GFW'] - 0.6, 0.0, RD, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_w')   # stops at the fascia and the cap: no shared faces
-    wbox(0.0, E, -60.0, -0.6, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')
+    wbox(0.0, E, -202.7, -6.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')   # its underside is the south end's 10'-8" ceiling
     wbox(0.0, G['GFW'] - 3, 0.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')
     wbox(0.0, E, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')
     wbox(G['GFW'] - 0.6, G['GFW'], 0.0, RD, G['SOFFIT'], G['FF2'], trim, 'fascia_w')
     wbox(G['GFW'], E, 0.0, 0.25, G['SOFFIT'], G['FF2'], trim, 'fascia_s')   # proud of the wall below it: no shared face
     wbox(G['GFW'] - 1.5, G['GFW'] + 0.5, 0.0, RD, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_w')
     wbox(G['GFW'], E, -1.5, 0.5, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_s')
+    south_end(wallm, trim, pt1)
     def guard(axis, a0, a1, c):
         posts_ = [a0] + [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]
         for k in range(int((a1 - a0) / 4.5) + 1):
@@ -711,9 +819,10 @@ def stage_living():
     hl.new(cr.outputs['Color'], hb.inputs['Base Color'])
     bu = hn.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 0.9; bu.inputs['Distance'].default_value = 0.03
     hl.new(vo.outputs['Distance'], bu.inputs['Height']); hl.new(bu.outputs['Normal'], hb.inputs['Normal'])
-    wbox(-193.0, 86.0, RD + 6.0, 481.0, -6.0, 300.0, ext, 'dining_wing')            # the kitchen and dining wing, its east face on the notch
-    wbox(-195.0, 88.0, RD + 4.0, 483.0, 300.0, 304.0, material('ST-05'), 'wing_coping')   # stone coping (FOR A-301 parapet cap)
-    wbox(86.0, 86.3, RD + 6.0, 481.0, 154.0, 155.0, material('POCKET'), 'wing_reveal')   # floor-line reveal in the stucco
+    if 'kitchen' not in CONTEXT:   # with the kitchen loaded through the arch, the wing is the real kitchen, not a massing block
+        wbox(-193.0, 86.0, RD + 6.0, 481.0, -6.0, 300.0, ext, 'dining_wing')            # the kitchen and dining wing, its east face on the notch
+        wbox(-195.0, 88.0, RD + 4.0, 483.0, 300.0, 304.0, material('ST-05'), 'wing_coping')   # stone coping (FOR A-301 parapet cap)
+        wbox(86.0, 86.3, RD + 6.0, 481.0, 154.0, 155.0, material('POCKET'), 'wing_reveal')   # floor-line reveal in the stucco
     # the pool: 6'-8" x 11'-0" (A-100), stone coping 12 in., water 6 in. below the coping
     px0, px1, py0, py1 = 197.0, 277.0, 286.0, 418.0
     for r_ in ((px0 - 12, px1 + 12, py0 - 12, py0), (px0 - 12, px1 + 12, py1, py1 + 12), (px0 - 12, px0, py0, py1), (px1, px1 + 12, py0, py1)):

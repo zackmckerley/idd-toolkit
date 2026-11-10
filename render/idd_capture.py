@@ -23,7 +23,7 @@ STACK = []            # component names currently drawing
 DOCS = {}             # id(doc) -> output path (filled on save)
 OPENINGS = {'door_leaf': ('x', 'w', None, 'head'), 'door_pair': ('x', 'w', None, 'head'), 'cased_opening': ('x', 'w', None, 'head'),
             'window': ('x', 'w', 'sill', 'head'), 'arched_opening': ('x', 'w', None, 'spring'), 'niche': ('x', 'w', 'y', 'h'),
-            'jib_door': ('x', 'w', None, 'head'), 'bifold': ('x', 'w', None, 'head')}
+            'jib_door': ('x', 'w', None, 'head'), 'bifold': ('x', 'w', None, 'head'), 'arched_cased_opening': ('x', 'w', None, 'spring')}
 _on = False
 
 
@@ -72,6 +72,8 @@ def _wrap_component(mod, name, fn):
                     else: y0 = float(ar[y0k]) if y0k else 0.0; y1 = float(ar[y1k])
                     if name == 'arched_opening':
                         r_ = ar.get('r') or wd / 2.0; y1 = y1 + float(r_)
+                    if name == 'arched_cased_opening':   # the apex of the segmental head
+                        r_ = float(ar['r']); y1 = y1 - (r_ ** 2 - (wd / 2) ** 2) ** 0.5 + r_ + 1.0   # 1 in. over the apex: the spandrels close it
                     _view_rec(a[0])['openings'].append({'kind': name, 'x0': min(x, x + wd), 'x1': max(x, x + wd), 'y0': y0, 'y1': y1, 'ctx': _ctx()})
                 except Exception as e_:
                     _view_rec(a[0])['openings'].append({'kind': name, 'error': str(e_)})
