@@ -77,8 +77,10 @@ if '--win' in a_:
         # the shoulder: shadows (under 0.05 linear) as shot, the bracket's top (2^EV) to 0.92 (0.7 read as tinted glass), a power curve between them;
         # close to the plain bracket in the bright sky and the white pool house, and it never darkens shade (a log curve washed out)
         knee, Lm, top = 0.05, 2.0 ** bev, 0.92; g_ = np.log(knee / top) / np.log(knee / Lm)
-        sh_ = top * (np.clip(L_, knee, None) / Lm) ** g_
-        pulled = np.clip(_srgb(np.where(L_ < knee, L_, sh_)), 0, 1)
+        # the curve runs on luminance and the colour is scaled with it, so the garden keeps its colour (per channel it went grey)
+        Y_ = (L_ * np.array([0.2126, 0.7152, 0.0722], np.float32)).sum(axis=2, keepdims=True)
+        Yo = np.where(Y_ < knee, Y_, top * (np.clip(Y_, knee, None) / Lm) ** g_)
+        pulled = np.clip(_srgb(np.clip(L_ * Yo / np.maximum(Y_, 1e-6), 0, 1)), 0, 1)
         ev = f'bracket merge ({bev:g} EV)'
     else:
         ev = float(a_[a_.index('--win-ev') + 1]) if '--win-ev' in a_ else 1.5

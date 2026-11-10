@@ -151,7 +151,8 @@ def material(code, variant=''):
         n = _img(nt, _map(folder, 'nor_gl.jpg'), 'Non-Color', size, obj)
         nmap = nt.nodes.new('ShaderNodeNormalMap'); nmap.inputs['Strength'].default_value = 0.8; nt.links.new(n.outputs['Color'], nmap.inputs['Color'])
         nt.links.new(nmap.outputs['Normal'], b.inputs['Normal'])
-        b.inputs['Roughness'].default_value = 0.95; b.inputs['Sheen Weight'].default_value = 0.6; b.inputs['Sheen Roughness'].default_value = 0.5
+        b.inputs['Roughness'].default_value = 0.95; b.inputs['Sheen Weight'].default_value = 0.2; b.inputs['Sheen Roughness'].default_value = 0.5
+        b.inputs['Sheen Tint'].default_value = (*rgb, 1)   # a white sheen at 0.6 turned a mid-taupe sofa near white (R6, 11.10.26)
         return m
     if kind == 'checker':
         # a checkered floor: two colours on the module the spec gives, laid square to the room
@@ -1279,8 +1280,8 @@ if PERSP:
         for o in DOWN: o.hide_render = True
     for o in bpy.data.objects:
         if o.type == 'LIGHT' and o.data.type == 'SUN':
-            o.data.energy = 0.0 if DUSK else 22.0; o.data.angle = math.radians(1.2)
-            el_, az_ = SUN if SUN else (32.0, 250.0)
+            o.data.energy = 0.0 if DUSK else (SUN[2] if SUN and len(SUN) > 2 else 22.0); o.data.angle = math.radians(1.2)   # --sun ELEV,AZ[,POWER]
+            el_, az_ = SUN[:2] if SUN else (32.0, 250.0)
             o.rotation_euler = (math.radians(90 - el_), 0, math.radians(180 - az_))
     for o in bpy.data.objects:                                   # walls for the exposure mask
         if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1

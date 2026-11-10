@@ -23,6 +23,54 @@ def wprism_xz(pts, y0, y1, mat, name='prism'):
     o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
 
 
+def leafy(objs, density=900.0, seed=3):
+    """Clip a hedge: instance real leaves over each box's surface with geometry nodes (3-1/2 x 1-3/4 in. leaves, tilted at
+    random, standing off the surface up to 1-1/2 in.). A textured box read as green foam (R6 review 11.10.26)."""
+    leaf_me = bpy.data.meshes.get('leaf_src')
+    if leaf_me is None:
+        n_ = 10; pts = [(1.75 * _m.cos(2 * _m.pi * i / n_) * IN, 0.875 * _m.sin(2 * _m.pi * i / n_) * IN, 0.15 * IN * (_m.cos(2 * _m.pi * i / n_)) ** 2) for i in range(n_)]
+        leaf_me = bpy.data.meshes.new('leaf_src'); leaf_me.from_pydata([(0, 0, -0.08 * IN)] + pts, [], [(0, 1 + i, 1 + (i + 1) % n_) for i in range(n_)])
+        lm = bpy.data.materials.new('LEAF'); lm.use_nodes = True; ln = lm.node_tree.nodes; ll = lm.node_tree.links
+        pb = ln['Principled BSDF']; pb.inputs['Roughness'].default_value = 0.45
+        oi_ = ln.new('ShaderNodeObjectInfo'); cr_ = ln.new('ShaderNodeValToRGB')
+        cr_.color_ramp.elements[0].color = (0.018, 0.045, 0.012, 1); cr_.color_ramp.elements[1].color = (0.10, 0.20, 0.04, 1)
+        ll.new(oi_.outputs['Random'], cr_.inputs['Fac']); ll.new(cr_.outputs['Color'], pb.inputs['Base Color'])
+        tr_ = ln.new('ShaderNodeBsdfTranslucent'); ll.new(cr_.outputs['Color'], tr_.inputs['Color'])
+        mx_ = ln.new('ShaderNodeMixShader'); mx_.inputs['Fac'].default_value = 0.25
+        ll.new(pb.outputs['BSDF'], mx_.inputs[1]); ll.new(tr_.outputs['BSDF'], mx_.inputs[2]); ll.new(mx_.outputs['Shader'], ln['Material Output'].inputs['Surface'])
+        leaf_me.materials.append(lm)
+        for pg in leaf_me.polygons: pg.use_smooth = True
+        lo = bpy.data.objects.new('leaf_src', leaf_me); bpy.context.collection.objects.link(lo); lo.location = (0, 0, -500 * IN)
+    lo = bpy.data.objects['leaf_src']
+    ng = bpy.data.node_groups.get('LEAVES')
+    if ng is None:
+        ng = bpy.data.node_groups.new('LEAVES', 'GeometryNodeTree')
+        ng.interface.new_socket('Geometry', in_out='INPUT', socket_type='NodeSocketGeometry')
+        ng.interface.new_socket('Geometry', in_out='OUTPUT', socket_type='NodeSocketGeometry')
+        N = ng.nodes; L = ng.links
+        gi = N.new('NodeGroupInput'); go = N.new('NodeGroupOutput')
+        ds = N.new('GeometryNodeDistributePointsOnFaces'); ds.inputs['Density'].default_value = density; ds.inputs['Seed'].default_value = seed
+        oi = N.new('GeometryNodeObjectInfo'); oi.inputs['Object'].default_value = lo; oi.inputs['As Instance'].default_value = False
+        ip = N.new('GeometryNodeInstanceOnPoints')
+        rv = N.new('FunctionNodeRandomValue'); rv.data_type = 'FLOAT_VECTOR'
+        rv.inputs['Min'].default_value = (-0.7, -0.7, -3.14); rv.inputs['Max'].default_value = (0.7, 0.7, 3.14)
+        e2r = N.new('FunctionNodeEulerToRotation'); rr = N.new('FunctionNodeRotateRotation'); rr.rotation_space = 'LOCAL'
+        rs = N.new('FunctionNodeRandomValue'); rs.data_type = 'FLOAT'; rs.inputs[2].default_value = 0.7; rs.inputs[3].default_value = 1.3
+        ro = N.new('FunctionNodeRandomValue'); ro.data_type = 'FLOAT'; ro.inputs[2].default_value = 0.0; ro.inputs[3].default_value = 1.5 * IN; ro.inputs['Seed'].default_value = 7
+        vm = N.new('ShaderNodeVectorMath'); vm.operation = 'SCALE'
+        sp = N.new('GeometryNodeSetPosition'); jn = N.new('GeometryNodeJoinGeometry')
+        L.new(gi.outputs[0], ds.inputs['Mesh'])
+        L.new(ds.outputs['Normal'], vm.inputs[0]); L.new(ro.outputs[1], vm.inputs['Scale'])
+        L.new(ds.outputs['Points'], sp.inputs['Geometry']); L.new(vm.outputs['Vector'], sp.inputs['Offset'])
+        L.new(sp.outputs['Geometry'], ip.inputs['Points']); L.new(oi.outputs['Geometry'], ip.inputs['Instance'])
+        L.new(rv.outputs[0], e2r.inputs[0]); L.new(ds.outputs['Rotation'], rr.inputs[0]); L.new(e2r.outputs[0], rr.inputs[1])
+        L.new(rr.outputs[0], ip.inputs['Rotation']); L.new(rs.outputs[1], ip.inputs['Scale'])
+        L.new(gi.outputs[0], jn.inputs[0]); L.new(ip.outputs['Instances'], jn.inputs[0]); L.new(jn.outputs[0], go.inputs[0])
+    for o in objs:
+        if o is None: continue
+        md = o.modifiers.new('leaves', 'NODES'); md.node_group = ng
+
+
 def wcyl(X, Y, Z, r, length, axis, mat, name='cyl', n=32):
     """Cylinder centred at (X, Y, Z); axis 'x', 'y' or 'z'."""
     verts = []; faces = []
@@ -459,10 +507,24 @@ def stage_living():
     # TV: the art-mode set nearly flush in a 4 in. niche 2 in. larger each way
     tb = G['TV_B']; tw = G['TV_W']; th = G['TV_H']
     # the set sits nearly flush: its face 1/2 in. behind the breast face, the niche's 2 in. margin dark round it
-    wbox(BF + 1.6, BF + 4.0, yc - tw / 2 - 2, yc + tw / 2 + 2, tb - 2, tb + th + 2, material('GAP'), 'niche_back')
+    wbox(BF + 1.6, BF + 4.0, yc - tw / 2 - 2, yc + tw / 2 + 2, tb - 2, tb + th + 2, wallm, 'niche_back')   # painted returns in shadow, not a void
     wbox(BF + 0.5, BF + 1.6, yc - tw / 2, yc + tw / 2, tb, tb + th, material('TV-BLACK'), 'tv')
     wbox(BF + 0.3, BF + 0.45, yc - tw / 2 + 0.6, yc + tw / 2 - 0.6, tb + 0.6, tb + th - 0.6, material('PLATE-WHITE'), 'tv_mat')
-    wbox(BF + 0.25, BF + 0.35, yc - tw / 2 + 4.5, yc + tw / 2 - 4.5, tb + 4.5, tb + th - 4.5, material('ART-01'), 'tv_art')
+    art_ = bpy.data.materials.new('ART-ABSTRACT'); art_.use_nodes = True; an = art_.node_tree.nodes; al = art_.node_tree.links
+    # staging: an abstract landscape on the art-mode screen (soft ochre ground, sage band, pale sky), not a blank beige panel (R6)
+    ab_ = an['Principled BSDF']; ab_.inputs['Roughness'].default_value = 0.7
+    atc = an.new('ShaderNodeTexCoord'); asep = an.new('ShaderNodeSeparateXYZ'); al.new(atc.outputs['Generated'], asep.inputs['Vector'])
+    anz = an.new('ShaderNodeTexNoise'); anz.inputs['Scale'].default_value = 3.0; anz.inputs['Detail'].default_value = 8.0; anz.inputs['Roughness'].default_value = 0.65
+    al.new(atc.outputs['Generated'], anz.inputs['Vector'])
+    amx = an.new('ShaderNodeMath'); amx.operation = 'MULTIPLY_ADD'; amx.inputs[1].default_value = 0.22; amx.inputs[2].default_value = -0.11
+    al.new(anz.outputs['Fac'], amx.inputs[0]); aad = an.new('ShaderNodeMath'); aad.operation = 'ADD'
+    al.new(asep.outputs['Z'], aad.inputs[0]); al.new(amx.outputs['Value'], aad.inputs[1])
+    arp = an.new('ShaderNodeValToRGB'); el = arp.color_ramp.elements
+    el[0].position = 0.0; el[0].color = (0.32, 0.20, 0.10, 1); el[1].position = 1.0; el[1].color = (0.80, 0.78, 0.72, 1)
+    for pos_, col_ in ((0.30, (0.55, 0.38, 0.20, 1)), (0.42, (0.36, 0.40, 0.30, 1)), (0.55, (0.52, 0.55, 0.48, 1)), (0.70, (0.74, 0.70, 0.62, 1))):
+        e_ = el.new(pos_); e_.color = col_
+    al.new(aad.outputs['Value'], arp.inputs['Fac']); al.new(arp.outputs['Color'], ab_.inputs['Base Color'])
+    wbox(BF + 0.25, BF + 0.35, yc - tw / 2 + 4.5, yc + tw / 2 - 4.5, tb + 4.5, tb + th - 4.5, art_, 'tv_art')
     # ---- the built-ins each side: base cabinet, open cases, belt with the brass rail, the panel band, cap, upper cases, frieze
     rnd = _rnd.Random(23)
     books_m = [material(f'BOOK-{i}') for i in range(8)]
@@ -529,8 +591,15 @@ def stage_living():
     wcyl(lx0, Yw(3.0) - 0.9, 1.2, 1.2, 1.0, 'y', brass, 'ladder_wheel'); wcyl(lx0, Yw(21.0) + 0.9, 1.2, 1.2, 1.0, 'y', brass, 'ladder_wheel')
     # CM-02 crown held 4 in. under the ceiling on the east wall (cases and breast), LED cove on its top
     def crown_run(x_face, ya, yb, top):
-        for k, (dz, pr) in enumerate(((0.0, 1.0), (3.0, 2.5), (6.0, 4.0), (9.0, 5.5))):
-            wbox(x_face - pr, x_face, ya, yb, top - 12.0 + dz, top - 12.0 + dz + 3.0, trim, 'crown', soft=0.6)
+        # a moulded CM-02 profile (bead, cyma recta, top fillet), 12 in. high, 5-1/2 in. projection, extruded along the run.
+        # Four stacked bevelled boxes read as bolsters (R6 review 11.10.26)
+        z0 = top - 12.0; pr = [(0.0, z0), (0.6, z0), (0.6, z0 + 0.5), (0.9, z0 + 0.9)]
+        for i in range(1, 25):
+            t = i / 24.0; pr.append((0.9 + 4.1 * (0.5 - 0.5 * _m.cos(_m.pi * t)), z0 + 0.9 + 9.6 * t))
+        pr += [(5.5, z0 + 10.5), (5.5, z0 + 12.0), (0.0, z0 + 12.0)]
+        o_ = wprism_xz([(x_face - p_, z_) for p_, z_ in pr], min(ya, yb), max(ya, yb), trim, 'crown')
+        for pg in o_.data.polygons: pg.use_smooth = True
+        o_.data.set_sharp_from_angle(angle=_m.radians(25))          # smooth along the cyma, crisp at the fillets so the profile reads
         wbox(x_face - 5.0, x_face - 4.4, ya, yb, top, top + 0.4, material('LAMP'), 'cove_led')
     top = Hh - G['COVE']
     crown_run(IF, Yw(RD), Yw(B1), top); crown_run(BF, Yw(B1), Yw(B0), top); crown_run(IF, Yw(B0), Yw(0.0), top)
@@ -558,14 +627,13 @@ def stage_living():
     glazed(G['SL0'], G['SL1'], G['BELT1'], G['CL_HEAD'], 3, False)
     # FOR's 22'-4" band at the window wall with the 5 in. drapery pocket 14 in. past each jamb; CM-02 under the band beside it
     PK0, PK1 = G['SL0'] - 15, G['SL1'] + 15
-    wbox(G['GFW'], E, RD - G['BAND_W'], RD, G['BAND'], Hh + 0.01, material(R('ceiling', 'PT-01')), 'band')
+    wbox(4.0, E, RD - G['BAND_W'], RD, G['BAND'], Hh + 0.01, material(R('ceiling', 'PT-01')), 'band')   # wall to wall: it stopped at the gallery line with its end showing
     MATS.setdefault('POCKET', {'hex': '#8A857E', 'rough': 0.8, 'kind': 'paint'})   # the slot's inside in shadow, not a black bar
     wbox(PK0, PK1, RD - 7.0, RD - 2.0, G['BAND'] - 0.01, Hh, material('POCKET'), 'drapery_pocket')
-    for (a_, b_) in ((G['GFW'], PK0), (PK1, IF)):
-        for k, (dz, pr) in enumerate(((0.0, 1.0), (3.0, 2.5), (6.0, 4.0), (9.0, 5.5))):
-            wbox(a_, b_, RD - pr, RD, G['BAND'] - G['COVE'] - 12.0 + dz, G['BAND'] - G['COVE'] - 9.0 + dz, trim, 'crown', soft=0.6)
+    # no crown on the window wall: the pocket runs 14 in. past each jamb, leaving 13 in. west and none east (R6: a corbel)
     for (a_, b_) in ((G['GFW'], G['SL0']), (G['SL1'], IF)):
         wbox(a_, b_, RD - 0.6, RD, 0.0, 8.5, trim, 'base', soft=0.15)
+    wbox(4.0, IF, 0.0, 0.6, 0.0, 8.5, trim, 'base_s', soft=0.15)   # the south wall under the gallery (R6)
     # ---- the kitchen's arched opening in the west end's north wall (build_great_rev1b ARCH, arched_cased_opening): 1'-5" pier,
     # 4'-10" wide, the arc meeting the jambs at 7'-2", radius 0.62 x width, apex 8'-4-3/4"; the shell's hole runs to 101.5, the
     # spandrels fill it back to the arc through the wall's 6 in., and the 5 in. casing follows the arc on the room face
@@ -589,7 +657,6 @@ def stage_living():
     wbox(G['GFW'], E, 0.0, 0.25, G['SOFFIT'], G['FF2'], trim, 'fascia_s')   # proud of the wall below it: no shared face
     wbox(G['GFW'] - 1.5, G['GFW'] + 0.5, 0.0, RD, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_w')
     wbox(G['GFW'], E, -1.5, 0.5, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_s')
-    wbox(0.0, G['GFW'] - 3.0, 0.0, RD, G['SOFFIT'] - 8.0, G['SOFFIT'], trim, 'crown_w_end')   # CM-01 in the west end, simplified
     def guard(axis, a0, a1, c):
         posts_ = [a0] + [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]
         for k in range(int((a1 - a0) / 4.5) + 1):
@@ -608,6 +675,7 @@ def stage_living():
     wbox(0.0, E, -60.0, -54.0, G['FF2'], Hh, wallm, 'hall_wall_s')
     wbox(0.0, E, -60.0, -11.0, 268.0, 272.0, material(R('ceiling', 'PT-01')), 'hall_ceiling')   # floor 2 hall, 9'-6" (FOR)
     wbox(0.0, 4.0, -60.0, RD, G['FF2'], Hh, wallm, 'hall_wall_w_face')
+    wbox(E - 4.0, E, -60.0, 0.0, G['FF2'], Hh, wallm, 'hall_wall_e_face')   # the hall's east end (R6: it was open to the sky)
     # ---- staging (captioned): a sofa with its back on the west gallery line facing the TV, a rug and a coffee table
     fab = material('FAB-SOFA'); rug = material('FAB-RUG'); wood = material('WOOD-FURN')
     cy = yc
@@ -626,10 +694,9 @@ def stage_living():
         wbox(sx0 + 9.25, sx0 + 37.0, y0_, y1_, 14.0, 19.5, fab, 'seat_cushion', soft=2.2)
         wbox(sx0 + 9.25, sx0 + 15.5, y0_ + 0.25, y1_ - 0.25, 19.5, 32.5, fab, 'back_cushion', soft=2.8)
     for y_, pm in ((cy - 39.5, 'FAB-PILLOW-A'), (cy + 21.5, 'FAB-PILLOW-B')):
-        wbox(sx0 + 15.75, sx0 + 20.5, y_, y_ + 18.0, 19.5, 36.0, material(pm), 'pillow', soft=2.5)
+        wbox(sx0 + 15.0, sx0 + 21.0, y_, y_ + 18.0, 19.5, 36.0, material(pm), 'pillow', soft=4.5)
     wbox(160.0, 196.0, cy - 22, cy + 22, 0.0, 15.0, wood, 'coffee_table', soft=0.6)
     import_model('wooden_bowl_01', 2.5, 176.0, cy - 6, 15.0, 0); import_model('ceramic_vase_01', 8.0, 184.0, cy + 10, 15.0, 0)
-    import_model('potted_plant_02', 40.0, G['SL0'] - 22.0, RD - 20.0, 0.0, 30)   # staging: a plant beside the west jamb of the window wall
     # ---- outside (FOR A-100 at 1/8 in., A-303): X = 92 + (site x - 773) / 0.75, Y = 202 + (705 - site y) / 0.75
     ext = material('STUCCO-EXT'); deck = material('DECK-01')
     # the hedge: leaf-scale colour variation and a deep bump, so it reads as planting and not a green-painted wall
@@ -638,7 +705,7 @@ def stage_living():
     tco_ = hn.new('ShaderNodeTexCoord'); vo = hn.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 32.0   # cells about 1-1/4 in., in object space (meters)
     no = hn.new('ShaderNodeTexNoise'); no.inputs['Scale'].default_value = 2.5; no.inputs['Detail'].default_value = 6.0
     hl.new(tco_.outputs['Object'], vo.inputs['Vector']); hl.new(tco_.outputs['Object'], no.inputs['Vector'])
-    cr = hn.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].color = (0.035, 0.075, 0.022, 1); cr.color_ramp.elements[1].color = (0.16, 0.28, 0.08, 1)
+    cr = hn.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].color = (0.012, 0.028, 0.008, 1); cr.color_ramp.elements[1].color = (0.04, 0.08, 0.02, 1)   # the hedge's shaded inside, under the leaves
     mx = hn.new('ShaderNodeMath'); mx.operation = 'MULTIPLY'
     hl.new(vo.outputs['Distance'], mx.inputs[0]); hl.new(no.outputs['Fac'], mx.inputs[1]); hl.new(mx.outputs['Value'], cr.inputs['Fac'])
     hl.new(cr.outputs['Color'], hb.inputs['Base Color'])
@@ -681,21 +748,26 @@ def stage_living():
     wbox(px0, px1, py0, py1, -6.5, -6.0, wm, 'pool_water')
     # the side yard: fence 1 ft inside the east line with a hedge in front (landscape plan, placeholder)
     wbox(338.0, 341.0, RD + 6.0, 818.0, 0.0, 72.0, ext, 'fence')
-    wbox(306.0, 338.0, RD + 30.0, 818.0, 0.0, 108.0, hedge, 'hedge', soft=6.0)
-    wbox(-200.0, 341.0, 818.0, 821.0, 0.0, 72.0, ext, 'fence_rear'); wbox(-200.0, 341.0, 790.0, 818.0, 0.0, 120.0, hedge, 'hedge_rear', soft=8.0)
+    h1_ = wbox(306.0, 338.0, RD + 30.0, 818.0, 0.0, 108.0, hedge, 'hedge', soft=6.0)
+    wbox(-200.0, 341.0, 818.0, 821.0, 0.0, 72.0, ext, 'fence_rear'); h2_ = wbox(-200.0, 341.0, 790.0, 818.0, 0.0, 120.0, hedge, 'hedge_rear', soft=8.0)
+    leafy([h1_, h2_])
     # the ancillary structure (A-204, A-303): 28'-9" x 10'-3", slab 11'-0", parapet 14'-0"; its north face (toward the house):
     # a full-lite door, a picture window; the exterior stair on its plan-east side to the roof deck, metal picket railing; pergola
     ax0, ax1, ay0, ay1 = -129.0, 216.0, 575.0, 698.0
     wbox(ax0, ax1, ay0, ay1, -6.0, 132.0, ext, 'ancillary')
     wbox(ax0, ax1, ay0, ay0 + 6, 132.0, 168.0, ext, 'parapet'); wbox(ax0, ax1, ay1 - 6, ay1, 132.0, 168.0, ext, 'parapet')
-    wbox(ax0, ax0 + 6, ay0, ay1, 132.0, 168.0, ext, 'parapet'); wbox(ax1 - 6, ax1, ay0, ay1, 132.0, 150.0, ext, 'parapet')
-    wbox(23.0, 55.0, ay0 - 0.5, ay0 + 0.5, 0.0, 96.0, fr, 'anc_door_frame')
-    wbox(25.0, 53.0, ay0 - 0.7, ay0 - 0.4, 2.0, 94.0, material('GLASS-DARK'), 'anc_door_glass')
-    wbox(99.0, 178.0, ay0 - 0.5, ay0 + 0.5, 36.0, 96.0, fr, 'anc_window_frame')
-    wbox(101.0, 176.0, ay0 - 0.7, ay0 - 0.4, 38.0, 94.0, material('GLASS-DARK'), 'anc_window_glass')
+    wbox(ax0, ax0 + 6, ay0 + 6, ay1 - 6, 132.0, 168.0, ext, 'parapet'); wbox(ax1 - 6, ax1, ay0 + 6, ay1 - 6, 132.0, 150.0, ext, 'parapet')   # between the long parapets: lapped corners showed a black slot
+    # openings cut as recesses with frames as rings and the glass in front of a dark room (R6: a solid black slab read as a board)
+    for (x0_, x1_, z0_, z1_, nm) in ((23.0, 55.0, 0.0, 96.0, 'anc_door'), (99.0, 178.0, 36.0, 96.0, 'anc_window')):
+        wbox(x0_ + 2, x1_ - 2, ay0 - 0.2, ay0 + 10.0, z0_ + 2 if z0_ else 0.0, z1_ - 2, material('GAP'), nm + '_room')
+        for r_ in ((x0_, x0_ + 2, z0_, z1_), (x1_ - 2, x1_, z0_, z1_), (x0_ + 2, x1_ - 2, z1_ - 2, z1_)) + (((x0_ + 2, x1_ - 2, z0_, z0_ + 2),) if z0_ else ()):
+            wbox(r_[0], r_[1], ay0 - 1.5, ay0 + 0.5, r_[2], r_[3], fr, nm + '_frame')
+        wbox(x0_ + 2, x1_ - 2, ay0 - 0.9, ay0 - 0.6, (z0_ + 2) if z0_ else 0.0, z1_ - 2, gl, nm + '_glass')
     for k in range(18):                                               # stair, 18 risers to the slab top, rising plan north
         z_ = (k + 1) * 132.0 / 18.0; y_ = ay0 - 10 + k * 7.4
         wbox(ax1, ax1 + 40.0, y_, y_ + 11.0, z_ - 1.5, z_, ext, 'anc_step')
+        wbox(ax1 + 0.5, ax1 + 39.5, y_ + 0.5, y_ + 7.9, -6.0, z_ - 1.5, ext, 'anc_stair_mass')   # solid stucco under the treads (R6: floating louvers)
+        wbox(ax1 + 38.0, ax1 + 40.0, y_, y_ + 7.4, z_ + 34.0, z_ + 36.0, steel, 'anc_rail')
     wbox(ax1, ax1 + 40.0, ay0 - 10, ay0 + 120, -6.0, 6.0, material('ST-05'), 'anc_stair_base')
     for k in range(30):
         y_ = ay0 - 6 + k * 4.4; z_ = max(0.0, (y_ - ay0 + 10) / 7.4 * 132.0 / 18.0)
