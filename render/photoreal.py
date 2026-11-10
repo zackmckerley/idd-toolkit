@@ -988,10 +988,13 @@ def downlight(X, Y, watts=1.5, cone=70):
     o = bpy.data.objects.new('downlight', ld); bpy.context.collection.objects.link(o); o.location = (X * IN, Y * IN, (H - 0.5) * IN)
     o.visible_glossy = False; DOWN.append(o)
     world_box(X - 2.0, X + 2.0, Y - 2.0, Y + 2.0, H - 0.05, H, material('TRIM-RING'), 'trim_ring')
+    if LIGHTPLAN:   # the lit lens is seen, as in a photograph of the room with the lights on (owner 11.09.26 PM: "you see all lights")
+        world_box(X - 1.6, X + 1.6, Y - 1.6, Y + 1.6, H - 0.08, H - 0.04, material('LENS'), 'downlight_lens')
 MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'})
+MATS.setdefault('LENS', {'kind': 'lamp', 'emit': 6.0})
 if floor_rect and LIGHTPLAN:
     for l_ in LIGHTPLAN:
-        if l_['type'] == 'recess': downlight(l_['X'], l_['Y'], watts=7.0, cone=60)
+        if l_['type'] == 'recess': downlight(l_['X'], l_['Y'], watts=4.0, cone=75)    # soft pools, nothing overpowering
 elif floor_rect:
     n_ = max(1, int(round(WID / 48)))
     rows_ = (DEP - 20, 20) if DEP >= 60 else (DEP / 2,)

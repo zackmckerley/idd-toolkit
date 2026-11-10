@@ -158,16 +158,16 @@
   "source": "generic"
  },
  "WD-01": {
-  "name": "WOOD FLOOR, LIGHT WHITE OAK (OWNER 11.09.26)",
-  "hex": "#C9AE8C",
+  "name": "WOOD FLOOR, LIGHT WHITE OAK (OWNER INSPIRATION 11.09.26)",
+  "hex": "#DBCBB7",
   "rough": 0.35,
   "kind": "wood",
   "status": "PLACEHOLDER",
   "source": "species and stain open",
   "texture": "acg/WoodFloor062",
   "tint": [
+   1.0,
    0.95,
-   0.92,
    0.88
   ]
  },
@@ -711,5 +711,49 @@
   ],
   "status": "OWNER DIRECTION 11.09.26",
   "source": "stain sample to pick"
+ },
+ "GROUT": {
+  "hex": "#C4BEB4",
+  "rough": 0.85,
+  "kind": "plastic"
+ },
+ "OVEN-GLASS": {
+  "name": "OVEN DOOR GLASS",
+  "hex": "#141516",
+  "rough": 0.04,
+  "kind": "ceramic"
+ },
+ "CAB-CREAM": {
+  "name": "KITCHEN CABINETRY, WARM CREAM MATTE (OWNER INSPIRATION 11.09.26)",
+  "hex": "#DBD0C2",
+  "rough": 0.45,
+  "kind": "paint",
+  "status": "OWNER INSPIRATION",
+  "source": "sampled from the owner's kitchen inspiration image 11.09.26, corrected to its ceiling white"
+ },
+ "PT-CEIL": {
+  "name": "CEILING, WARM WHITE (OWNER INSPIRATION 11.09.26)",
+  "hex": "#EDE6DC",
+  "rough": 0.85,
+  "kind": "paint",
+  "status": "OWNER INSPIRATION",
+  "source": "inspiration image"
+ },
+ "ST-03-INSPO": {
+  "name": "KITCHEN STONE AS THE OWNER'S INSPIRATION: WARM CREAM WITH SOFT TAUPE AND CARAMEL VEINS",
+  "hex": "#F1EDE7",
+  "rough": 0.25,
+  "kind": "marble",
+  "honed": true,
+  "vein": "#9A8470",
+  "vein2": "#B79A72",
+  "veins": 0.9,
+  "status": "OWNER INSPIRATION",
+  "source": "inspiration image 11.09.26 (Calacatta Monet pick reads violet: owner to confirm)"
+ },
+ "ALABASTER": {
+  "name": "ALABASTER PENDANT (PLACEHOLDER, FIXTURE OPEN)",
+  "kind": "lamp",
+  "emit": 1.6
  }
 }

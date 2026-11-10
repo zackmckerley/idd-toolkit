@@ -15,7 +15,7 @@ def counter(v, x0, x1, top=COUNTER, slab=SLAB, edge=None, overhang=0.0):
     _rect(v, x0 - overhang, top - e, x1 + overhang, top, OUTLINE, fill=(1, 1, 1)); shadow(v, x0 - overhang, x1 + overhang, top - e)
     # a mitered edge shows no joint on its face: the apron meets the slab at the arris (45 degrees), so no line is drawn in the band
 
-def toe(v, x0, x1):
+def toe(v, x0, x1, depth=24.0):
     _rect(v, x0, 0, x1, TOE, MED); _line(v, (x0, TOE), (x1, TOE), FINE, MID)
 
 def frame_opening(v, x0, y0, x1, y1):
@@ -145,6 +145,15 @@ def veneer_door(v, x, w, y0, y1, glass=False, pull='bar', hinge='L', depth=24.0)
     px = x + w - STILE - 2.2 if hinge == 'L' else x + STILE + 2.2
     if pull == 'bar': _line(v, (px, (y0 + y1) / 2 - 3), (px, (y0 + y1) / 2 + 3), OUTLINE)
     elif pull == 'long': _line(v, (px, 30), (px, 66), OUTLINE); _line(v, (px - 0.6, 30), (px - 0.6, 66), FINE, MID)
+
+def filler_panel(v, x, w, y0, y1, depth=25.0):
+    """A flush panel or filler between cabinets or appliance columns, full depth (recorded for the 3-D render)."""
+    _rect(v, x, y0, x + w, y1, MED)
+
+def soffit(v, x0, x1, y0, H, depth=24.0, crown_drop=8.0):
+    """Drywall and scribe above a cabinet run, flush with the cabinet face from the cabinet top to the ceiling, the crown on its face
+    (1/ID-501 rule). In elevation it is the line at the cabinet top; recorded for the plan and the 3-D render."""
+    _line(v, (x0, y0), (x1, y0), FINE)
 
 def drywall_column(v, x, w, H, crown_drop=8.0, depth=26.0):
     """A drywall column or pilaster seen face-on, floor to the crown, `depth` deep off the wall (recorded for the plan and the 3-D render)."""

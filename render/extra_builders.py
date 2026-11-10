@@ -65,7 +65,9 @@ def _carcass(x, w, y0, y1, D, interior=False):
 
 
 def b_toe(a, ctx):
-    box(a['x0'], a['x1'], 0.0, 4.5, 0.0, 21.0, material('TOE'), 'toe')
+    # the kick in the cabinet finish, 3 in. back from the cabinet face (owner 11.09.26 PM: "the toe kicks need to match the cabinets")
+    D = float(a.get('depth') or 24.0)
+    box(a['x0'], a['x1'], 0.0, 4.5, 0.0, D - 3.0, cab_mat(), 'toe')
 
 
 def b_frame_opening(a, ctx):
@@ -150,21 +152,41 @@ def b_outlet_splash(a, ctx):
 
 
 def b_pro_range(a, ctx):
+    """48 in. dual-fuel professional range, built like the real thing: brushed stainless body and front frame, two oven doors
+    (30 + 18) with framed dark glass and tubular handles on round brackets, a control rail of eight knobs with bezels, six
+    sealed burners under continuous cast-iron grates and a griddle at the right, a vented kick and a low island backguard."""
     x, w, h = a['x'], a.get('w', 48.0), a.get('h', 36.0)
-    ss = material('STAINLESS'); gr = material('GRATE'); gl = material('GLASS-DARK') if 'GLASS-DARK' in MATS else material('GAP')
-    box(x + 0.1, x + w - 0.1, 0.0, h - 1.0, 0.0, 27.0, ss, 'range_body')
-    box(x + 1, x + w - 1, 1.5, 4.5, 26.9, 27.2, material('GAP'), 'range_kick')
-    rail_y = h - 5.5
-    for i in range(8): cyl(x + 5 + (w - 10) * i / 7, rail_y + 1.3, 28.0, 1.0, 1.6, 'd', ss, 'knob')
-    split = x + w * 0.62
-    for (d0, d1) in ((x + 1.5, split - 0.5), (split + 0.5, x + w - 1.5)):
-        box(d0, d1, 5.0, rail_y - 1.0, 27.0, 27.6, ss, 'oven_door'); box(d0 + 3, d1 - 3, 10.0, rail_y - 9.0, 27.6, 27.65, gl, 'oven_glass')
-        cyl((d0 + d1) / 2, rail_y - 5.0, 29.4, 0.45, d1 - d0 - 4, 'x', ss, 'handle')
-        for xx in (d0 + 2.5, d1 - 2.5): cyl(xx, rail_y - 5.0, 28.4, 0.3, 1.8, 'd', ss, 'handle_post')
-    box(x, x + w, h - 1.0, h + 0.5, 1.0, 27.0, ss, 'cooktop')
-    for i in range(3):
-        box(x + 1 + i * (w - 2) / 3 + 0.3, x + 1 + (i + 1) * (w - 2) / 3 - 0.3, h + 0.5, h + 1.4, 3.0, 25.5, gr, 'grate')
-    box(x, x + w, h + 0.5, h + 7.0, 0.0, 2.5, ss, 'backguard')
+    ss = material('STAINLESS'); ci = material('GRATE'); gl = material('OVEN-GLASS'); gap = material('GAP')
+    D = 27.0
+    box(x + 0.06, x + w - 0.06, 4.5, h - 1.0, 0.5, D - 0.5, ss, 'range_body')
+    box(x + 0.06, x + w - 0.06, 0.0, 4.5, 0.5, D - 2.5, gap, 'range_toe')
+    for i in range(10): box(x + 4 + i * (w - 8) / 10, x + 4 + i * (w - 8) / 10 + 2.6, 1.2, 3.4, D - 2.55, D - 2.45, ss, 'kick_vent')
+    rail_y = h - 6.0
+    box(x + 0.3, x + w - 0.3, rail_y, h - 1.0, D - 0.5, D + 0.6, ss, 'control_rail')
+    for i in range(8):
+        kx = x + 4.5 + (w - 9) * i / 7
+        cyl(kx, rail_y + 2.5, D + 0.75, 1.15, 0.3, 'd', ss, 'bezel'); cyl(kx, rail_y + 2.5, D + 1.6, 0.85, 1.5, 'd', ss, 'knob')
+        box(kx - 0.08, kx + 0.08, rail_y + 2.6, rail_y + 3.3, D + 2.32, D + 2.38, gap, 'knob_pointer')
+    split = x + 30.0
+    for (d0, d1) in ((x + 0.5, split - 0.25), (split + 0.25, x + w - 0.5)):
+        box(d0, d1, 5.0, rail_y - 0.6, D - 0.5, D + 0.6, ss, 'oven_door')
+        box(d0 + 3.0, d1 - 3.0, 9.5, rail_y - 9.0, D + 0.6, D + 0.64, gl, 'oven_window')
+        for (p0, p1, q0, q1) in ((d0 + 2.6, d1 - 2.6, 9.1, 9.5), (d0 + 2.6, d1 - 2.6, rail_y - 9.0, rail_y - 8.6), (d0 + 2.6, d0 + 3.0, 9.1, rail_y - 8.6), (d1 - 3.0, d1 - 2.6, 9.1, rail_y - 8.6)):
+            box(p0, p1, q0, q1, D + 0.6, D + 0.7, ss, 'window_frame')
+        hy = rail_y - 4.0
+        cyl((d0 + d1) / 2, hy, D + 2.4, 0.55, d1 - d0 - 5.0, 'x', ss, 'handle')
+        for hx in (d0 + 3.0, d1 - 3.0): cyl(hx, hy, D + 1.5, 0.45, 1.9, 'd', ss, 'handle_bracket')
+    box(x, x + w, h - 1.0, h, 0.5, D - 0.5, ss, 'cooktop')
+    gw = (w - 2.0) * 2.0 / 3.0; gx0 = x + 1.0
+    for i in range(6):                                   # sealed burners: black caps on brass-tone bases under the grates
+        bx_ = gx0 + gw / 6.0 + (i % 3) * gw / 3.0; bz = 7.0 if i < 3 else 20.0
+        cyl(bx_, h + 0.5, bz, 2.3, 1.0, 'y', ss, 'burner_base'); cyl(bx_, h + 1.05, bz, 1.6, 0.4, 'y', ci, 'burner_cap')
+    for k in range(3):                                   # continuous cast-iron grates, three sections, bars both ways
+        g0 = gx0 + k * gw / 3.0 + 0.2; g1 = gx0 + (k + 1) * gw / 3.0 - 0.2
+        for zz in (2.0, 13.5, 25.0): box(g0, g1, h + 1.6, h + 2.2, zz - 0.3, zz + 0.3, ci, 'grate_bar')
+        for xx in (g0 + 0.3, (g0 + g1) / 2, g1 - 0.3): box(xx - 0.3, xx + 0.3, h + 1.6, h + 2.2, 1.7, 25.3, ci, 'grate_bar')
+    box(gx0 + gw + 0.4, x + w - 1.0, h + 0.2, h + 0.9, 2.0, 25.0, ss, 'griddle')
+    box(x, x + w, h, h + 3.0, 0.5, 2.0, ss, 'backguard')
 
 
 def b_hood_breast(a, ctx):
@@ -308,7 +330,10 @@ def b_counter_stool(a, ctx):
 def b_veneer_door(a, ctx):
     """A veneer door in its face frame, glass with lit shelves behind when the drawing says glass; long pulls as drawn."""
     x, w, y0, y1 = a['x'], a['w'], a['y0'], a['y1']; D = float(a.get('depth') or 24.0); glass = a.get('glass')
-    _carcass(x, w, y0, y1, D, interior=glass)
+    # paired doors share a 2 in. stile: each carcass takes half of it, so two boxes never overlap (coplanar overlapping faces with
+    # the bevel shader render as black slots)
+    _carcass(x + 1.0, w - 2.0, y0, y1, D, interior=glass)
+    box(x, x + 1.0, y0, y1, 0.0, D, cab_mat(), 'stile_half'); box(x + w - 1.0, x + w, y0, y1, 0.0, D, cab_mat(), 'stile_half')
     if glass:
         m = cab_mat()
         for (p0, p1, q0, q1) in ((x, x + 2, y0, y1), (x + w - 2, x + w, y0, y1), (x, x + w, y0, y0 + 2), (x, x + w, y1 - 2, y1)):
@@ -319,7 +344,18 @@ def b_veneer_door(a, ctx):
     else: _bar_pull(px, (y0 + y1) / 2 if (y1 - y0) < 40 else y0 + 36, 6.0, True, D + 0.06)
 
 
-EXTRA_BUILDERS = {'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
+def b_filler_panel(a, ctx):
+    box(a['x'], a['x'] + a['w'], a['y0'], a['y1'], 0.0, float(a.get('depth') or 25.0), cab_mat(), 'filler_panel')
+
+
+def b_soffit(a, ctx):
+    """Drywall over a cabinet run, flush with the cabinet face from the cabinet top to the ceiling, the crown on its face."""
+    x0, x1, y0, dp = a['x0'], a['x1'], a['y0'], float(a.get('depth') or 24.0); cd = a.get('crown_drop') or T['crown']
+    box(x0, x1, y0, H, 0.0, dp, wall_mat(), 'wall_soffit')
+    sweep([(x1, H), (x0, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'soffit_crown')
+
+
+EXTRA_BUILDERS = {'soffit': b_soffit, 'filler_panel': b_filler_panel, 'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
                   'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
                   'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
                   'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,

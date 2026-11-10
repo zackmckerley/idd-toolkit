@@ -58,6 +58,7 @@ if B.splash_return.__defaults__: B.splash_return.__defaults__ = (B.splash_return
 from build_kitchen import (H, CR, CS, TOP, KD, TALL_D, BASE_D, RC, RANGE_W, RANGE_D, BREAST_W, BREAST_D, COL_W, S_TALL, NOTE, NOTE_LH, WHITE, WALL, PT,
                            W_FACE, N_FACE, S_FACE, ISL_X, ISL_N, ISL_W, ISL_L, ISL_CAB, WF, OV, ISL_TOP, ISL_BAYS, SINK_CL, SINK_W, SINK_CAB, DW_W, AISLE,
                            shell, base_run, tag, wrap, draw_views, para_block, draw_schedule, floor_line, Plan)
+TALL_D = S_TALL = 25.0     # owner 11.09.26 PM: the corner columns 25 x 25, flush with the 25 in. side runs and the counter edge (were 26 x 26)
 # review 11.09.26: every elevation carries an overall floor-to-ceiling dimension outside its chain
 _E_dim_v = E.ElevationView.dim_v
 def _dim_v_overall(self, y0i, y1i, x_pt, pts_i, side='r'):
@@ -119,7 +120,7 @@ SLIDER = (52.0, 241.0)                       # (215.0 - 137.0) / 1.5 = 52.0, (49
 SLIDER_HEAD = 117.0                          # FOR A-600: slider D04 15'-9" x 9'-9" (coordination 11.09.26; was 8'-0" assumed)
 # ---- the south wall, west-face coordinates
 P_OPEN = (27.0, 65.0)                        # fx(396.72), fx(453.72) = 27.0 to 65.0: FOR's 3'-2" opening, 2'-3" from the west wall, center 3'-10"
-DW_COL = 26.0                                # drywall column, 26 x 26, at the NW and SW corners (owner 11.03.26)
+DW_COL = 25.0                                # drywall column, 25 x 25, at the NW and SW corners (owner 11.03.26; 25 to be flush, 11.09.26 PM)
 VEST = (DW_COL, P_OPEN[1])                   # 26 to 65: the vestibule in front of the wall opening, closed by the swing doors
 RET = (P_OPEN[1], P_OPEN[1] + 4.0)           # 65 to 69: drywall return, the doors' east jamb
 WPIER = (ARCH[0] - CS - 12.0, ARCH[0] - CS)  # 179.96 to 191.96: 1'-0" pier west of the arch casing, as the east side (1'-5" less the 5" casing)
@@ -188,14 +189,15 @@ def grain(v, x0, y0, x1, y1):
         pts = [(x0 + 1.5 + (x1 - x0 - 3) * t / 12, yy + 0.6 * math.sin(t * 1.3 + i)) for t in range(13)]
         C._poly(v, pts, C.FINE, C.PALE, close=False)
 
-veneer_door = K.veneer_door      # in idd_kitchen since 11.09.26, so the 3-D capture records glass and pulls
+def veneer_door(v, x, w, y0, y1, glass=False, pull='bar', hinge='L'):   # in idd_kitchen since 11.09.26 so the capture records it; the runs are 25 deep
+    K.veneer_door(v, x, w, y0, y1, glass=glass, pull=pull, hinge=hinge, depth=25.0)
 
 # ================================================================== north wall (looking north, west at the left): alcove run, wall, hall door
 def north_wall(v):
     L = ROOM_W; RE = N_RUN_E
     shell(v, L, crown=[(0, L)], base=[(RE, N_LEAF_X - CS), (N_LEAF_X + N_LEAF + CS, L)])
     pantry_w = (RE - DW_COL - 2 * COL_W - 4.5) / 2                    # 39.49 each, between the drywall column and the jog
-    K.drywall_column(v, 0.0, DW_COL, H, CR, depth=26.0)             # the NW drywall column, 1 in. proud of the run face
+    K.drywall_column(v, 0.0, DW_COL, H, CR, depth=25.0)             # the NW drywall column, 1 in. proud of the run face
     def R(a, b, y0, y1): C._rect(v, a, y0, b, y1, C.OUTLINE, fill=SEC)   # the range wall run in front of it, cut (grey), as at the SW (ID-743)
     R(0, BASE_D - 3, 0, K.TOE); R(0, BASE_D, K.TOE, K.BOX_TOP); R(0, BASE_D + 1, K.BOX_TOP, K.COUNTER); R(0, 0.75, K.COUNTER, TOP)
     for y in B.SHELF_Y: R(0, 12.0, y, y + B.SHELF_T)
@@ -205,21 +207,22 @@ def north_wall(v):
     segs = [('P', pantry_w), ('panel', 1.5), ('R', COL_W), ('panel', 1.5), ('F', COL_W), ('panel', 1.5), ('P', pantry_w)]
     for kind, w in segs:
         if kind == 'P':                                              # owner 11.09.26 (C28): the end pantries glass to 7'-0", wood above
-            K._rect(v, x, 0, x + w, TOP, K.OUTLINE); K.toe(v, x, x + w); dw = (w - 3 * K.STILE) / 2
+            K._rect(v, x, 0, x + w, TOP, K.OUTLINE); K.toe(v, x, x + w, depth=25.0); dw = (w - 3 * K.STILE) / 2
             for i in range(2):
                 dx = x + K.STILE + i * (dw + K.STILE); hinge = 'L' if i == 0 else 'R'
                 veneer_door(v, dx - K.STILE, dw + 2 * K.STILE, K.TOE, UP_T, hinge=hinge, glass=True)
                 g0, g1 = dx + K.STILE + 0.8, dx + dw - K.STILE - 0.8
                 for gy in (24.0, 40.0, 56.0, 70.0): C._line(v, (g0, gy), (g1, gy), C.FINE, LIGHT)   # glass shelves, lit
                 veneer_door(v, dx - K.STILE, dw + 2 * K.STILE, UP_T, TOP, hinge=hinge)
-        elif kind == 'panel': K._rect(v, x, 0, x + w, TOP, K.MED)
+        elif kind == 'panel': K.filler_panel(v, x, w, 0, TOP, depth=25.0)
         else:
-            K._rect(v, x, 0, x + w, UP_T, K.OUTLINE); K.toe(v, x, x + w)
+            K._rect(v, x, 0, x + w, UP_T, K.OUTLINE); K.toe(v, x, x + w, depth=25.0)
             veneer_door(v, x, w, K.TOE, UP_T, pull='long', hinge='L' if kind == 'R' else 'R')
             dw = (w - 3 * K.STILE) / 2
             for i in range(2): veneer_door(v, x + i * (dw + K.STILE), dw + 2 * K.STILE, UP_T, TOP, hinge='L' if i == 0 else 'R')   # C28: wood, no glass
             tag(v, x + w / 2, 60, 'A3 REFRIGERATOR' if kind == 'R' else 'A4 FREEZER', 5.0, INK, box=True)
         x += w
+    K.soffit(v, DW_COL, RE, TOP, H, depth=N_RUN_D, crown_drop=CR)                     # owner 11.09.26 PM: drywall and crown out to the cabinet face
     cloud(v, DW_COL, 0, RE, TOP, pad=0.6, tag_at='tl')                               # C28: end pantries glass to 7'-0", every top wood
     C._line(v, (RE, 0), (RE, TOP), C.HEAVY)                         # the run's finished end at the jog
     C._line(v, (RE, TOP), (RE, H - CR), C.OUTLINE)                  # the jog corner above it, the recess 24 in. beyond
@@ -234,13 +237,13 @@ def north_wall(v):
     v.dim_v(0, H, v.X(L) + 14, E.snap_points([0, UP_T, 96, 96 + CS, TOP, H]))
     return ('NORTH WALL, LOOKING NORTH, WEST AT THE LEFT. THE REFRIGERATOR RUN SITS ON THE MAIN NORTH FACE FROM THE WEST WALL TO THE JOG '
             f'AT {ft(RE)}, 25" DEEP (FOR\'S 2\'-1"), IN THE OWNER\'S VENEER LANGUAGE: RIFT WHITE OAK VENEER (SPECIES AND STAIN TO PICK), FLUSH INSET DOORS. THE 24" '
-            f'RECESS IS THE EAST {ft(L - RE)} BAY WITH THE EXTERIOR DOOR 05. FROM THE WEST: THE 26" x 26" DRYWALL COLUMN, PT-02, FLOOR TO CEILING WITH BASE AND CROWN, '
-            'ON FOR\'S 2\'-1" CORNER BAY: IT TAKES THAT BAY AND 1" MORE, STANDS 1" PROUD OF THE RUN FACE AND OF THE RANGE RUN\'S COUNTER EDGE, AND BOTH RUNS DIE INTO '
+            f'RECESS IS THE EAST {ft(L - RE)} BAY WITH THE EXTERIOR DOOR 05. FROM THE WEST: THE 25" x 25" DRYWALL COLUMN, PT-02, FLOOR TO CEILING WITH BASE AND CROWN, '
+            'ON FOR\'S 2\'-1" CORNER BAY: IT TAKES THAT BAY EXACTLY (25"), FLUSH WITH THE RUN FACE AND THE RANGE RUN\'S COUNTER EDGE (OWNER 11.09.26 PM), AND BOTH RUNS DIE INTO '
             f'ITS SIDES (OWNER 11.03.26, ITS PAIR AT THE SW CORNER). {inch(pantry_w)} PANTRY CABINET WITH A PAIR OF TALL DOORS TOE TO 7\'-0", 1-1/2" PANEL, 36" PANEL-READY '
             f'REFRIGERATOR COLUMN A3 AT {ft(f0)} FROM THE WEST WALL, 1-1/2" PANEL, 36" FREEZER COLUMN A4, 1-1/2" PANEL, {inch(pantry_w)} PANTRY CABINET WITH A FINISHED '
             'VENEER END AT THE JOG. FOR DRAWS 3\'-6" PANTRIES AND A 6\'-0" PAIR WITHOUT PANELS: THE COLUMN AND THE OWNER\'S 1-1/2" PANELS TAKE 2-3/4" FROM EACH PANTRY, '
             'THE PAIR STARTS ON FOR\'S 5\'-7" STRING. TOP ROW 7\'-0" TO 9\'-3": SOLID VENEER OVER THE PANTRIES, FOUR GLASS DOORS WITH INTERIOR LIGHTING OVER THE '
-            'REFRIGERATOR AND FREEZER. 1" SCRIBE, CROWN CM-01 CONTINUOUS OVER THE RUN, ROUND THE JOG AND ACROSS THE RECESS. RECESS BACK WALL PT-02 WITH BASE AND '
+            'REFRIGERATOR AND FREEZER. 1" SCRIBE AND DRYWALL FLUSH WITH THE CABINET FACE TO THE CEILING, CROWN CM-01 ON THAT FACE (OWNER 11.09.26 PM), CONTINUOUS OVER THE RUN, ROUND THE JOG AND ACROSS THE RECESS. RECESS BACK WALL PT-02 WITH BASE AND '
             'CROWN: THE 3\'-0" x 8\'-0" EXTERIOR DOOR 05 (FOR\'S 3\'-4" OPENING, LEAF CENTERED, FULL-LITE GLASS, 5" CASING, HINGED EAST, SWINGS OUT), KITCHEN SWITCH '
             f'AND DIMMER ON THE {ft(N_LEAF_X - CS - RE)} OF WALL WEST OF THE CASING, {ft(L - N_LEAF_X - N_LEAF - CS)} OF WALL EAST OF IT TO THE EAST WALL. THE WALL BEHIND '
             'THE RUN IS SOLID ON FOR REV 1 (STORAGE ROOMS NORTH OF IT, NO WINDOWS). APPLIANCE OUTLETS BEHIND THE REFRIGERATOR AND FREEZER, NOTHING ELSE ON THIS WALL. '
@@ -265,7 +268,7 @@ def arched_cased_opening(v, x, w, spring, r):
 def fake_leaf(v, x, w, hinge):  # x, w: the leaf in view inches
     """A swing door faced as cabinetry: one leaf 1/2 in. off the floor to 9'-3", the bottom 4-1/2 in. faced as the toe, grooves at 3'-0"
     and 7'-0" so it reads as the tall cabinets' three doors, a cabinet pull at the meeting stile, swing marks (the set's convention)."""
-    K.toe(v, x, x + w)
+    K.toe(v, x, x + w, depth=25.0)
     for y0, y1 in ((K.TOE, UP_T), (UP_T, TOP)): K.single_door_cab(v, x, w, y0, y1, hinge=hinge)   # owner 11.09.26 (C31): one large panel to 7'-0", as the tall cabinets
     C._rect(v, x, 0.5, x + w, 0.5 + LEAF_H, C.OUTLINE)
     hx, fx = (x, x + w) if hinge == 'L' else (x + w, x)
@@ -323,8 +326,8 @@ def garage(v, x0, x1, y0=None, y1=None, label_at=None):
         C._rect(v, dx - 0.35, dy - 0.35, dx + 0.35, dy + 0.35, C.FINE, fill=INK)
 
 def tall_cab(v, x, w, hinge):
-    K._rect(v, x, 0, x + w, TOP, K.OUTLINE); K.toe(v, x, x + w)
-    for y0, y1 in ((K.TOE, UP_T), (UP_T, TOP)): K.single_door_cab(v, x, w, y0, y1, hinge=hinge)   # C31: one large panel toe to 7'-0", the top row over it
+    K._rect(v, x, 0, x + w, TOP, K.OUTLINE); K.toe(v, x, x + w, depth=25.0)
+    for y0, y1 in ((K.TOE, UP_T), (UP_T, TOP)): K.single_door_cab(v, x, w, y0, y1, hinge=hinge, depth=25.0)   # C31: one large panel toe to 7'-0", the top row over it
 
 def south_wall(v):
     L = ROOM_W
@@ -351,7 +354,7 @@ def south_wall(v):
     for y in MSHELF:
         K.floating_shelf(v, m0, m1 - m0, y, B.SHELF_T); C._line(v, (m0 + 2, y - 0.4), (m1 - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
     hw = (m1 - m0) / 2                                                                   # owner 11.09.26 (C30): glass in the middle uppers, two pairs
-    K.door_pair_cab(v, m0, hw, UP_T, TOP, glass=True, depth=24.0); K.door_pair_cab(v, m0 + hw, hw, UP_T, TOP, glass=True, depth=24.0)   # flush with the talls
+    K.door_pair_cab(v, m0, hw, UP_T, TOP, glass=True, depth=25.0); K.door_pair_cab(v, m0 + hw, hw, UP_T, TOP, glass=True, depth=25.0)   # flush with the talls
     glass_inside(v, m0, hw, UP_T, TOP, 2, (13.0,)); glass_inside(v, m0 + hw, hw, UP_T, TOP, 2, (13.0,))
     K.light_rail(v, m0, m1, UP_T)
     tag(v, (m0 + m1) / 2, 66, 'OPEN SHELVES, LIT', 5.0, INK, box=True)
@@ -374,7 +377,8 @@ def south_wall(v):
     C._line(v, (X(VEST[1]), TOP), (X(VEST[0]), TOP), C.OUTLINE)                       # the head, 9'-3", fascia above
     # the SW drywall column, its face above the range wall run, which the view cuts below the counter (grey)
     c0 = X(DW_COL)
-    K.drywall_column(v, c0, L - c0, H, CR, depth=26.0)
+    K.drywall_column(v, c0, L - c0, H, CR, depth=25.0)
+    K.soffit(v, t0, c0, TOP, H, depth=25.0, crown_drop=CR)                            # owner 11.09.26 PM: drywall and crown out to the cabinet face
     def R(a, b, y0, y1): C._rect(v, X(b), y0, X(a), y1, C.OUTLINE, fill=SEC)
     R(0, BASE_D - 3, 0, K.TOE); R(0, BASE_D, K.TOE, K.BOX_TOP); R(0, BASE_D + 1, K.BOX_TOP, K.COUNTER); R(0, 0.75, K.COUNTER, TOP)
     for y in B.SHELF_Y: R(0, 12.0, y, y + B.SHELF_T)                                   # the range wall shelves, cut
@@ -387,10 +391,10 @@ def south_wall(v):
     return ('SOUTH WALL, LOOKING SOUTH, EAST AT THE LEFT, ON FOR REV 1 (OWNER COMMENTS 11.03.26 KEPT). FROM THE EAST: 1\'-0" PIER (FOR\'S 1\'-5" LESS THE '
             '5" CASING), THE 4\'-10" OPENING TO THE LIVING ROOM CASED WITH A SEGMENTAL ARCHED HEAD (SPRING 7\'-2", CROWN 8\'-4-3/4", FOR\'S OPENING, VERIFY THE HEAD, '
             'THE ARCH IS TRIM), THEN A 1\'-0" WALL PIER TO MATCH THE EAST SIDE (KITCHEN SWITCH AND DIMMER ON IT, CL 4\'-0"), THEN TWO '
-            f'{inch(TALL_W)} x 24" TALL CABINETS TOE TO 9\'-3", RIFT WHITE OAK VENEER INSET, SINGLE DOORS SPLIT AT 3\'-0" AND 7\'-0", PULLS MEETING AT THE CENTER. THEN 5\'-0" OF '
+            f'{inch(TALL_W)} x 25" TALL CABINETS TOE TO 9\'-3", RIFT WHITE OAK VENEER INSET, SINGLE DOORS SPLIT AT 3\'-0" AND 7\'-0", PULLS MEETING AT THE CENTER. THEN 5\'-0" OF '
             'SHELVING: TWO 30" INSET DRAWER STACKS, ST-03 COUNTER 25" DEEP (FOR\'S 2\'-1" RUN), SLAB SPLASH FROM THE COUNTER TO 7\'-0", TWO 2" x 12" DEEP ST-03 '
             'FLOATING SHELVES THE FULL 5\'-0" BETWEEN THE TALL CABINET SIDE AND THE RETURN, UNDERSIDES AT 4\'-10" AND 6\'-0", ON STEEL RODS INTO BLOCKING IN THE '
-            'PANTRY WALL, LED IN THE FRONT EDGES, TWO 30" DOORS 7\'-0" TO 9\'-3", 24" DEEP AND FLUSH WITH THE TALL CABINETS SO THE SHELVING READS AS A NICHE, A LIGHT '
+            'PANTRY WALL, LED IN THE FRONT EDGES, TWO 30" DOORS 7\'-0" TO 9\'-3", 25" DEEP AND FLUSH WITH THE TALL CABINETS SO THE SHELVING READS AS A NICHE, A LIGHT '
             'RAIL UNDER THEM, THE LED DRIVERS IN THAT UPPER CABINET, TWO GFCI CL 3\'-6". FOR\'S 3\'-0" BUILT-IN OVEN (14\'-0" TO 17\'-0" FROM THE EAST WALL) IS '
             'DROPPED (OWNER 11.06.26, THE OVENS STAY UNDER THE RANGE) AND FOR\'S 6\'-5" BAR IS THIS SHELVING AND THE TALL CABINETS. THEN A 4" VENEERED MILLWORK '
             'RETURN BY THE CABINETMAKER (3/4" PLYWOOD SKINS ON SOLID BLOCKING, ANCHORED TO THE WALL AND FLOOR) FROM THE CABINET FACE TO THE WALL, THE DOORS\' EAST '
@@ -401,9 +405,9 @@ def south_wall(v):
             'APPROVE), A 3/4" HARDWOOD HEAD JAMB WITH A STOP ON THE VESTIBULE SIDE AND MAGNETIC CATCHES, BOTTOM PIVOT PLATES SET IN WD-01, A MAGNETIC HOLD-OPEN ON '
             f'EACH SIDE. THEY SWING INTO A {ft(VEST[1] - VEST[0])} x 2\'-0" VESTIBULE AND PARK AGAINST ITS SIDES, BEHIND THEM FOR\'S 3\'-2" x 8\'-1" WALL OPENING, '
             f'{ft(P_OPEN[0])} TO {ft(P_OPEN[1])} FROM THE WEST WALL (CENTER {ft(sum(P_OPEN) / 2)}), WITH DRYWALL RETURNS AND NO DOOR, IN PLACE OF FOR\'S HIDDEN '
-            'MILLWORK DOOR 17. A HEADER AT 9\'-3" WITH DRYWALL ABOVE TO THE CEILING CARRIES THE CROWN OVER THE LEAVES. THEN THE 26" x 26" DRYWALL COLUMN IN THE SW '
-            'CORNER (OWNER 11.03.26), PT-02, 2" PROUD OF THE CABINET FACE AND 1" PROUD OF THE COUNTER EDGE, SEEN ABOVE THE RANGE WALL RUN AND ITS SHELVES, WHICH '
-            'THE VIEW CUTS (GREY). CROWN CM-01 CONTINUOUS, 1" SCRIBE OVER THE CABINETS, 8-1/2" BASE ON THE PIERS AND THE RETURN. ALL CABINET AND LEAF FACES IN THE SAME '
+            'MILLWORK DOOR 17. A HEADER AT 9\'-3" WITH DRYWALL ABOVE TO THE CEILING CARRIES THE CROWN OVER THE LEAVES. THEN THE 25" x 25" DRYWALL COLUMN IN THE SW '
+            'CORNER (OWNER 11.03.26), PT-02, FLUSH WITH THE CABINET FACE AND THE COUNTER EDGE (OWNER 11.09.26 PM: A PERFECTLY EVEN CONNECTION), SEEN ABOVE THE RANGE WALL RUN AND ITS SHELVES, WHICH '
+            'THE VIEW CUTS (GREY). CROWN CM-01 CONTINUOUS, 1" SCRIBE AND DRYWALL FLUSH WITH THE CABINET FACE ABOVE THE CABINETS WITH THE CROWN ON THAT FACE (OWNER 11.09.26 PM), 8-1/2" BASE ON THE PIERS AND THE RETURN. ALL CABINET AND LEAF FACES IN THE SAME '
             'RIFT WHITE OAK VENEER: THE LEAVES CANNOT BE GLASS, SO THE WALL READS AS ONE PIECE OF MILLWORK.')
 
 # ================================================================== east wall (looking east, north at the left): FOR's slider, drapery pocket
@@ -699,7 +703,7 @@ def west_wall(v):
     base_run(v, rx + RANGE_W, tall_x, [(W_STACKS_N[0], 'drawers'), (W_STACKS_N[1], 'drawers')])
     K.counter(v, s0, rx); K.counter(v, rx + RANGE_W, tall_x)
     K.pro_range(v, rx, RANGE_W, B.RANGE_H); tag(v, RC, 14, 'A1', 5.5, INK, box=True)
-    K.drywall_column(v, 0.0, s0, H, CR, depth=26.0); K.drywall_column(v, tall_x, L - tall_x, H, CR, depth=26.0)   # owner 11.03.26, built out floor to crown
+    K.drywall_column(v, 0.0, s0, H, CR, depth=25.0); K.drywall_column(v, tall_x, L - tall_x, H, CR, depth=25.0)   # owner 11.03.26, built out floor to crown
     for x in (0.0, tall_x): tag(v, x + TALL_D / 2, 66, 'DRYWALL', 5.0, INK, box=True); tag(v, x + TALL_D / 2, 60, 'COLUMN', 5.0, INK, box=True)
     # owner 11.09.26 (C26): TL-05 decorative tile (to select) on the splash and the wall at the shelves, column to column, counter to the scribe line;
     # the hood breast clad in ST-03, the counter stone, one slab face with book-matched veins, mitered returns
@@ -731,8 +735,8 @@ def west_wall(v):
     rx = RC - RANGE_W / 2; bx = RC - BREAST_W / 2; s0 = S_TALL; L = KD
     sh_l = bx - B.SHELF_GAP - (s0 + B.SHELF_GAP)
     return (f'WEST WALL, LOOKING WEST, SOUTH AT THE LEFT, {ft(L)} (FOR REV 1). RANGE WALL STUDY 3, OPTION B (OWNER 11.02.26), COLUMNS 11.03.26. SYMMETRICAL '
-            'ABOUT THE RANGE: A 26" x 26" DRYWALL COLUMN AT EACH END ON FOR\'S 2\'-1" CORNER BAYS, FLOOR TO CEILING, PT-02 WITH BASE AND CROWN, 1" PROUD OF THE '
-            'COUNTER EDGE, THE NORTH ONE AT THE REFRIGERATOR RUN (ID-742 VIEW 2), THE SOUTH ONE AT THE SWING DOORS (ID-743 VIEW 3), THE COUNTERS AND THE SLAB DYING '
+            'ABOUT THE RANGE: A 25" x 25" DRYWALL COLUMN AT EACH END ON FOR\'S 2\'-1" CORNER BAYS, FLOOR TO CEILING, PT-02 WITH BASE AND CROWN, FLUSH WITH THE '
+            'COUNTER EDGE AND THE SIDE RUNS\' CABINET FACES (OWNER 11.09.26 PM), THE NORTH ONE AT THE REFRIGERATOR RUN (ID-742 VIEW 2), THE SOUTH ONE AT THE SWING DOORS (ID-743 VIEW 3), THE COUNTERS AND THE SLAB DYING '
             f'INTO THEIR SIDES. 48" DUAL-FUEL RANGE A1 WITH ITS OVENS BELOW ON FOR\'S RANGE AXIS, {ft(RC)} FROM THE SOUTH CORNER AND {ft(KD - RC)} FROM THE NORTH (THE WALL\'S 1/16" ON THE NORTH SIDE), '
             f'{ft(bx - s0)} OF OPEN STONE WALL EACH SIDE OF THE BREAST. FOR DRAWS A 26" RANGE AND A 32" HOOD: THE 48" RANGE AND THE BREAST ARE THE OWNER\'S AND ARE '
             'LISTED FOR FOR ON ID-741. 54" HOOD LINER A2 IN A RECTANGULAR BREAST 60" WIDE AND 27" DEEP, STRAIGHT SIDES, NO TAPER, WRAPPED ON THE FACE, BOTH SIDES AND '
@@ -1137,7 +1141,7 @@ def _build():
         '1. 48" RANGE IN A 60" x 27" HOOD BREAST CLAD IN ST-03.',
         '2. FOR\'S 3\'-0" BUILT-IN OVEN ON THE SOUTH RUN DELETED.',
         '3. FOR\'S TWO WEST WINDOWS DELETED.',
-        '4. 26" x 26" DRYWALL COLUMNS AT THE NW AND SW CORNERS.',
+        '4. 25" x 25" DRYWALL COLUMNS AT THE NW AND SW CORNERS.',
         '5. TALL CABINETS AND SHELVING IN PLACE OF FOR\'S 6\'-5" BAR.',
         '6. HIDDEN DOOR 17 OMITTED: PAIR OF SWING DOORS ON THE KITCHEN SIDE.',
         f'7. ISLAND MOVED {inch(ISL_SHIFT)} EAST FOR A 42" RANGE AISLE.',
@@ -1145,7 +1149,7 @@ def _build():
         '9. BEVERAGE REFRIGERATOR A13 AND ICE MAKER A14 ON THE SOUTH RUN: WATER AND DRAIN.', '',
         (True, 'MATERIALS'),
         'ST-03 CALACATTA MONET (OWNER 11.09.26): COUNTERS, SPLASH, SHELVES, THE RECTANGULAR HOOD BREAST, SINK APRON, HONED.',
-        'CABINETRY: RIFT WHITE OAK VENEER THROUGHOUT THE KITCHEN AND ISLAND, STAINED A FEW SHADES DARKER THAN THE LIGHT WHITE OAK FLOOR WD-01 (SAMPLES TO OWNER).',
+        'CABINETRY: RIFT WHITE OAK VENEER THROUGHOUT THE KITCHEN AND ISLAND, STAINED A FEW SHADES DARKER THAN THE LIGHT WHITE OAK FLOOR WD-01 (SAMPLES TO OWNER). TOE KICKS IN THE SAME VENEER, 3" RECESSED. SIDE RUNS AND COLUMNS 25" DEEP, ONE FACE PLANE.',
         'TL-05 DECORATIVE TILE ON THE RANGE WALL; WC-03 WALLPAPER IN THE PANTRY (BOTH TO SELECT).',
         'PT-02 AND CM-01 PER THE FINISH SCHEDULE.', '',
         (True, 'COORDINATED WITH FOR (11.09.26)'),

@@ -26,15 +26,15 @@
  },
  "KITCHEN": {
   "roles": {
-   "wall": "PT-01",
+   "wall": "PT-02",
    "trim": "PT-01-SATIN",
    "door": "PT-01-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "WD-01",
-   "ceiling": "PT-01",
-   "cabinet": "OAK-STAINED",
-   "counter": "CAL-MONET",
+   "ceiling": "PT-CEIL",
+   "cabinet": "CAB-CREAM",
+   "counter": "ST-03-INSPO",
    "tile": "BSP-01",
    "hood": "HOOD-PLASTER"
   }

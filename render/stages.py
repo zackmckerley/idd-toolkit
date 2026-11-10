@@ -292,7 +292,7 @@ def stage_kitchen():
     seating overhang, the working-side cabinets from ID-243 view captures, three pendants, four stools."""
     ISL_X, ISL_N, ISL_L, ISL_W, WF, OV = 72.625, 67.0, 110.9375, 49.0, 2.0, 15.0
     yN = DEP - ISL_N; yS = yN - ISL_L
-    stone = material('CAL-MONET'); cab = material(R('cabinet', 'CAB-01'), '-trim')
+    stone = material(R('counter', 'CAL-MONET')); cab = material(R('cabinet', 'CAB-01'), '-trim')
     top_x0, top_x1 = ISL_X - 1.0, ISL_X - 1.0 + 65.0
     wbox(top_x0, top_x1, yS, yN, 34.0, 36.0, stone, 'island_top')
     wbox(top_x0, top_x1, yS, yS + WF, 0.0, 34.0, stone, 'waterfall'); wbox(top_x0, top_x1, yN - WF, yN, 0.0, 34.0, stone, 'waterfall')
@@ -324,8 +324,10 @@ def stage_kitchen():
     px = top_x0 + 65.0 / 2
     pend = [(l_['X'], l_['Y']) for l_ in (LIGHTPLAN or []) if l_['type'] == 'pendant'] or [(px, yN - ISL_L / 2 + dy) for dy in (-33.0, 0.0, 33.0)]
     for (px, py) in pend:          # P1 at the lighting plan's J-boxes (ID-121)
-        wcyl(px, py, (H + 74) / 2 + 2, 0.18, H - 76, 'z', br, 'pendant_rod'); wsphere(px, py, 70.0, 5.5, material('LAMP'), 'pendant_globe')
-        wcyl(px, py, 76.0, 1.4, 1.2, 'z', br, 'pendant_cap'); wpoint(px, py, 70.0, 30.0 if DUSK else 18.0, 3.0)
+        # P1 (fixture open): an alabaster cylinder on a brass stem, as in the owner's inspiration image, glowing softly
+        wcyl(px, py, (H + 76) / 2, 0.2, H - 76, 'z', br, 'pendant_rod'); wcyl(px, py, H - 0.4, 2.2, 0.8, 'z', br, 'pendant_canopy')
+        wcyl(px, py, 69.0, 3.0, 10.0, 'z', material('ALABASTER'), 'pendant_alabaster'); wcyl(px, py, 74.4, 3.1, 0.8, 'z', br, 'pendant_cap')
+        wpoint(px, py, 69.0, 12.0, 2.5)
     for vi, v in enumerate(ALL):          # the stools the seating-side elevation draws (owner 11.09.26 PM: five)
         if v['view'] == 'ISLAND - SEATING SIDE':
             M2 = Matrix.Translation(((ISL_X + ISL_W) * IN, yS * IN, 0)) @ Matrix.Rotation(_m.radians(90), 4, 'Z')
