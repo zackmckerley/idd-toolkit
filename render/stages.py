@@ -503,6 +503,19 @@ def door_in_x_wall(xf, side, y0, y1, head, trim, leafm, cs=3.5):
     wbox(c0, c1, y0, y1, head, head + cs, trim, 'door_casing', soft=0.1)
 
 
+def ceiling_can(X_, Y_, z_, watts=14.0):
+    """A recessed can at a ceiling of height z_ (a stage ceiling, not the room's H): 3000 K spot, trim ring, the lens seen lit."""
+    MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'}); MATS.setdefault('LENS', {'kind': 'lamp', 'emit': 6.0})
+    ld = bpy.data.lights.new('downlight', 'SPOT'); ld.energy = watts; ld.spot_size = _m.radians(80); ld.spot_blend = 0.6
+    ld.shadow_soft_size = 1.25 * IN; ld.use_nodes = True
+    bb = ld.node_tree.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3000
+    ld.node_tree.links.new(bb.outputs['Color'], ld.node_tree.nodes['Emission'].inputs['Color'])
+    o = bpy.data.objects.new('downlight', ld); bpy.context.collection.objects.link(o); o.location = (X_ * IN, Y_ * IN, (z_ - 0.5) * IN)
+    o.visible_glossy = False
+    wbox_abs(X_ - 2.25, X_ + 2.25, Y_ - 2.25, Y_ + 2.25, z_ - 0.05, z_, material('TRIM-RING'), 'trim_ring')
+    wbox_abs(X_ - 1.8, X_ + 1.8, Y_ - 1.8, Y_ + 1.8, z_ - 0.08, z_ - 0.04, material('LENS'), 'downlight_lens')
+
+
 def south_end(wallm, trim, pt1):
     """The south end under floor 2 (build_great_rev1b south_wall: OPEN TO THE SOUTH END UNDER THE GALLERY BEAM, HEAD 10'-8"),
     modelled so the living room sees into it (owner 11.10.26: through a door opening you must see the other room). World X east,
@@ -514,7 +527,8 @@ def south_end(wallm, trim, pt1):
     MATS.setdefault('STEEL-SS', {'hex': '#B8B5AE', 'rough': 0.3, 'kind': 'metal'})
     # floor: the living room's boards continue (world coordinates, same material: no seam); the foyer's checkerboard past the arch
     wbox_abs(86.2, 268.0, ys - 6.0, -12.0, -2.0, 0.0, wd, 'south_floor')
-    wbox_abs(80.2, 206.0, -296.0, ys - 6.0, -2.0, 0.0, material('TL-01'), 'foyer_floor')   # not R(): the room's floor role would give the living room's oak
+    FW, FE, FS = 37.2, 247.0, -301.7       # the foyer: its tray (X 55.1..235.9) and the front wall the sconces sit on (plan RCP)
+    wbox_abs(FW, FE, FS, ys - 6.0, -2.0, 0.0, material('TL-01'), 'foyer_floor')   # not R(): the room's floor role would give the living room's oak
     # west wall with door 12
     for y0_, y1_, z0_ in ((ys - 6.0, -122.0, 0.0), (-89.0, -6.0, 0.0), (-122.0, -89.0, 96.0)):
         wbox(86.2, 92.2, y0_, y1_, z0_, CH, wallm, 'se_wall_w')
@@ -531,9 +545,29 @@ def south_end(wallm, trim, pt1):
     for x0_, x1_, z0_ in ((86.2, AX, 0.0), (AX + AW, 262.0, 0.0), (AX, AX + AW, AP + 1.0)):
         wbox(x0_, x1_, ys - 6.0, ys, z0_, CH, wallm, 'se_wall_s')
     arch_xz(AX, AW, asp, AP + 1.0, ys - 6.0, ys, ys, ys + 0.75, wallm, trim)
-    wbox(80.2, 86.2, -296.0, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_w'); wbox(206.0, 212.0, -296.0, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_e')
-    wbox(80.2, 212.0, -302.0, -296.0, 0.0, CH, wallm, 'foyer_wall_s')
-    wbox(80.2, 212.0, -302.0, ys - 6.0, CH, CH + 4.0, pt1, 'foyer_ceiling')
+    wbox(FW - 6.0, FW, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_w'); wbox(FE, FE + 6.0, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_e')
+    wbox(FW, 86.2, ys - 6.0, ys, 0.0, CH, wallm, 'foyer_wall_n'); wbox(262.0, FE, ys - 6.0, ys, 0.0, CH, wallm, 'foyer_wall_n')
+    # the front wall: the entry pair centred between the plan's sconces (X 64.5 and 154.5), 6'-0" x 8'-0", oak, with its casing
+    DX0, DX1, DH = 109.5 - 36.0, 109.5 + 36.0, 96.0
+    for x0_, x1_, z0_ in ((FW - 6.0, DX0, 0.0), (DX1, FE + 6.0, 0.0), (DX0, DX1, DH)):
+        wbox(x0_, x1_, FS - 6.0, FS, z0_, CH, wallm, 'foyer_wall_s')
+    oak = material('WD-02')
+    for a_, b_ in ((DX0, 109.4), (109.6, DX1)):
+        wbox(a_, b_, FS - 2.75, FS - 1.0, 0.0, DH, oak, 'entry_leaf', soft=0.06)
+        for z0_, z1_ in ((10.0, 38.0), (44.0, DH - 6.0)):
+            wbox(a_ + 5.0, b_ - 5.0, FS - 1.0, FS - 0.8, z0_, z1_, oak, 'entry_panel', soft=0.12)
+        wbox(b_ - 3.0 if a_ < 109.5 else a_ + 1.0, b_ - 2.0 if a_ < 109.5 else a_ + 2.0, FS - 0.8, FS + 0.6, 34.0, 46.0, material('STEEL-SS'), 'entry_pull', soft=0.3)
+    wbox(DX0 - 4.5, DX0, FS, FS + 0.75, 0.0, DH + 4.5, trim, 'entry_casing', soft=0.1); wbox(DX1, DX1 + 4.5, FS, FS + 0.75, 0.0, DH + 4.5, trim, 'entry_casing', soft=0.1)
+    wbox(DX0, DX1, FS, FS + 0.75, DH, DH + 4.5, trim, 'entry_casing', soft=0.1)
+    # the tray (plan RCP: 180 x 81 in. at X 145.5, Y -244.5), 6 in. up, the flat ceiling round it
+    TX0, TX1, TY0, TY1 = 55.1, 235.9, -285.25, -203.75
+    for x0_, x1_, y0_, y1_ in ((FW, FE, FS, TY0), (FW, FE, TY1, ys - 6.0), (FW, TX0, TY0, TY1), (TX1, FE, TY0, TY1)):
+        wbox(x0_, x1_, y0_, y1_, CH, CH + 6.0, pt1, 'foyer_ceiling')
+    wbox(FW, FE, FS, ys - 6.0, CH + 6.0, CH + 10.0, pt1, 'foyer_tray')
+    B_f = lambda x0_, x1_, y0__, y1__: wbox(x0_, x1_, y0__, y1__, 0.0, 8.5, trim, 'foyer_base', soft=0.15)
+    B_f(FW, DX0 - 4.5, FS, FS + 0.6); B_f(DX1 + 4.5, FE, FS, FS + 0.6)
+    B_f(FW, FW + 0.6, FS + 0.6, ys - 6.0); B_f(FE - 0.6, FE, FS + 0.6, ys - 6.0)
+    B_f(FW + 0.6, AX - 5.0, ys - 6.6, ys - 6.0); B_f(AX + AW + 5.0, FE - 0.6, ys - 6.6, ys - 6.0)
     # the lower flight: oak treads stepping up east to the landing, a raking half wall on its north side, its top 36 in. over
     # the nosings, a wood cap
     RS, n_, x_b, x_t = 7.3125, 7, 169.3, 235.3
@@ -549,22 +583,35 @@ def south_end(wallm, trim, pt1):
               -153.5, -147.5, material('WD-SHELF'), 'half_wall_cap')
     # base: stopped at every casing, none on the stair side
     B_ = lambda x0_, x1_, y0_, y1_: wbox(x0_, x1_, y0_, y1_, 0.0, 8.5, trim, 'se_base', soft=0.15)
-    B_(92.2, 92.8, ys, -125.5); B_(92.2, 92.8, -85.5, -6.0)
-    B_(230.1, 230.7, -148.0, -91.5); B_(230.1, 230.7, -55.5, -6.0)
+    B_(92.2, 92.8, ys, -125.5); B_(92.2, 92.8, -85.5, 0.6)   # round the jamb return to the living room's base
+    B_(230.1, 230.7, -148.0, -91.5); B_(230.1, 230.7, -55.5, 0.6)
     B_(92.8, AX - 5.0, ys, ys + 0.6); B_(AX + AW + 5.0, 165.9, ys, ys + 0.6)
     B_(165.9, 230.1, -148.0, -147.4)
-    # lights: the plan's recessed cans at the 10'-8" ceiling, two in the south end and one in the foyer
+    # lights, from the plan's RCP (build_rcp.for_items, converted as above): in the south end a centre fixture at (161.3, -74.8),
+    # wall washers along the west wall at X 113 and two cans by the stair and arch at Y -172; a sconce on the closet wall at
+    # Y -119.5; in the foyer a pendant in the tray at (109.7, -244.5) and sconces each side of the entry at X 64.5 and 154.5
     MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'}); MATS.setdefault('LENS', {'kind': 'lamp', 'emit': 6.0})
-    for X_, Y_ in ((126.0, -70.0), (196.0, -70.0), (126.0, -150.0), (146.0, -250.0)):
-        ld = bpy.data.lights.new('downlight', 'SPOT'); ld.energy = 4.0; ld.spot_size = _m.radians(75); ld.spot_blend = 0.55
-        ld.shadow_soft_size = 1.25 * IN; ld.use_nodes = True
-        bb = ld.node_tree.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3500
-        ld.node_tree.links.new(bb.outputs['Color'], ld.node_tree.nodes['Emission'].inputs['Color'])
-        o = bpy.data.objects.new('downlight', ld); bpy.context.collection.objects.link(o); o.location = (X_ * IN, Y_ * IN, (CH - 0.5) * IN)
-        o.visible_glossy = False
-        wbox_abs(X_ - 2.0, X_ + 2.0, Y_ - 2.0, Y_ + 2.0, CH - 0.05, CH, material('TRIM-RING'), 'trim_ring')
-        wbox_abs(X_ - 1.6, X_ + 1.6, Y_ - 1.6, Y_ + 1.6, CH - 0.08, CH - 0.04, material('LENS'), 'downlight_lens')
-
+    MATS.setdefault('SHADE', {'kind': 'lamp', 'emit': 3.0})
+    can = ceiling_can
+    for X_, Y_ in ((113.1, -29.0), (113.1, -60.0), (113.1, -151.0), (113.1, -177.0), (129.6, -172.1), (199.1, -172.1)):
+        can(X_, Y_, CH)
+    for X_, Y_ in ((241.8, -236.5), (48.7, -219.0), (48.7, -261.6)):
+        can(X_, Y_, CH, 10.0)
+    def drum(X_, Y_, zb, d, h, watts, rod_top):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=d / 2 * IN, depth=h * IN, location=(X_ * IN, Y_ * IN, (zb + h / 2) * IN))
+        o = bpy.context.active_object; o.name = 'drum_shade'; o.data.materials.append(material('SHADE'))
+        for pg in o.data.polygons: pg.use_smooth = True
+        if rod_top > zb + h: wbox(X_ - 0.25, X_ + 0.25, Y_ - 0.25, Y_ + 0.25, zb + h, rod_top, material('STEEL-SS'), 'pendant_rod')
+        wpoint(X_, Y_, zb + h / 2, watts, radius=d / 3, color=(1.0, 0.86, 0.68))
+    drum(161.3, -74.8, CH - 7.0, 16.0, 6.0, 45.0, CH)                 # semi-flush: 10'-8" is too low to hang a drum
+    drum(109.7, -244.5, 92.0, 18.0, 12.0, 60.0, CH + 6.0)             # the foyer pendant, in its tray
+    def sconce_y(X_, yf, side, z_=66.0, watts=12.0):   # on a wall whose face is Y = yf, the room on `side`
+        y0_, y1_ = sorted((yf, yf + side * 1.0)); wbox(X_ - 2.5, X_ + 2.5, y0_, y1_, z_ - 6.0, z_ + 6.0, material('STEEL-SS'), 'sconce_plate', soft=0.3)
+        y0_, y1_ = sorted((yf + side * 1.0, yf + side * 5.5)); wbox(X_ - 2.25, X_ + 2.25, y0_, y1_, z_ - 3.0, z_ + 7.0, material('SHADE'), 'sconce_shade', soft=1.0)
+        wpoint(X_, yf + side * 3.5, z_ + 2.0, watts, radius=1.5, color=(1.0, 0.86, 0.68))
+    sconce_y(64.5, FS, 1); sconce_y(154.5, FS, 1)
+    xf_ = 230.7; wbox(xf_ - 1.0, xf_, -122.0, -117.0, 60.0, 72.0, material('STEEL-SS'), 'sconce_plate', soft=0.3)
+    wbox(xf_ - 5.5, xf_ - 1.0, -121.75, -117.25, 63.0, 73.0, material('SHADE'), 'sconce_shade', soft=1.0); wpoint(xf_ - 3.5, -119.5, 68.0, 12.0, radius=1.5)
 
 def stage_living():
     """The living room from build_great_rev1b's numbers: the fireplace wall (ID-231 view 1: plaster breast, WS-01 surround, flush
@@ -765,6 +812,8 @@ def stage_living():
     wbox(G['GFW'] - 1.5, G['GFW'] + 0.5, 0.0, RD, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_w')
     wbox(G['GFW'], E, -1.5, 0.5, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_s')
     south_end(wallm, trim, pt1)
+    for Y_ in (31.1, 128.2, 160.5):   # the plan's cans under the west gallery (RCP X 45.1), at its 10'-8" soffit
+        ceiling_can(45.1, Y_, G['SOFFIT'], 10.0)
     def guard(axis, a0, a1, c):
         posts_ = [a0] + [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]
         for k in range(int((a1 - a0) / 4.5) + 1):

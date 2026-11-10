@@ -1,0 +1,6 @@
+[
+ {
+  "type": "none",
+  "note": "build_rcp: no recessed fixture in the living room's 22'-4\" volume (X 92..280, Y 0..194); the cove is the light. The cans under the west and south galleries sit at their 10'-8\" soffit and are placed by stage_living (ceiling_can), not here, because the renderer puts plan cans at the room's ceiling height."
+ }
+]
