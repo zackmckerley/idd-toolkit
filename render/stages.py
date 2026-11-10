@@ -712,6 +712,8 @@ def stage_living():
     bu = hn.new('ShaderNodeBump'); bu.inputs['Strength'].default_value = 0.9; bu.inputs['Distance'].default_value = 0.03
     hl.new(vo.outputs['Distance'], bu.inputs['Height']); hl.new(bu.outputs['Normal'], hb.inputs['Normal'])
     wbox(-193.0, 86.0, RD + 6.0, 481.0, -6.0, 300.0, ext, 'dining_wing')            # the kitchen and dining wing, its east face on the notch
+    wbox(-195.0, 88.0, RD + 4.0, 483.0, 300.0, 304.0, material('ST-05'), 'wing_coping')   # stone coping (FOR A-301 parapet cap)
+    wbox(86.0, 86.3, RD + 6.0, 481.0, 154.0, 155.0, material('POCKET'), 'wing_reveal')   # floor-line reveal in the stucco
     # the pool: 6'-8" x 11'-0" (A-100), stone coping 12 in., water 6 in. below the coping
     px0, px1, py0, py1 = 197.0, 277.0, 286.0, 418.0
     for r_ in ((px0 - 12, px1 + 12, py0 - 12, py0), (px0 - 12, px1 + 12, py1, py1 + 12), (px0 - 12, px0, py0, py1), (px1, px1 + 12, py0, py1)):
@@ -732,13 +734,13 @@ def stage_living():
         if y_ > 575.0: break
         hit = py0 - 12 <= y_ <= py1 + 12
         for a0, a1 in _cut(86.0, 338.0, px0 - 12 if hit else 1, px1 + 12 if hit else 0):
-            if a1 - a0 > 1: wbox(a0, a1, y_ - 0.25, y_ + 0.25, -0.5, -0.45, jm, 'paver_joint')
+            pass   # the paver texture carries its own joints
     for k in range(0, 11):                                          # joints along the deck (constant X), on the pool's grid
         x_ = px0 - 12 - 24.0 * 4 + 24.0 * k
         if not 86.0 < x_ < 338.0: continue
         hit = px0 - 12 <= x_ <= px1 + 12
         for a0, a1 in _cut(RD + 6.0, 575.0, py0 - 12 if hit else 1, py1 + 12 if hit else 0):
-            if a1 - a0 > 1: wbox(x_ - 0.25, x_ + 0.25, a0, a1, -0.5, -0.45, jm, 'paver_joint')
+            pass
     wm = bpy.data.materials.new('POOL-WATER'); wm.use_nodes = True; bw_ = wm.node_tree.nodes['Principled BSDF']
     bw_.inputs['Base Color'].default_value = (0.36, 0.70, 0.74, 1); bw_.inputs['Roughness'].default_value = 0.04   # aqua: clear water over white plaster reads as nothing
     bw_.inputs['Transmission Weight'].default_value = 1.0; bw_.inputs['IOR'].default_value = 1.33
@@ -754,12 +756,20 @@ def stage_living():
     # the ancillary structure (A-204, A-303): 28'-9" x 10'-3", slab 11'-0", parapet 14'-0"; its north face (toward the house):
     # a full-lite door, a picture window; the exterior stair on its plan-east side to the roof deck, metal picket railing; pergola
     ax0, ax1, ay0, ay1 = -129.0, 216.0, 575.0, 698.0
-    wbox(ax0, ax1, ay0, ay1, -6.0, 132.0, ext, 'ancillary')
+    # the body behind a 10 in. front wall that has the door and window cut through it, so the openings have depth
+    wbox(ax0, ax1, ay0 + 10.0, ay1, -6.0, 132.0, ext, 'ancillary')
+    for (x0_, x1_, z0_, z1_) in ((ax0, 23.0, -6.0, 132.0), (23.0, 55.0, 96.0, 132.0), (55.0, 99.0, -6.0, 132.0), (99.0, 178.0, -6.0, 36.0),
+                                 (99.0, 178.0, 96.0, 132.0), (178.0, ax1, -6.0, 132.0)):
+        wbox(x0_, x1_, ay0, ay0 + 10.0, z0_, z1_, ext, 'anc_front')
     wbox(ax0, ax1, ay0, ay0 + 6, 132.0, 168.0, ext, 'parapet'); wbox(ax0, ax1, ay1 - 6, ay1, 132.0, 168.0, ext, 'parapet')
     wbox(ax0, ax0 + 6, ay0 + 6, ay1 - 6, 132.0, 168.0, ext, 'parapet'); wbox(ax1 - 6, ax1, ay0 + 6, ay1 - 6, 132.0, 150.0, ext, 'parapet')   # between the long parapets: lapped corners showed a black slot
     # openings cut as recesses with frames as rings and the glass in front of a dark room (R6: a solid black slab read as a board)
     for (x0_, x1_, z0_, z1_, nm) in ((23.0, 55.0, 0.0, 96.0, 'anc_door'), (99.0, 178.0, 36.0, 96.0, 'anc_window')):
-        wbox(x0_ + 2, x1_ - 2, ay0 - 0.2, ay0 + 10.0, z0_ + 2 if z0_ else 0.0, z1_ - 2, material('GAP'), nm + '_room')
+        wbox(x0_ + 2, x1_ - 2, ay0 + 9.0, ay0 + 10.0, z0_ + 2 if z0_ else 0.0, z1_ - 2, wallm, nm + '_room')        # the room's back wall, 9 in. in
+        for sx_ in (x0_ + 2, x1_ - 3):
+            wbox(sx_, sx_ + 1, ay0 - 0.2, ay0 + 9.0, z0_ + 2 if z0_ else 0.0, z1_ - 2, ext, nm + '_jamb')
+        wbox(x0_ + 3, x1_ - 3, ay0 - 0.2, ay0 + 9.0, z1_ - 3, z1_ - 2, ext, nm + '_head')
+        if z0_: wbox(x0_ - 1, x1_ + 1, ay0 - 3.0, ay0 + 0.5, z0_ - 1.5, z0_, ext, nm + '_sill')
         for r_ in ((x0_, x0_ + 2, z0_, z1_), (x1_ - 2, x1_, z0_, z1_), (x0_ + 2, x1_ - 2, z1_ - 2, z1_)) + (((x0_ + 2, x1_ - 2, z0_, z0_ + 2),) if z0_ else ()):
             wbox(r_[0], r_[1], ay0 - 1.5, ay0 + 0.5, r_[2], r_[3], fr, nm + '_frame')
         wbox(x0_ + 2, x1_ - 2, ay0 - 0.9, ay0 - 0.6, (z0_ + 2) if z0_ else 0.0, z1_ - 2, gl, nm + '_glass')
@@ -771,6 +781,7 @@ def stage_living():
     wbox(ax1, ax1 + 40.0, ay0 - 10, ay0 + 120, -6.0, 6.0, material('ST-05'), 'anc_stair_base')
     for k in range(30):
         y_ = ay0 - 6 + k * 4.4; z_ = max(0.0, (y_ - ay0 + 10) / 7.4 * 132.0 / 18.0)
+        if z_ > 128.0: break
         wbox(ax1 + 38.5, ax1 + 39.25, y_, y_ + 0.75, z_, z_ + 36.0, steel, 'anc_picket')
     for (x_, y_) in ((-40.0, 590.0), (130.0, 590.0), (-40.0, 683.0), (130.0, 683.0)):   # pergola by others (A-303: top 19'-0")
         wbox(x_, x_ + 6, y_, y_ + 6, 132.0, 228.0, material('WOOD-FURN'), 'pergola_post')

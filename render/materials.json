@@ -472,7 +472,7 @@
  },
  "FAB-SOFA": {
   "name": "SOFA FABRIC (STAGING)",
-  "hex": "#76695A",
+  "hex": "#6A5E50",
   "rough": 0.9,
   "kind": "fabric",
   "texture": "acg/Fabric086",
@@ -794,19 +794,19 @@
   "source": "FOR A-301 E-1 stucco, color open"
  },
  "DECK-01": {
-  "name": "POOL DECK PAVERS",
+  "name": "POOL DECK PAVERS, 24 IN. SQUARE",
   "hex": "#E2D8C8",
-  "rough": 0.7,
+  "rough": 0.75,
   "kind": "stone",
-  "texture": "acg/Travertine004",
+  "texture": "concrete_pavement_02",
   "tint": [
-   1.0,
-   0.97,
-   0.93
+   2.9,
+   3.2,
+   3.4
   ],
   "status": "PLACEHOLDER",
-  "source": "FOR A-100 paved pool deck, material per landscape plan L-2",
-  "size_in": 48
+  "source": "FOR A-100 paved pool deck, material per landscape plan L-2 (Poly Haven concrete_pavement_02, tinted to a light limestone)",
+  "size_in": 72
  },
  "POOL-PLASTER": {
   "name": "POOL INTERIOR, WHITE PLASTER",

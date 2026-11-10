@@ -8,7 +8,7 @@ HERE = sys.argv[sys.argv.index('--dest') + 1] if '--dest' in sys.argv else os.pa
 def get(u, out=None):
     r = subprocess.run(['curl', '-sSfL', '--max-time', '180', '-A', 'IDD-render/1.0'] + (['-o', out] if out else []) + [u], capture_output=True, check=True)
     return r.stdout
-TEX = ['oak_veneer_01', 'wood_floor', 'marble_01', 'painted_plaster_wall', 'rough_linen', 'laminate_floor_02', 'plank_flooring_02', 'terry_cloth']
+TEX = ['oak_veneer_01', 'wood_floor', 'marble_01', 'painted_plaster_wall', 'rough_linen', 'laminate_floor_02', 'plank_flooring_02', 'terry_cloth', 'concrete_pavement_02']
 HDRI = ['white_home_studio', 'modern_bathroom', 'green_sanctuary', 'garden_nook']
 MODELS = ['potted_plant_01', 'potted_plant_04', 'ceramic_vase_01', 'ceramic_vase_03', 'wooden_bowl_01', 'wicker_basket_02', 'wooden_stool_02', 'potted_plant_02', 'modern_arm_chair_01']
 for a in TEX:
