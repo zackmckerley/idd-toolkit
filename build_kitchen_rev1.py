@@ -345,6 +345,7 @@ def south_wall(v):
         cx += w_
     K.counter(v, m0, m1)
     C.tile_grid(v, m0, m1, K.COUNTER, UP_T, module=(3.0, 12.0), grout=0.0625, setout='center')   # owner 11.10.26: TL-05 at the bar too, as the range wall
+    C.tile_grid(v, 0.0, 25.0, K.COUNTER, UP_T, module=(3.0, 12.0), grout=0.0625, side=(m1, -1))   # and wrapped onto the return's side (R6 11.10.26)
     for y in MSHELF:
         K.floating_shelf(v, m0, m1 - m0, y, B.SHELF_T, finish='wood'); C._line(v, (m0 + 2, y - 0.4), (m1 - 2, y - 0.4), C.FINE, LIGHT, '[1.5 1.5] 0')
     hw = (m1 - m0) / 2                                                                   # owner 11.09.26 (C30): glass in the middle uppers, two pairs

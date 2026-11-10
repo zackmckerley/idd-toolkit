@@ -183,21 +183,44 @@ def make_photo(code, preview=False):
     # the clast structure of the reference: a dense, wandering fracture net at three scales (9 in. clasts, 4 in. breakup over most
     # of the slab, 1-3/4 in. crackle in clusters), thin charcoal veins with a soft brown edge; the scan contributes only its hairlines
     vsc = np.clip(v - 0.55, 0, 1) * 0.6 * (1 - body) + np.where(body, np.clip(v, 0, 1) * 0.0, 0)   # scan blobs dropped (read as ink)
-    nets = []
-    for cell_in, heal_, zone_t, wmin, wmax, wob in ((9.0, 0.30, None, 0.11, 0.24, 0.10), (4.0, 0.22, 0.34, 0.07, 0.14, 0.12), (1.75, 0.18, 0.58, 0.04, 0.075, 0.14)):
+    # ghost veins first: a soft, wide, low-contrast grey-taupe net under everything (the depth real stone has, R6 11.10.26)
+    gp_ = 7.0 * PX_IN * s
+    eg, wg = network(shape, rng, gp_, gp_ * 0.6, heal=0.35, wvar=1.0, wob_px=gp_ * 0.12, fallback=False)
+    ghost = np.exp(-np.abs(eg) / (0.35 * PX_IN * s)) * np.clip((fbm(shape, rng, 3, 1.5) - 0.3) * 2.0, 0, 1)
+    img = img * (1 - 0.22 * ghost[..., None]) + mid[None, None] * (0.22 * ghost[..., None])
+    levels = []   # (core, halo, tone, opacity): bold charcoal clasts, grey-brown breakup, light grey crackle
+    for cell_in, heal_, zone_t, wmin, wmax, wob, tone_, op_ in ((9.0, 0.30, None, 0.11, 0.24, 0.10, core, 0.95), (4.0, 0.22, 0.34, 0.07, 0.14, 0.12, core * 0.5 + mid * 0.5, 0.85),
+                                                                 (1.75, 0.18, 0.58, 0.04, 0.075, 0.14, mid * 0.7 + ground * 0.3, 0.6)):
         cp_ = cell_in * PX_IN * s
         e_, w_ = network(shape, rng, cp_, cp_ * 0.55, heal=heal_, wvar=1.0, wob_px=cp_ * wob, fallback=False)
         zone = np.ones(shape, np.float32) if zone_t is None else np.clip((fbm(shape, rng, 3, 1.2) - zone_t) * 3.5, 0, 1)
         sw = 0.6 + 0.8 * fbm(shape, rng, 3, 4.0)
         vw = np.minimum(PX_IN * s * (wmin + (wmax - wmin) * np.clip(w_ - 0.35, 0, 1)) * sw, PX_IN * s * wmax * 1.15) * zone
-        c_ = np.clip(0.5 + (vw * 0.5 - np.abs(e_)) / (0.9 * max(s, 0.5)), 0, 1) * (vw > 0.25)   # crisp, antialiased edges: a soft ramp read as a smudge
+        c_ = np.clip(0.5 + (vw * 0.5 - np.abs(e_)) / (0.9 * max(s, 0.5)), 0, 1) * (vw > 0.25)
         h_ = np.exp(-np.abs(e_) / np.maximum(vw * 1.4, 0.6)) * (vw > 0.25)
-        nets.append((c_, h_))
-    net = np.maximum.reduce([c_ for c_, _ in nets]); nh = np.maximum.reduce([h_ for _, h_ in nets])
+        levels.append((c_, h_, tone_, op_))
+    nh = np.maximum.reduce([h_ for _, h_, _, _ in levels])
     img = img * (1 - 0.14 * nh[..., None]) + mid[None, None] * (0.14 * nh[..., None])
     gm2 = (nh * stain)[..., None]
-    img = img * (1 - 0.40 * gm2) + gold[None, None] * (0.40 * gm2)   # gold-brown iron staining along some veins
-    v = np.clip(np.maximum(net, vsc), 0, 1)
+    img = img * (1 - 0.45 * gm2) + gold[None, None] * (0.45 * gm2)   # gold-brown iron staining along some veins
+    nz_ = ndi.gaussian_filter(rng.standard_normal(shape).astype(np.float32), 1.6 * s); brk = np.clip(0.9 + 0.12 * nz_ / (nz_.std() + 1e-6), 0.7, 1.0)   # crystalline, not sandpaper
+    for c_, _, tone_, op_ in levels[::-1]:                               # fine first, bold last on top
+        t_ = tone_[None, None] * (1 - 0.45 * stain[..., None]) + gold[None, None] * 0.75 * (0.45 * stain[..., None])   # gold-brown runs
+        a_l = np.clip(c_ * op_ * brk, 0, 1)[..., None]
+        img = img * (1 - a_l) + t_ * a_l
+    full = img if img.shape[1] >= W else np.concatenate([img, img[:, ::-1]], 1)[:, :W]
+    vv0 = np.maximum.reduce([c_ * op_ for c_, _, _, op_ in levels])
+    out = os.path.join(HERE, 'assets', 'slabs', code + ('_preview' if preview else '')); os.makedirs(out, exist_ok=True)
+    Image.fromarray((np.clip(full, 0, 1) * 255).astype(np.uint8)).save(os.path.join(out, 'Diffuse.jpg'), quality=93)
+    vv = vv0 if vv0.shape[1] >= W else np.concatenate([vv0, vv0[:, ::-1]], 1)[:, :W]
+    rough = np.clip(0.30 + 0.30 * vv + 0.05 * rng.standard_normal(vv.shape).astype(np.float32), 0, 1)
+    Image.fromarray((rough * 255).astype(np.uint8)).save(os.path.join(out, 'Rough.jpg'), quality=90)
+    hgt = ndi.gaussian_filter(-vv * 0.5, 1.0)
+    gy, gx = np.gradient(hgt)
+    nrm = np.stack([-gx, gy, np.ones_like(gx)], -1); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
+    Image.fromarray(((nrm * 0.5 + 0.5) * 255).astype(np.uint8)).save(os.path.join(out, 'nor_gl.jpg'), quality=90)
+    print('wrote', out, full.shape)
+    return
     vc = np.clip(v, 0, 1)[..., None]
     k_ = np.clip((vc - 0.25) / 0.4, 0, 1)                                    # vein edges warm grey-brown and gold, cores near black
     edge_tone = mid[None, None] * (1 - 0.45 * stain[..., None]) + gold[None, None] * (0.45 * stain[..., None])

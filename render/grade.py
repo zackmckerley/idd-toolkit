@@ -12,6 +12,9 @@ from PIL import Image
 
 a_ = sys.argv
 im = Image.open(a_[1]).convert('RGB')
+if '--gain' in a_:   # channel gains R,G,B: take part of the warm downlight cast off the creams without a grey card (the walls are a picked beige)
+    g_ = np.array([float(t) for t in a_[a_.index('--gain') + 1].split(',')], np.float32)
+    im = Image.fromarray(np.clip(np.asarray(im, np.float32) * g_, 0, 255).astype(np.uint8))
 if '--wb' in a_:
     a = np.array(im).astype(np.float32); mx = a.max(axis=2); mn = a.min(axis=2)
     m = (mx > 150) & ((mx - mn) < 40)

@@ -768,6 +768,20 @@ def b_tile_grid(a, ctx):
     grout behind; only inside the `show` windows when the drawing limits them (cabinets and mirrors in front)."""
     x0, x1, y0, y1 = a['x0'], a['x1'], a['y0'], a['y1']; tw, th = a.get('module') or (24, 12); g = a.get('grout', 0.125) or 0.125
     m = material(R('tile', 'WT-02')); grout = material(R('grout', 'GROUT'))
+    if a.get('side'):   # the side of a return seen edge-on: the plane x = x_face, tiles laid along the depth d0..d1 (x0..x1)
+        xf, fc = float(a['side'][0]), int(a['side'][1]); d0, d1 = x0, x1
+        box(min(xf, xf + fc * 0.2), max(xf, xf + fc * 0.2), y0, y1, d0, d1, grout, 'grout')
+        cols = [d0]; dd = d1 - tw
+        while dd > d0 + 0.5: cols.insert(1, dd); dd -= tw                     # full tiles from the front edge back to the wall
+        cols.append(d1); rows = []; yy = y0
+        while yy < y1 - 0.1: rows.append(yy); yy += th
+        rows.append(y1)
+        for ri in range(len(rows) - 1):
+            for ci in range(len(cols) - 1):
+                c0_, c1_ = cols[ci] + (g / 2 if ci else 0), cols[ci + 1] - (g / 2 if ci < len(cols) - 2 else 0)
+                r0_, r1_ = rows[ri] + (g / 2 if ri else 0), rows[ri + 1] - (g / 2 if ri < len(rows) - 2 else 0)
+                box(min(xf, xf + fc * 0.375), max(xf, xf + fc * 0.375), r0_, r1_, c0_, c1_, m, 'tile')
+        return
     fd = float(a.get('face_d') or 0.0)    # a column return seen face-on: the tile sits on that face, not on the wall
     box(x0, x1, y0, y1, fd - 0.01, fd + 0.2, grout, 'grout')
     Lx = x1 - x0; n = int(Lx / tw); rem = Lx - n * tw

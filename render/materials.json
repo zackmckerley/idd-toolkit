@@ -945,7 +945,7 @@
  },
  "GROUT-CREAM": {
   "name": "GROUT, WARM CREAM (TL-05)",
-  "hex": "#DDD3C3",
+  "hex": "#CDBFAA",
   "rough": 0.85,
   "kind": "plastic"
  },
@@ -956,11 +956,11 @@
   "kind": "wood",
   "texture": "oak_veneer_01",
   "tint": [
-   0.927,
-   0.771,
-   0.629
+   1.066,
+   1.002,
+   1.006
   ],
   "status": "OWNER INSPIRATION",
-  "source": "owner 11.10.26: the wood shelving the same color as the floors"
+  "source": "owner 11.10.26: the wood shelving the same color as the floors; tint lifted against the floor: the shelf edges sit in warm LED light and read darker and more orange (R6 11.10.26)"
  }
 }
