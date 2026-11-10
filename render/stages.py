@@ -514,7 +514,7 @@ def south_end(wallm, trim, pt1):
     MATS.setdefault('STEEL-SS', {'hex': '#B8B5AE', 'rough': 0.3, 'kind': 'metal'})
     # floor: the living room's boards continue (world coordinates, same material: no seam); the foyer's checkerboard past the arch
     wbox_abs(86.2, 268.0, ys - 6.0, -12.0, -2.0, 0.0, wd, 'south_floor')
-    wbox_abs(80.2, 206.0, -296.0, ys - 6.0, -2.0, 0.0, material(R('floor', 'TL-01')), 'foyer_floor')
+    wbox_abs(80.2, 206.0, -296.0, ys - 6.0, -2.0, 0.0, material('TL-01'), 'foyer_floor')   # not R(): the room's floor role would give the living room's oak
     # west wall with door 12
     for y0_, y1_, z0_ in ((ys - 6.0, -122.0, 0.0), (-89.0, -6.0, 0.0), (-122.0, -89.0, 96.0)):
         wbox(86.2, 92.2, y0_, y1_, z0_, CH, wallm, 'se_wall_w')
@@ -540,7 +540,7 @@ def south_end(wallm, trim, pt1):
     run = (x_t - x_b) / (n_ - 1)
     for k in range(1, n_):
         x0_ = x_b + (k - 1) * run
-        wbox(x0_, min(x0_ + run + 0.5, x_t), ys, -153.0, 0.0, k * RS, wd, 'stair_step')
+        wbox(x0_, min(x0_ + run + 0.5, x_t), ys, -153.0, 0.0, k * RS - 1.0, wd, 'stair_step')   # the tread sits on it: no shared top
         wbox(x0_ - 0.75, x0_ + run, ys, -153.0, k * RS - 1.0, k * RS, wd, 'tread')
     wbox(x_t, 262.0, ys, -148.0, 0.0, n_ * RS, wd, 'landing')
     hw = [(165.9, 0.0), (235.9, 0.0), (235.9, n_ * RS + 36.0), (x_b, RS + 36.0), (165.9, RS + 36.0)]
