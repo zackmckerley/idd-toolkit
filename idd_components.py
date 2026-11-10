@@ -350,10 +350,11 @@ def niche(v, x, w, y, h, shelves=1):
 def towel_bar(v, cx, y=48, w=24):
     _line(v, (cx - w / 2, y), (cx + w / 2, y), OUTLINE)
     for px in (cx - w / 2 + 1, cx + w / 2 - 1): _rect(v, px - 0.6, y - 1.2, px + 0.6, y + 1.2, FINE)
-def tile_grid(v, x0, x1, y0, y1, module=(24, 12), grout=0.125, setout='center', stagger=False, show=None):
+def tile_grid(v, x0, x1, y0, y1, module=(24, 12), grout=0.125, setout='center', stagger=False, show=None, face_d=0.0):
     """Tile hatch: horizontal joints as fine lines, vertical joints set out from the center (or a centered joint), full course at the floor.
     module = (tile width, tile height). `show` = list of (x0, x1, y0, y1) windows; joints are drawn only inside them (set-out stays on the full extent),
-    so cabinets, mirrors and openings in front of the tile are not hatched through."""
+    so cabinets, mirrors and openings in front of the tile are not hatched through. face_d: the tiled face's distance off the wall when it
+    is not the wall itself (a column return seen face-on, 11.09.26 night), recorded for the 3-D render."""
     tw, th = module
     def seg(a, b):
         if not show: _line(v, a, b, FINE, TILE); return

@@ -6,8 +6,15 @@ import idd_components as C
 from idd_components import _rect, _line, _poly, _ellipse, shadow, HEAVY, OUTLINE, MED, FINE, SHADOW, INK, MID, LIGHT, PALE
 
 COUNTER = 36.0; SLAB = 1.25; TOE = 4.5; BOX_TOP = COUNTER - SLAB
-STILE = 2.0          # face frame stile and rail
-REVEAL = 0.125       # inset reveal, drawn as the inner line offset
+# Owner 11.09.26 night: "why do you have large gaps between all of the cabinet doors? they should be touching each other all sides".
+# No face frame shows between fronts: doors and drawers meet with a 1/8 in. reveal (1/16 in. each side). STILE is the frame between
+# openings (0 = fronts touching), REVEAL the gap each side of a front. Both are recorded on every call so the renderer builds the same.
+STILE = 0.0          # face frame stile and rail between fronts (was 2.0)
+REVEAL = 0.0625      # reveal each side of a front: 1/8 in. between two fronts
+# Door style for every inset front (owner 11.09.26 night: "slim shakers like in the attached"): a 1-3/8 in. frame round a flat
+# panel set 3/8 in. back, drawn as the inner line. 'flat' is the plain slab. Recorded on every call so the renderer builds it.
+DOOR_STYLE = 'slim_shaker'
+SHAKER = 1.375
 
 def counter(v, x0, x1, top=COUNTER, slab=SLAB, edge=None, overhang=0.0):
     """Stone counter seen face-on: the slab edge (thick edge when `edge` is given), shadow line under the overhang."""
@@ -18,31 +25,35 @@ def counter(v, x0, x1, top=COUNTER, slab=SLAB, edge=None, overhang=0.0):
 def toe(v, x0, x1, depth=24.0):
     _rect(v, x0, 0, x1, TOE, MED); _line(v, (x0, TOE), (x1, TOE), FINE, MID)
 
-def frame_opening(v, x0, y0, x1, y1):
-    """One inset opening in the face frame: the opening line and the front 1/8 in. inside it."""
+def frame_opening(v, x0, y0, x1, y1, style=None):
+    """One inset opening in the face frame: the opening line and the front 1/8 in. inside it; a slim shaker front adds its panel line."""
+    style = DOOR_STYLE if style is None else style
     _rect(v, x0, y0, x1, y1, MED); _rect(v, x0 + REVEAL, y0 + REVEAL, x1 - REVEAL, y1 - REVEAL, FINE, MID)
+    k = REVEAL + SHAKER
+    if style == 'slim_shaker' and x1 - x0 > 2 * k + 2 and y1 - y0 > 2 * k + 2:
+        _rect(v, x0 + k, y0 + k, x1 - k, y1 - k, FINE, MID)
 
-def drawer_stack(v, x, w, n=3, top=BOX_TOP, pull='bar', bottom=TOE, depth=24.0):
+def drawer_stack(v, x, w, n=3, top=BOX_TOP, pull='bar', bottom=TOE, depth=24.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
     """Inset drawer stack: the face frame as a rect with the openings laid out top to bottom (top drawer shallower)."""
     _rect(v, x, bottom, x + w, top, OUTLINE)
     inner = top - bottom - STILE * (n + 1)
     hs = [inner * 0.22] + [inner * (0.78 / (n - 1))] * (n - 1) if n > 1 else [inner]
     y = top - STILE
     for h in hs:
-        frame_opening(v, x + STILE, y - h, x + w - STILE, y)
+        frame_opening(v, x + STILE, y - h, x + w - STILE, y, style)
         cy = y - h / 2
         if pull == 'bar': _line(v, (x + w / 2 - min(6, w * 0.2), cy), (x + w / 2 + min(6, w * 0.2), cy), OUTLINE)
         elif pull == 'cup': _poly(v, [(x + w / 2 - 2.5, cy + 0.6), (x + w / 2 + 2.5, cy + 0.6), (x + w / 2 + 1.8, cy - 1.0), (x + w / 2 - 1.8, cy - 1.0)], MED)
         y -= h + STILE
 
-def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0, depth=24.0):
+def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0, depth=24.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
     """Inset pair of doors between y0 and y1 (a base sink cabinet, an upper, a tall cabinet). `depth` is the box depth from the wall
     (not drawn in elevation; recorded for the plan and the 3-D render, 24 in. unless the cabinet is a true 13 in. upper)."""
     _rect(v, x, y0, x + w, y1, OUTLINE)
     dw = (w - 3 * STILE) / 2
     for i in range(2):
         dx = x + STILE + i * (dw + STILE)
-        frame_opening(v, dx, y0 + STILE, dx + dw, y1 - STILE)
+        frame_opening(v, dx, y0 + STILE, dx + dw, y1 - STILE, 'flat' if glass else style)
         if glass:
             _rect(v, dx + 2.5, y0 + STILE + 2.5, dx + dw - 2.5, y1 - STILE - 2.5, FINE, MID)
             _line(v, (dx + 4, y1 - STILE - 5), (dx + dw * 0.45, y0 + STILE + 4), FINE, PALE)
@@ -53,8 +64,8 @@ def door_pair_cab(v, x, w, y0, y1, glass=False, pulls=True, muntins=0, depth=24.
             py = (y0 + y1) / 2 if (y1 - y0) < 40 else (y0 + 36 if y1 > 60 else y0 + (y1 - y0) * 0.5)
             _line(v, (px, py - 3), (px, py + 3), OUTLINE)
 
-def single_door_cab(v, x, w, y0, y1, hinge='L', glass=False, depth=24.0):
-    _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
+def single_door_cab(v, x, w, y0, y1, hinge='L', glass=False, depth=24.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
+    _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE, 'flat' if glass else style)
     if glass: _rect(v, x + STILE + 2.5, y0 + STILE + 2.5, x + w - STILE - 2.5, y1 - STILE - 2.5, FINE, MID)
     px = x + w - STILE - 2.2 if hinge == 'L' else x + STILE + 2.2
     py = (y0 + y1) / 2 if (y1 - y0) < 40 else y0 + 36
@@ -63,7 +74,8 @@ def single_door_cab(v, x, w, y0, y1, hinge='L', glass=False, depth=24.0):
 def end_panel(v, x, w, y0, y1):
     _rect(v, x, y0, x + w, y1, OUTLINE); _rect(v, x + 1.5, y0 + 1.5, x + w - 1.5, y1 - 1.5, FINE, MID)
 
-def light_rail(v, x0, x1, y, h=1.5):
+def light_rail(v, x0, x1, y, h=1.5, led=True):
+    """Light rail under an upper run; led=True: LS2 LED tape behind it lights the counter and any shelf below (recorded for the render)."""
     _rect(v, x0, y - h, x1, y, MED); _line(v, (x0 + 1, y - h - 0.3), (x1 - 1, y - h - 0.3), FINE, LIGHT, '[1.5 1.5] 0')   # LED tape
 
 def upper_run(v, x, widths, y0, y1, glass=False, stack=None, muntins=0):
@@ -137,27 +149,37 @@ def veneer_grain(v, x0, y0, x1, y1):
         pts = [(x0 + 1.5 + (x1 - x0 - 3) * t / 12, yy + 0.6 * math.sin(t * 1.3 + i)) for t in range(13)]
         _poly(v, pts, FINE, PALE, close=False)
 
-def veneer_door(v, x, w, y0, y1, glass=False, pull='bar', hinge='L', depth=24.0):
-    """One inset veneer door in its face frame; glass=True for a glass door with lit shelves behind (recorded for the 3-D render)."""
-    _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
+def veneer_door(v, x, w, y0, y1, glass=False, pull='bar', hinge='L', depth=24.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
+    """One inset door in its face frame (a slim shaker unless style='veneer'); glass=True for a glass door with lit shelves behind (recorded
+    for the 3-D render). Never draw a pair as two of these overlapping on a shared stile: use door_pair_cab (the overlap rendered black)."""
+    _rect(v, x, y0, x + w, y1, OUTLINE); frame_opening(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE, 'flat' if (glass or style == 'veneer') else style)
     if glass: _rect(v, x + STILE + 2.5, y0 + STILE + 2.5, x + w - STILE - 2.5, y1 - STILE - 2.5, FINE, MID); _line(v, (x + 4, y1 - 6), (x + w * 0.45, y0 + 5), FINE, PALE)
-    else: veneer_grain(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
+    elif style == 'veneer': veneer_grain(v, x + STILE, y0 + STILE, x + w - STILE, y1 - STILE)
     px = x + w - STILE - 2.2 if hinge == 'L' else x + STILE + 2.2
     if pull == 'bar': _line(v, (px, (y0 + y1) / 2 - 3), (px, (y0 + y1) / 2 + 3), OUTLINE)
     elif pull == 'long': _line(v, (px, 30), (px, 66), OUTLINE); _line(v, (px - 0.6, 30), (px - 0.6, 66), FINE, MID)
 
-def filler_panel(v, x, w, y0, y1, depth=25.0):
-    """A flush panel or filler between cabinets or appliance columns, full depth (recorded for the 3-D render)."""
-    _rect(v, x, y0, x + w, y1, MED)
+def filler_panel(v, x, w, y0, y1, depth=25.0, toe_kick=True):
+    """A flush panel or filler between cabinets or appliance columns (recorded for the 3-D render). toe_kick: when it starts at the floor
+    it stops at the toe and the run's 3 in. recessed toe runs through under it (owner 11.09.26 night: continuous toe under the fridge)."""
+    if toe_kick and y0 <= 0.01:
+        _rect(v, x, TOE, x + w, y1, MED); toe(v, x, x + w, depth)
+    else:
+        _rect(v, x, y0, x + w, y1, MED)
 
 def soffit(v, x0, x1, y0, H, depth=24.0, crown_drop=8.0):
     """Drywall and scribe above a cabinet run, flush with the cabinet face from the cabinet top to the ceiling, the crown on its face
     (1/ID-501 rule). In elevation it is the line at the cabinet top; recorded for the plan and the 3-D render."""
     _line(v, (x0, y0), (x1, y0), FINE)
 
-def drywall_column(v, x, w, H, crown_drop=8.0, depth=26.0):
-    """A drywall column or pilaster seen face-on, floor to the crown, `depth` deep off the wall (recorded for the plan and the 3-D render)."""
+def drywall_column(v, x, w, H, crown_drop=8.0, depth=26.0, finish='drywall'):
+    """A column or pilaster seen face-on, floor to the crown, `depth` deep off the wall (recorded for the plan and the 3-D render).
+    finish='millwork' (owner 11.09.26 night: "it should look like continuous cabinetry"): clad in a flat painted panel in the cabinet
+    finish with the runs' toe kick, so the corner reads as part of the cabinetry. A corner column seen in two elevations is one
+    object; the renderer builds it once."""
     _rect(v, x, 0, x + w, H - crown_drop, OUTLINE)
+    if finish == 'millwork':
+        _rect(v, x + 0.125, TOE, x + w - 0.125, H - crown_drop - 0.125, FINE, MID); toe(v, x, x + w)
 
 def counter_stool(v, cx, seat=26.0, w=17.0):
     """Counter stool, N.I.C., dashed: seat, four legs, foot ring."""
@@ -190,10 +212,10 @@ def _arc_bridge(v, cx, y, reach=5.0):
     _poly(v, arc + [(cx + 2 * reach, y - 4)], MED, close=False)
     _line(v, (cx + 2 * reach, y - 4), (cx + 2 * reach + 1.5, y - 4), MED)
 
-def sink_cab(v, x, w, bottom=TOE, top=BOX_TOP, front=7.0):
+def sink_cab(v, x, w, bottom=TOE, top=BOX_TOP, front=7.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
     """Sink base: a pair of doors under a false front (tip-out) the depth of the sink rim."""
-    door_pair_cab(v, x, w, bottom, top - front)
-    _rect(v, x, top - front, x + w, top, OUTLINE); frame_opening(v, x + STILE, top - front + STILE / 2, x + w - STILE, top - STILE / 2)
+    door_pair_cab(v, x, w, bottom, top - front, style=style)
+    _rect(v, x, top - front, x + w, top, OUTLINE); frame_opening(v, x + STILE, top - front + STILE / 2, x + w - STILE, top - STILE / 2, style)
 
 def outlet_splash(v, cx, cy=42.0):
     C.outlet(v, cx, cy, horizontal=True)
@@ -223,3 +245,19 @@ def waterfall(v, x, w, top=COUNTER, side='L', thick=SLAB):
 
 def stool_clear(v, L, top=COUNTER, knee=15.0):
     _line(v, (0, top - SLAB - knee), (L, top - SLAB - knee), FINE, LIGHT, '[2 2] 0')
+
+
+def undercounter_appliance(v, x, w, kind='beverage', top=BOX_TOP, bottom=TOE, depth=24.0, style=DOOR_STYLE, stile=STILE, reveal=REVEAL):
+    """Panel-ready undercounter appliance in the cabinet run (recorded for the 3-D render): kind 'beverage' (a glass door in a slim
+    panel frame, lit shelves of bottles behind, owner 11.09.26 C33) or 'ice' (a solid shaker panel). A bar pull at the latch side,
+    a ventilation grille in the toe (owner 11.09.26 night: "don't show up well": they were linework the renderer couldn't read)."""
+    _rect(v, x, bottom, x + w, top, OUTLINE)
+    if kind == 'beverage':
+        frame_opening(v, x + STILE, bottom + STILE, x + w - STILE, top - STILE, 'flat')
+        _rect(v, x + STILE + 2.0, bottom + STILE + 2.0, x + w - STILE - 2.0, top - STILE - 2.0, FINE, MID)
+        for gy in (12.0, 19.0, 26.0): _line(v, (x + STILE + 2.5, gy), (x + w - STILE - 2.5, gy), FINE, LIGHT)
+        _line(v, (x + w - STILE - 2.2, 17), (x + w - STILE - 2.2, 27), OUTLINE)
+    else:
+        frame_opening(v, x + STILE, bottom + STILE, x + w - STILE, top - STILE, style)
+        _line(v, (x + w / 2 - 4, top - 4.5), (x + w / 2 + 4, top - 4.5), OUTLINE)
+    for gx in range(1, int(w // 1.5)): _line(v, (x + gx * 1.5, 0.8), (x + gx * 1.5, bottom - 0.8), FINE, MID)   # toe grille

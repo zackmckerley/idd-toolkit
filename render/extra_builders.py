@@ -5,7 +5,7 @@ import math as _m
 MATS.setdefault('TOE', {'hex': '#2A2826', 'rough': 0.8, 'kind': 'paint'})
 MATS.setdefault('STAINLESS', {'hex': '#B9B8B4', 'rough': 0.28, 'kind': 'metal', 'lin': [0.52, 0.51, 0.49], 'brushed': True})
 MATS.setdefault('GRATE', {'hex': '#1C1C1C', 'rough': 0.45, 'kind': 'metal', 'lin': [0.03, 0.03, 0.03]})
-MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 6.0})
+MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 2.2})   # 11.09.26 night: 6.0 blew out the shelves and darkened everything else
 
 cab_mat = lambda: material(R('cabinet', 'CAB-01'), '-trim')
 stone_mat = lambda: material(R('counter', 'STONE-TOP'))
@@ -37,26 +37,39 @@ def _bar_pull(cx, cy, length, vertical, d, metal=None):
         for xx in (cx - length / 2 + 0.6, cx + length / 2 - 0.6): cyl(xx, cy, d + 0.55, 0.2, 1.1, 'd', metal, 'post')
 
 
-def _inset_front(x0, y0, x1, y1, D, mat=None, glass=False):
-    """An inset door or drawer front in its face-frame opening: a dark 1/8 in. reveal, the front flush with the frame."""
+SHAKER = 1.375   # idd_kitchen.SHAKER: the slim shaker frame (owner 11.09.26 night)
+
+
+def _frame(x0, y0, x1, y1, k, d0, d1, mat, nm):
+    """A rectangular frame k wide: stiles full height, rails between them, so no two pieces overlap (overlapping coplanar faces
+    render black with the bevel shader: the glass doors' black corners, 11.09.26)."""
+    box(x0, x0 + k, y0, y1, d0, d1, mat, nm); box(x1 - k, x1, y0, y1, d0, d1, mat, nm)
+    box(x0 + k, x1 - k, y0, y0 + k, d0, d1, mat, nm); box(x0 + k, x1 - k, y1 - k, y1, d0, d1, mat, nm)
+
+
+def _inset_front(x0, y0, x1, y1, D, mat=None, glass=False, style='slim_shaker', r=0.125):
+    """An inset door or drawer front in its face-frame opening, a dark 1/8 in. reveal round it, flush with the frame. A slim shaker
+    front is a 1-3/8 in. frame with the panel 1/4 in. back, so its inside edges read as the shaker line."""
     mat = mat or cab_mat()
-    r = 0.125
-    if not glass: box(x0, x1, y0, y1, D - 0.02, D + 0.01, material('GAP'), 'reveal')
     if not glass:
-        box(x0 + r, x1 - r, y0 + r, y1 - r, D + 0.01, D + 0.06, mat, 'front'); return
-    st = 2.25
-    for (a, b_, c, e) in ((x0 + r, x0 + r + st, y0 + r, y1 - r), (x1 - r - st, x1 - r, y0 + r, y1 - r),
-                          (x0 + r, x1 - r, y0 + r, y0 + r + st), (x0 + r, x1 - r, y1 - r - st, y1 - r)):
-        box(a, b_, c, e, D + 0.01, D + 0.06, mat, 'glass_frame')
-    box(x0 + r + st, x1 - r - st, y0 + r + st, y1 - r - st, D - 0.3, D - 0.25, material('GLASS-CLEAR'), 'glass')
+        box(x0, x1, y0, y1, D - 0.02, D + 0.01, material('GAP'), 'reveal')
+        k = SHAKER
+        if style == 'slim_shaker' and x1 - x0 > 2 * (k + r) + 2 and y1 - y0 > 2 * (k + r) + 2:
+            _frame(x0 + r, y0 + r, x1 - r, y1 - r, k, D + 0.01, D + 0.31, mat, 'shaker_frame')
+            box(x0 + r + k, x1 - r - k, y0 + r + k, y1 - r - k, D + 0.01, D + 0.06, mat, 'shaker_panel')
+        else:
+            box(x0 + r, x1 - r, y0 + r, y1 - r, D + 0.01, D + 0.31, mat, 'front')
+        return
+    _frame(x0 + r, y0 + r, x1 - r, y1 - r, 1.75, D - 0.69, D + 0.31, mat, 'glass_frame')
+    box(x0 + r + 1.75, x1 - r - 1.75, y0 + r + 1.75, y1 - r - 1.75, D - 0.3, D - 0.25, material('GLASS-CLEAR'), 'glass')
 
 
 def _carcass(x, w, y0, y1, D, interior=False):
-    if interior:   # a glass cabinet: the carcass is hollow, a painted interior with two shelves and a lit top
-        m = cab_mat()
+    if interior:   # a glass cabinet: the carcass is hollow, a painted interior with two shelves and a lit top; the sides stop 3/4 in.
+        m = cab_mat()  # short of the face so the face frame owns the front (no shared faces)
         box(x, x + w, y0, y1, 0.0, 0.75, m, 'cab_back')
-        box(x, x + 0.75, y0, y1, 0.75, D, m, 'cab_side'); box(x + w - 0.75, x + w, y0, y1, 0.75, D, m, 'cab_side')
-        box(x, x + w, y0, y0 + 0.75, 0.75, D, m, 'cab_bottom'); box(x, x + w, y1 - 0.75, y1, 0.75, D, m, 'cab_top')
+        box(x, x + 0.75, y0, y1, 0.75, D - 0.75, m, 'cab_side'); box(x + w - 0.75, x + w, y0, y1, 0.75, D - 0.75, m, 'cab_side')
+        box(x + 0.75, x + w - 0.75, y0, y0 + 0.75, 0.75, D - 0.75, m, 'cab_bottom'); box(x + 0.75, x + w - 0.75, y1 - 0.75, y1, 0.75, D - 0.75, m, 'cab_top')
         for k in (1, 2):
             yy = y0 + (y1 - y0) * k / 3; box(x + 0.75, x + w - 0.75, yy - 0.25, yy + 0.25, 1.0, D - 1.5, material('GLASS-CLEAR'), 'shelf')
         box(x + 2, x + w - 2, y1 - 1.0, y1 - 0.8, 2.0, D - 2.0, material('LED-STRIP'), 'cab_led')
@@ -73,55 +86,58 @@ def b_toe(a, ctx):
 def b_frame_opening(a, ctx):
     if ctx.get('depth', 0) != 0: return
     D = _cab_depth(a['y0'], a['y1'], a)
-    box(a['x0'] - 2.0, a['x1'] + 2.0, max(0.0, a['y0'] - 2.0), a['y1'] + 2.0, 0.0, D - 0.02, cab_mat(), 'carcass')   # the face frame around it
-    _inset_front(a['x0'], a['y0'], a['x1'], a['y1'], D)
+    box(a['x0'], a['x1'], a['y0'], a['y1'], 0.0, D - 0.02, cab_mat(), 'carcass')   # the box behind the opening (no face frame: fronts touch)
+    _inset_front(a['x0'], a['y0'], a['x1'], a['y1'], D, style=a.get('style') or 'slim_shaker', r=0.0625)
 
 
 def b_drawer_stack(a, ctx):
-    x, w, n, top, bottom = a['x'], a['w'], a.get('n', 3), a.get('top', 34.75), a.get('bottom', 4.5)
-    D = _cab_depth(bottom, top, a); S = 2.0
+    x, w, n, top, bottom = a['x'], a['w'], a.get('n', 3), a.get('top', 34.75), a.get('bottom', 4.5); st_ = a.get('style', 'flat')
+    D = _cab_depth(bottom, top, a); S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125))
     _carcass(x, w, bottom, top, D)
     inner = top - bottom - S * (n + 1)
     hs = [inner * 0.22] + [inner * (0.78 / (n - 1))] * (n - 1) if n > 1 else [inner]
     y = top - S
     for h in hs:
-        _inset_front(x + S, y - h, x + w - S, y, D)
-        _bar_pull(x + w / 2, y - h / 2, min(12.0, w * 0.4), False, D + 0.06)
+        _inset_front(x + S, y - h, x + w - S, y, D, style=st_, r=r_)
+        _bar_pull(x + w / 2, y - h / 2, min(12.0, w * 0.4), False, D + 0.31)
         y -= h + S
 
 
-def _doors(x, w, y0, y1, n, glass, pulls, hinge='L', depth=None):
-    D = float(depth or 24.0); S = 2.0
+def _doors(x, w, y0, y1, n, glass, pulls, hinge='L', depth=None, style='flat', S=2.0, r=0.125):
+    D = float(depth or 24.0)
     _carcass(x, w, y0, y1, D, interior=glass)
-    if glass:   # the face frame around a glass cabinet
+    if glass:   # the face frame around a glass cabinet: stiles full height, rails between, the center stile between the rails
         m = cab_mat()
-        box(x, x + w, y0, y0 + S, D - 0.75, D, m, 'ff'); box(x, x + w, y1 - S, y1, D - 0.75, D, m, 'ff')
-        box(x, x + S, y0, y1, D - 0.75, D, m, 'ff'); box(x + w - S, x + w, y0, y1, D - 0.75, D, m, 'ff')
-        if n == 2: box(x + w / 2 - S / 2, x + w / 2 + S / 2, y0, y1, D - 0.75, D, m, 'ff')
+        if S > 0.01:
+            _frame(x, y0, x + w, y1, S, D - 0.75, D, m, 'ff')
+            if n == 2: box(x + w / 2 - S / 2, x + w / 2 + S / 2, y0 + S, y1 - S, D - 0.75, D, m, 'ff')
+        else:          # no face frame: a thin edge band round the hollow box behind the touching glass doors
+            _frame(x, y0, x + w, y1, 0.75, D - 0.75, D, m, 'ff')
     dw = (w - (n + 1) * S) / n
     for i in range(n):
         dx = x + S + i * (dw + S)
-        _inset_front(dx, y0 + S, dx + dw, y1 - S, D, glass=glass)
+        _inset_front(dx, y0 + S, dx + dw, y1 - S, D, glass=glass, style=style, r=r)
         if pulls:
             right = (i == 0 and n == 2) or (n == 1 and hinge == 'L')
             px = dx + dw - 2.2 if right else dx + 2.2
+            # exactly where idd_kitchen draws it (owner 11.09.26 night: "door handles in the correct places per the drawing")
             py = (y0 + y1) / 2 if (y1 - y0) < 40 else (y0 + 36 if y1 > 60 else y0 + (y1 - y0) * 0.5)
-            if y0 >= 50: py = y0 + 4.0
-            _bar_pull(px, py, 6.0, True, D + 0.06)
+            _bar_pull(px, py, 6.0, True, D + 0.31)
 
 
 def b_door_pair_cab(a, ctx):
-    _doors(a['x'], a['w'], a['y0'], a['y1'], 2, a.get('glass'), a.get('pulls', True), depth=a.get('depth'))
+    _doors(a['x'], a['w'], a['y0'], a['y1'], 2, a.get('glass'), a.get('pulls', True), depth=a.get('depth'), style=a.get('style', 'flat'), S=float(a.get('stile', 2.0)), r=float(a.get('reveal', 0.125)))
 
 
 def b_single_door_cab(a, ctx):
-    _doors(a['x'], a['w'], a['y0'], a['y1'], 1, a.get('glass'), True, a.get('hinge', 'L'), depth=a.get('depth'))
+    _doors(a['x'], a['w'], a['y0'], a['y1'], 1, a.get('glass'), True, a.get('hinge', 'L'), depth=a.get('depth'), style=a.get('style', 'flat'), S=float(a.get('stile', 2.0)), r=float(a.get('reveal', 0.125)))
 
 
 def b_sink_cab(a, ctx):
     x, w, bottom, top, front = a['x'], a['w'], a.get('bottom', 4.5), a.get('top', 34.75), a.get('front', 7.0)
-    _doors(x, w, bottom, top - front, 2, False, True)
-    _carcass(x, w, top - front, top, 24.0); _inset_front(x + 2, top - front + 1, x + w - 2, top - 1, 24.0)
+    st_ = a.get('style', 'flat'); D = float(a.get('depth') or 24.0); S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125))
+    _doors(x, w, bottom, top - front, 2, False, True, depth=D, style=st_, S=S, r=r_)
+    _carcass(x, w, top - front, top, D); _inset_front(x + S, top - front + S / 2, x + w - S, top - S / 2, D, style=st_, r=r_)
 
 
 def b_counter(a, ctx):
@@ -139,7 +155,10 @@ def b_floating_shelf(a, ctx):
 
 
 def b_light_rail(a, ctx):
-    h = a.get('h', 1.5); box(a['x0'], a['x1'], a['y'] - h, a['y'], 11.0, 13.0, cab_mat(), 'light_rail')
+    """The light rail on the face of the uppers, LS2 tape behind it (11.09.26 night: without it the zone over the bar's top shelf read dark)."""
+    h = a.get('h', 1.5); D = float(a.get('depth') or 25.0)
+    box(a['x0'], a['x1'], a['y'] - h, a['y'], D - 1.0, D, cab_mat(), 'light_rail')
+    if a.get('led', True): box(a['x0'] + 1, a['x1'] - 1, a['y'] - 0.06, a['y'] - 0.01, D - 4.0, D - 2.5, material('LED-STRIP'), 'rail_led')
 
 
 def b_pot_filler(a, ctx):
@@ -308,13 +327,21 @@ def b_shelves(a, ctx):
         y = y0 + (y1 - y0) * i / (n + 1); box(x, x + w, y, y + a.get('thick', 1.0), 0.0, 12.0, trim_mat(), 'shelf')
 
 
+COL_N = [0]
+
+
 def b_drywall_column(a, ctx):
     """A drywall column floor to ceiling, its depth off the wall as the drawing records it, base and crown wrapped round its face."""
     x, w, dp = a['x'], a['w'], float(a.get('depth') or 26.0)
-    box(x, x + w, 0.0, H, 0.0, dp, wall_mat(), 'wall_column')
+    COL_N[0] += 1; objs = []
     tm = trim_mat(); hb = T['base']; cd = T['crown']
-    box(x - 0.01, x + w + 0.01, 0.0, hb, dp, dp + 0.75, tm, 'column_base')
-    sweep([(x + w, H), (x, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'column_crown')
+    if a.get('finish') == 'millwork':   # clad as cabinetry: a flat panel in the cabinet finish on the runs' recessed toe
+        objs += [box(x, x + w, 4.5, H, 0.0, dp, cab_mat(), 'column_panel'), box(x, x + w, 0.0, 4.5, 0.0, dp - 3.0, cab_mat(), 'toe')]
+    else:
+        objs += [box(x, x + w, 0.0, H, 0.0, dp, wall_mat(), 'wall_column'), box(x - 0.01, x + w + 0.01, 0.0, hb, dp, dp + 0.75, tm, 'column_base')]
+    objs.append(sweep([(x + w, H), (x, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'column_crown'))
+    for o in objs:
+        if o is not None: o['col_id'] = COL_N[0]
 
 
 def b_counter_stool(a, ctx):
@@ -332,20 +359,23 @@ def b_veneer_door(a, ctx):
     x, w, y0, y1 = a['x'], a['w'], a['y0'], a['y1']; D = float(a.get('depth') or 24.0); glass = a.get('glass')
     # paired doors share a 2 in. stile: each carcass takes half of it, so two boxes never overlap (coplanar overlapping faces with
     # the bevel shader render as black slots)
-    _carcass(x + 1.0, w - 2.0, y0, y1, D, interior=glass)
-    box(x, x + 1.0, y0, y1, 0.0, D, cab_mat(), 'stile_half'); box(x + w - 1.0, x + w, y0, y1, 0.0, D, cab_mat(), 'stile_half')
+    S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125))
     if glass:
-        m = cab_mat()
-        for (p0, p1, q0, q1) in ((x, x + 2, y0, y1), (x + w - 2, x + w, y0, y1), (x, x + w, y0, y0 + 2), (x, x + w, y1 - 2, y1)):
-            box(p0, p1, q0, q1, D - 0.75, D, m, 'ff')
-    _inset_front(x + 2, y0 + 2, x + w - 2, y1 - 2, D, glass=glass)
-    px = x + w - 4.2 if a.get('hinge', 'L') == 'L' else x + 4.2
-    if a.get('pull') == 'long': _bar_pull(px, 48.0, 36.0, True, D + 0.06)
-    else: _bar_pull(px, (y0 + y1) / 2 if (y1 - y0) < 40 else y0 + 36, 6.0, True, D + 0.06)
+        _carcass(x, w, y0, y1, D, interior=True); _frame(x, y0, x + w, y1, max(S, 0.75), D - 0.75, D, cab_mat(), 'ff')
+    else:
+        _carcass(x, w, y0, y1, D)
+    _inset_front(x + S, y0 + S, x + w - S, y1 - S, D, glass=glass, style=a.get('style', 'flat'), r=r_)
+    px = x + w - S - 2.2 if a.get('hinge', 'L') == 'L' else x + S + 2.2
+    if a.get('pull') == 'long': _bar_pull(px, 48.0, 36.0, True, D + 0.31)        # idd_kitchen: 30 to 66
+    elif a.get('pull') == 'bar': _bar_pull(px, (y0 + y1) / 2, 6.0, True, D + 0.31)   # idd_kitchen: centred on the door
 
 
 def b_filler_panel(a, ctx):
-    box(a['x'], a['x'] + a['w'], a['y0'], a['y1'], 0.0, float(a.get('depth') or 25.0), cab_mat(), 'filler_panel')
+    D = float(a.get('depth') or 25.0)
+    if a.get('toe_kick', True) and a['y0'] <= 0.01:   # the run's recessed toe runs through under it (owner 11.09.26 night)
+        box(a['x'], a['x'] + a['w'], 4.5, a['y1'], 0.0, D, cab_mat(), 'filler_panel'); box(a['x'], a['x'] + a['w'], 0.0, 4.5, 0.0, D - 3.0, cab_mat(), 'toe')
+    else:
+        box(a['x'], a['x'] + a['w'], a['y0'], a['y1'], 0.0, D, cab_mat(), 'filler_panel')
 
 
 def b_soffit(a, ctx):
@@ -355,7 +385,34 @@ def b_soffit(a, ctx):
     sweep([(x1, H), (x0, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'soffit_crown')
 
 
-EXTRA_BUILDERS = {'soffit': b_soffit, 'filler_panel': b_filler_panel, 'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
+def b_undercounter_appliance(a, ctx):
+    """Panel-ready undercounter appliance: 'beverage' a glass door in a slim panel frame with lit glass shelves and bottles behind;
+    'ice' a shaker panel. Bar pull, a dark grille in the recessed toe."""
+    x, w, top, bottom = a['x'], a['w'], a.get('top', 34.75), a.get('bottom', 4.5); D = float(a.get('depth') or 24.0)
+    S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125)); SB = max(S, 0.75)   # the liner band behind touching fronts
+    box(x, x + w, 0.0, bottom, 0.0, D - 3.0, cab_mat(), 'toe')
+    box(x + 1.0, x + w - 1.0, 0.6, bottom - 0.6, D - 2.98, D - 2.9, material('GRATE'), 'toe_grille')
+    if a.get('kind') == 'beverage':
+        m = cab_mat(); lm = material('CERAMIC-WHITE')
+        box(x, x + w, bottom, top, 0.0, D - 22.0, m, 'bev_box')                       # the appliance body behind its liner
+        box(x, x + SB, bottom, top, D - 22.0, D - 0.75, lm, 'bev_liner'); box(x + w - SB, x + w, bottom, top, D - 22.0, D - 0.75, lm, 'bev_liner')
+        box(x + SB, x + w - SB, bottom, bottom + SB, D - 22.0, D - 0.75, lm, 'bev_liner'); box(x + SB, x + w - SB, top - SB, top, D - 22.0, D - 0.75, lm, 'bev_liner')
+        box(x + SB, x + w - SB, bottom + SB, top - SB, D - 22.5, D - 22.0, lm, 'bev_liner')
+        _frame(x, bottom, x + w, top, SB, D - 0.75, D, m, 'ff')
+        for gy in (12.0, 19.0, 26.0):
+            box(x + SB + 0.5, x + w - SB - 0.5, gy - 0.15, gy + 0.15, D - 21.0, D - 2.0, material('GLASS-CLEAR'), 'bev_shelf')
+            for k in range(int((w - 2 * SB - 1) / 3.3)):
+                cyl(x + SB + 2.0 + k * 3.3, gy + 1.6, D - 9.0, 1.45, 11.0, 'd', material('GLASS-DARK'), 'bottle')
+        box(x + SB + 1, x + w - SB - 1, top - SB - 1.0, top - SB - 0.8, D - 20.0, D - 4.0, material('LED-STRIP'), 'bev_led')
+        _inset_front(x + S, bottom + S, x + w - S, top - S, D, glass=True, r=r_)
+        _bar_pull(x + w - S - 2.2, 22.0, 10.0, True, D + 0.31)          # idd_kitchen: 17 to 27
+    else:
+        _carcass(x, w, bottom, top, D)
+        _inset_front(x + S, bottom + S, x + w - S, top - S, D, style=a.get('style', 'slim_shaker'), r=r_)
+        _bar_pull(x + w / 2, top - S - 4.5, min(8.0, w * 0.5), False, D + 0.31)
+
+
+EXTRA_BUILDERS = {'undercounter_appliance': b_undercounter_appliance, 'soffit': b_soffit, 'filler_panel': b_filler_panel, 'veneer_door': b_veneer_door, 'drywall_column': b_drywall_column, 'counter_stool': b_counter_stool, 'toe': b_toe, 'frame_opening': b_frame_opening, 'drawer_stack': b_drawer_stack, 'door_pair_cab': b_door_pair_cab,
                   'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
                   'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
                   'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,

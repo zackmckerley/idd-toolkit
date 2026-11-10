@@ -52,6 +52,9 @@ OPEN = set(_FULL.get(k, k) for k in args[args.index('--open') + 1].split(',')) i
 # evening photograph, daylight down, every fixture of the plan on (the way the lighting design reads)
 LIGHTPLAN = json.load(open(args[args.index('--lightplan') + 1])) if '--lightplan' in args else None
 DUSK = '--dusk' in args
+# --sun ELEV,AZ: the sun's altitude and its azimuth in plan degrees (clockwise from plan north), from the site's true north,
+# latitude, date and hour. Default 32, 250: a late-afternoon sun from the plan west-southwest.
+SUN = [float(v) for v in args[args.index('--sun') + 1].split(',')] if '--sun' in args else None
 V = json.load(open(views_path))[idx]
 _ppi = args[args.index('--ppi') + 1] if '--ppi' in args else 'auto'
 PPI = float(V['k']) * 17.0 / 1892.0 * 300.0 if _ppi == 'auto' else float(_ppi)
@@ -685,7 +688,8 @@ def b_tile_grid(a, ctx):
     grout behind; only inside the `show` windows when the drawing limits them (cabinets and mirrors in front)."""
     x0, x1, y0, y1 = a['x0'], a['x1'], a['y0'], a['y1']; tw, th = a.get('module') or (24, 12); g = a.get('grout', 0.125) or 0.125
     m = material(R('tile', 'WT-02')); grout = material('GROUT')
-    box(x0, x1, y0, y1, -0.01, 0.2, grout, 'grout')
+    fd = float(a.get('face_d') or 0.0)    # a column return seen face-on: the tile sits on that face, not on the wall
+    box(x0, x1, y0, y1, fd - 0.01, fd + 0.2, grout, 'grout')
     Lx = x1 - x0; n = int(Lx / tw); rem = Lx - n * tw
     off = rem / 2 if a.get('setout', 'center') == 'center' else 0
     if a.get('setout', 'center') == 'center' and rem / 2 < tw * 0.25: off = rem / 2 + tw / 2
@@ -707,7 +711,7 @@ def b_tile_grid(a, ctx):
         for ci in range(len(cs_) - 1):
             bx0, bx1, by0, by1 = cs_[ci] + (g / 2 if ci else 0), cs_[ci + 1] - (g / 2 if ci < len(cs_) - 2 else 0), rows[ri] + (g / 2 if ri else 0), rows[ri + 1] - (g / 2 if ri < len(rows) - 2 else 0)
             if bx1 - bx0 > 0.2 and by1 - by0 > 0.2:
-                box(bx0, bx1, by0, by1, 0.0, 0.375, m, 'tile'); count += 1
+                box(bx0, bx1, by0, by1, fd, fd + 0.375, m, 'tile'); count += 1
             if count > 2500: return
 
 
@@ -882,6 +886,45 @@ def wall_matrix(direction):
 
 
 PORTALS = []
+# ---- joint audit (owner 11.09.26 night: "joints between cabinets and walls flush with no differences in width / height that are not
+# intentionally supposed to be there"). Every box that forms a face of the millwork is listed per wall in wall inches before the
+# wall transform; neighbours that touch along the wall are compared: a face-plane step, a top or bottom step, or a sliver gap is
+# written to OUT.joints.txt. Intentional steps (a counter edge 1 in. proud, the toe) are other groups and are not compared.
+JOINT_AUDIT = []
+AUDIT_NAMES = {'carcass': 'body', 'filler_panel': 'body', 'column_panel': 'body', 'wall_column': 'body', 'ff': 'body',
+               'wall_soffit': 'soffit', 'toe': 'toe'}
+def _local_bbox(o):
+    xs = [v.co.x / IN for v in o.data.vertices]; ys = [v.co.z / IN for v in o.data.vertices]; ds = [-v.co.y / IN for v in o.data.vertices]
+    return (min(xs), max(xs), min(ys), max(ys), min(ds), max(ds))
+
+def joint_report(path):
+    lines = []; n = 0
+    for view, items in JOINT_AUDIT:
+        for grp in ('body', 'soffit', 'toe'):
+            its = sorted([it for it in items if AUDIT_NAMES[it[0]] == grp], key=lambda t: t[1])
+            for i, a in enumerate(its):
+                covered = []
+                for b in its[i + 1:]:
+                    if b[1] > a[2] + 1.0: break
+                    if min(a[4], b[4]) - max(a[3], b[3]) < 1.0: continue          # not side by side
+                    lo_, hi_ = max(a[3], b[3]), min(a[4], b[4])
+                    if any(c0 <= lo_ + 0.5 and hi_ - 0.5 <= c1 for c0, c1 in covered): continue   # a nearer piece already meets a here
+                    if b[1] < a[2] - 0.5: continue                                   # overlapping along the wall, not a joint
+                    gap = b[1] - a[2]
+                    if -0.02 <= gap <= 1.0:
+                        # intentional by the drawing: a 1/8 in. reveal between leaves, and a base under a counter beside a column whose face
+                        # is flush with the counter edge (the range wall, owner 11.09.26 PM)
+                        under_ctr = {a[0], b[0]} & {'wall_column', 'column_panel'} and min(a[4], b[4]) <= 35.0 and abs(a[6] - b[6]) <= 1.01
+                        if abs(a[6] - b[6]) > 0.06 and not under_ctr:
+                            lines.append(f'{view}: {grp} FACE STEP {abs(a[6] - b[6]):.2f} in. at x {a[2]:.2f} ({a[0]} face {a[6]:.2f} / {b[0]} face {b[6]:.2f})'); n += 1
+                        if 0.14 < gap <= 1.0:
+                            lines.append(f'{view}: {grp} GAP {gap:.2f} in. between {a[0]} and {b[0]} at x {a[2]:.2f}, y {max(a[3], b[3]):.1f} to {min(a[4], b[4]):.1f}'); n += 1
+                        if grp == 'body' and abs(a[4] - b[4]) > 0.06 and abs(a[4] - b[4]) < 3.0:
+                            lines.append(f'{view}: body TOP STEP {abs(a[4] - b[4]):.2f} in. at x {a[2]:.2f} ({a[0]} top {a[4]:.2f} / {b[0]} top {b[4]:.2f})'); n += 1
+                        covered.append((max(a[3], b[3]), min(a[4], b[4])))           # the nearest neighbour only, per height band
+    open(path, 'w').write('\n'.join(lines) + ('\n' if lines else 'no unintended steps or gaps\n'))
+    print('joint audit:', n, 'findings ->', path)
+
 def build_wall(vi, M, front_room_depth):
     global V, roles
     V = ALL[vi]
@@ -921,6 +964,8 @@ def build_wall(vi, M, front_room_depth):
         po = bpy.data.objects.new('portal', ld); bpy.context.collection.objects.link(po)
         po.location = ((x0 + x1) / 2 * IN, -d * IN, (y0 + y1) / 2 * IN); po.rotation_euler = (math.radians(-90), 0, 0)
         WINDOWS.append(((x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, M))
+    JOINT_AUDIT.append((V['view'], [(o.name.split('.')[0], *_local_bbox(o)) for o in set(bpy.data.objects) - before
+                                    if o.type == 'MESH' and o.name.split('.')[0] in AUDIT_NAMES and not o.hide_render]))
     for o in set(bpy.data.objects) - before:
         o.matrix_world = M @ o.matrix_world; o['wall_view'] = vi
 
@@ -931,6 +976,22 @@ WINDOWS = []
 if ROOM_MODE:
     for d_ in DIRS:
         if d_ in WALLS: build_wall(WALLS[d_], wall_matrix(d_), DEP if d_ in ('NORTH', 'SOUTH') else WID)
+    # a corner column seen in two elevations is drawn in both: build it once. Two copies in the same place overlap face for face
+    # and render as a black slot (the kitchen's NW corner, 11.09.26).
+    from mathutils import Vector as _V
+    _cols = {}
+    for o in bpy.data.objects:
+        if o.get('col_id') is not None and o.type == 'MESH' and (o.name.startswith('column_panel') or o.name.startswith('wall_column')):
+            bb = [o.matrix_world @ _V(c) for c in o.bound_box]
+            _cols[o['col_id']] = tuple(round(f(getattr(p_, ax) for p_ in bb) / IN) for ax in 'xyz' for f in (min, max))
+    _seen = []; _drop = set()
+    for cid in sorted(_cols):
+        if any(all(abs(a_ - b_) <= 2 for a_, b_ in zip(_cols[cid], k_)) for k_ in _seen): _drop.add(cid)
+        else: _seen.append(_cols[cid])
+    for o in bpy.data.objects:
+        if o.get('col_id') in _drop: o.hide_render = True   # hidden, not removed: removing segfaulted later passes
+    if _drop: print('duplicate corner columns built once:', sorted(_drop))
+    joint_report(out + '.joints.txt')
     OPEN_SIDES = [d_ for d_ in DIRS if d_ not in WALLS and (not WALLMAP or d_ in OPEN)]
     PLAIN_SIDES = [d_ for d_ in DIRS if WALLMAP and d_ not in WALLS and d_ not in OPEN]
     V = ALL[idx]; roles = dict(room['roles'])
@@ -1092,8 +1153,9 @@ if PERSP:
     d_ = tgt_ - loc; flat = Vector((d_.x, d_.y, 0.0))
     cam.rotation_euler = flat.normalized().to_track_quat('-Z', 'Y').to_euler()
     W_r, H_r = RES; hfov = 2 * math.atan(18.0 / LENS)
+    big_fov = 2 * math.atan(18.0 / LENS * max(W_r, H_r) / W_r)   # Blender shifts in units of the larger image side (portrait: the height)
     rise = d_.z / max(flat.length, 1e-6)                       # tangent of the angle to the target above the horizon
-    cam_d.shift_y = rise / (2 * math.tan(hfov / 2)) * 1.0
+    cam_d.shift_y = rise / (2 * math.tan(big_fov / 2))
     cam.location = loc; sc.camera = cam
     sc.render.resolution_x, sc.render.resolution_y = W_r, H_r
     # the garden outside the windows: an outdoor HDRI in place of the studio one, so the glass shows planting and sky
@@ -1106,7 +1168,8 @@ if PERSP:
     for o in bpy.data.objects:
         if o.type == 'LIGHT' and o.data.type == 'SUN':
             o.data.energy = 0.0 if DUSK else 22.0; o.data.angle = math.radians(1.2)
-            o.rotation_euler = (math.radians(90 - 32), 0, math.radians(-70))
+            el_, az_ = SUN if SUN else (32.0, 250.0)
+            o.rotation_euler = (math.radians(90 - el_), 0, math.radians(180 - az_))
     for o in bpy.data.objects:                                   # walls for the exposure mask
         if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1
 else:

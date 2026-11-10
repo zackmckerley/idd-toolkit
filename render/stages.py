@@ -297,7 +297,7 @@ def stage_kitchen():
     wbox(top_x0, top_x1, yS, yN, 34.0, 36.0, stone, 'island_top')
     wbox(top_x0, top_x1, yS, yS + WF, 0.0, 34.0, stone, 'waterfall'); wbox(top_x0, top_x1, yN - WF, yN, 0.0, 34.0, stone, 'waterfall')
     wbox(ISL_X + 0.5, ISL_X + ISL_W, yS + WF, yN - WF, 4.5, 34.0, cab, 'island_body')
-    wbox(ISL_X + 3.0, ISL_X + ISL_W - 3, yS + WF, yN - WF, 0.0, 4.5, material('TOE'), 'island_toe')
+    wbox(ISL_X + 3.0, ISL_X + ISL_W - 3, yS + WF, yN - WF, 0.0, 4.5, cab, 'island_toe')   # the toe in the cabinet finish on both faces (owner 11.09.26 night)
     # working side (west face): the captured cabinets, placed like an east-facing wall at the island face
     for vi, v in enumerate(ALL):
         if v['view'] == 'ISLAND - WORKING SIDE':
@@ -311,9 +311,12 @@ def stage_kitchen():
             for o in set(bpy.data.objects) - before:
                 o.matrix_world = M @ o.matrix_world
     # seating side: three inset panels under the overhang
+    # (ID-243 view 6: three flat recessed panels in a 2 in. face frame, on the toe; built as slim shaker panels like every front)
+    pw_ = (ISL_L - 2 * WF - 4 * 2.0) / 3
     for k in range(3):
-        a = yS + WF + 2 + k * (ISL_L - 2 * WF - 4) / 3; b_ = a + (ISL_L - 2 * WF - 4) / 3 - 2
-        wbox(ISL_X + ISL_W, ISL_X + ISL_W + 0.4, a, b_, 6.5, 32.0, cab, 'panel', soft=0.1)
+        a = yS + WF + 2.0 + k * (pw_ + 2.0); b_ = a + pw_
+        for (p0, p1, q0, q1) in ((a, a + 1.375, 6.5, 32.75), (b_ - 1.375, b_, 6.5, 32.75), (a + 1.375, b_ - 1.375, 6.5, 7.875), (a + 1.375, b_ - 1.375, 31.375, 32.75)):
+            wbox(ISL_X + ISL_W, ISL_X + ISL_W + 0.3, p0, p1, q0, q1, cab, 'seat_panel_frame')
     # faucet at the sink (bridge gooseneck), brass
     br = material(R('metal', 'METAL-BRASS'))
     sink_y = yN - 2.0 - 35.25 - 18.0
@@ -389,3 +392,244 @@ def stage_pool():
 
 
 STAGES = {'pool': stage_pool, 'closet': stage_closet, 'kitchen': stage_kitchen, 'mbr': stage_mbr, 'powder': stage_powder}
+
+
+# ================================================================== living room (ID-230 to ID-234, owner's pick 11.09.26)
+def stage_living():
+    """The living room from build_great_rev1b's numbers: the fireplace wall (ID-231 view 1: plaster breast, WS-01 surround, flush
+    hearth, the art-mode TV in its niche, open bookcases each side with 30 in. base cabinets, belt course with the brass rail and
+    rolling ladder, the panel band, the gallery cap, the upper cases, CM-02 with its LED cove), the window wall (ID-232: FOR's
+    three-panel slider and clerestory with divided lites, the band between, the 22'-4" band with the drapery pocket), the west and
+    south galleries with the steel picket guard, and outside the site from FOR A-100 and A-303: the paved deck, the pool, the dining
+    wing, the side fence and hedge, and the ancillary structure with its stair and pergola. World inches: X east from the west end's
+    west wall, Y north from the south gallery line, Z up. Plan north is true south on this site (A-303), so the window wall faces
+    the true south sun."""
+    G = dict(RD=194.0, H=272.0, GFW=92.0, BELT0=117.0, BELT1=124.0, SOFFIT=128.0, FF2=154.0, GT=196.0, CROWN_B=256.0, COVE=4.0,
+             BAND=268.0, BAND_W=12.0, SL0=120.0, SL1=252.0, SL_HEAD=117.0, CL_HEAD=250.0, BW=84.0, BD=24.0, BI_D=14.0, CAB_H=30.0,
+             TOP_T=1.25, FB_W=42.0, FB_B=6.0, FB_T=36.0, LEG=9.0, SHELF_B=45.5, SHELF_T=48.0, TV_W=66.25, TV_H=37.75, TV_B=56.0)
+    E = 280.0; RD = G['RD']; Hh = G['H']
+    wallm = material(R('wall', 'PT-02')); trim = material('PT-01-SATIN'); case_m = material('PT-01-SATIN')
+    ws = material('WS-01'); st1 = material('ST-01'); brass = material('METAL-BRASS'); steel = material('STEEL-PT')
+    def Yw(x): return RD - x                                         # east wall view x (from the north wall) to world Y
+    CX = RD / 2; B0 = (RD - G['BW']) / 2; B1 = B0 + G['BW']
+    BF = E - G['BD']                                                 # breast face
+    IF = E - G['BI_D']                                               # built-in face
+    # ---- the breast, one plaster plane floor to the crown
+    wbox(BF, E, Yw(B1), Yw(B0), 0.0, G['CROWN_B'], wallm, 'breast')
+    # firebox: listed direct-vent unit, 42 x 30 opening 6 in. above the flush hearth, black glass
+    h = G['FB_W'] / 2; yc = Yw(CX)
+    wbox(BF - 0.01, BF + 0.4, yc - h, yc + h, G['FB_B'], G['FB_T'], material('OVEN-GLASS'), 'firebox_glass')
+    wbox(BF + 0.4, BF + 12, yc - h, yc + h, G['FB_B'], G['FB_T'], material('GAP'), 'firebox')
+    for k in range(5):                                               # a low gas flame bed, warm
+        wbox(BF + 3, BF + 9, yc - 15 + k * 7, yc - 11 + k * 7, G['FB_B'] + 1.5, G['FB_B'] + 3.0, material('LAMP'), 'ember')
+    # WS-01 surround: 9 in. legs, frieze, a 2-1/2 in. shelf at 4'-0" projecting 6 in.; bolection bead round the opening
+    L_ = G['LEG']; S0 = yc - h - L_; S1 = yc + h + L_
+    wbox(BF - 1.5, BF, S0, yc - h, 0.0, G['SHELF_B'], ws, 'surround_leg', soft=0.15)
+    wbox(BF - 1.5, BF, yc + h, S1, 0.0, G['SHELF_B'], ws, 'surround_leg', soft=0.15)
+    wbox(BF - 1.5, BF, yc - h, yc + h, G['FB_T'], G['SHELF_B'], ws, 'surround_frieze', soft=0.15)
+    wbox(BF - 6.0, BF, S0 - 1.0, S1 + 1.0, G['SHELF_B'], G['SHELF_T'], ws, 'mantel_shelf', soft=0.2)
+    for (a_, b_, z0, z1) in ((yc - h - 1.5, yc - h, 0, G['FB_T'] + 1.5), (yc + h, yc + h + 1.5, 0, G['FB_T'] + 1.5), (yc - h - 1.5, yc + h + 1.5, G['FB_T'], G['FB_T'] + 1.5)):
+        wbox(BF - 2.25, BF - 1.5, a_, b_, z0, z1, ws, 'bolection', soft=0.3)
+    wbox(BF - 20.0, BF, yc - 33.0, yc + 33.0, -0.02, 0.03, st1, 'hearth')          # flush ST-01 hearth 5'-6" x 1'-8"
+    # TV: the art-mode set nearly flush in a 4 in. niche 2 in. larger each way
+    tb = G['TV_B']; tw = G['TV_W']; th = G['TV_H']
+    wbox(BF + 0.01, BF + 4.0, yc - tw / 2 - 2, yc + tw / 2 + 2, tb - 2, tb + th + 2, material('GAP'), 'tv_niche')
+    wbox(BF + 2.6, BF + 4.0, yc - tw / 2 - 2, yc + tw / 2 + 2, tb - 2, tb + th + 2, wallm, 'niche_back')
+    wbox(BF + 0.4, BF + 1.5, yc - tw / 2, yc + tw / 2, tb, tb + th, material('TV-BLACK'), 'tv')
+    wbox(BF + 0.3, BF + 0.45, yc - tw / 2 + 0.6, yc + tw / 2 - 0.6, tb + 0.6, tb + th - 0.6, material('PLATE-WHITE'), 'tv_mat')
+    wbox(BF + 0.25, BF + 0.35, yc - tw / 2 + 4.5, yc + tw / 2 - 4.5, tb + 4.5, tb + th - 4.5, material('ART-01'), 'tv_art')
+    # ---- the built-ins each side: base cabinet, open cases, belt with the brass rail, the panel band, cap, upper cases, frieze
+    rnd = _rnd.Random(23)
+    books_m = [material(f'BOOK-{i}') for i in range(8)]
+    def books(y0_, y1_, z, depth=9.0):
+        y = y0_ + 0.5
+        while y < y1_ - 1.5:
+            if rnd.random() < 0.30:                                  # a gap or an object
+                if rnd.random() < 0.35 and y1_ - y > 10:
+                    wcyl(IF + 6, y + 4, z + 4.5, 2.6, 9.0, 'z', material('CERAMIC-WHITE'), 'vase'); y += 9; continue
+                y += rnd.uniform(5, 14); continue
+            run = rnd.randint(5, 14); lean = rnd.random() < 0.15
+            for _ in range(run):
+                t = rnd.uniform(0.8, 1.7); hh = rnd.uniform(8.0, 11.5)
+                if y + t > y1_ - 1.0: break
+                wbox(IF + 1.0 + rnd.uniform(0, 1.2), IF + 1.0 + depth, y, y + t, z, z + hh, rnd.choice(books_m), 'book')
+                y += t + 0.05
+            if rnd.random() < 0.25 and y1_ - y > 12:                  # a short horizontal stack
+                for k in range(rnd.randint(3, 5)):
+                    wbox(IF + 1.5, IF + 9.5, y + 0.5, y + 9.5, z + k * 1.3, z + k * 1.3 + 1.2, rnd.choice(books_m), 'book_flat')
+                y += 11
+            y += rnd.uniform(1.0, 3.0)
+    def case(ya, yb, z0, z1, pitch=18.0, thick=2.0):
+        side = 1.5
+        wbox(E - 0.75, E, ya, yb, z0, z1, case_m, 'case_back')
+        wbox(IF, E, ya, ya + side, z0, z1, case_m, 'case_side'); wbox(IF, E, yb - side, yb, z0, z1, case_m, 'case_side')
+        n = max(1, int(round((z1 - z0) / pitch))); p_ = (z1 - z0) / n
+        for k in range(1, n + 1):
+            zt = z0 + k * p_
+            if k < n:
+                wbox(IF, E - 0.75, ya + side, yb - side, zt - thick, zt, case_m, 'shelf', soft=0.12)
+                wbox(IF + 0.5, IF + 2.5, ya + side, yb - side, zt - thick - 0.25, zt - thick, steel, 'shelf_flat')   # steel flat under the nose
+            books(ya + side, yb - side, z0 + (k - 1) * p_ + (0 if k == 1 else 0))
+    for (ya, yb) in ((Yw(G['RD']), Yw(B1)), (Yw(B0), Yw(0.0))):      # south flank, north flank (world Y order)
+        # 30 in. inset base cabinet: 4-1/2 in. toe 3 in. back, a pair of inset doors in a face frame, WS-01 top
+        wbox(IF + 3, E, ya, yb, 0.0, 4.5, case_m, 'toe')
+        wbox(IF, E, ya, yb, 4.5, G['CAB_H'], case_m, 'cab_frame', soft=0.1)
+        dw = (yb - ya - 3.0) / 2
+        for j in range(2):
+            a_ = ya + 1.5 + j * (dw) + (0.0625 if j else 0); b_ = a_ + dw - 0.125
+            wbox(IF - 0.02, IF + 0.75, a_, b_, 6.0, G['CAB_H'] - 1.5, case_m, 'cab_door', soft=0.1)
+            wbox(IF + 0.75, IF + 1.0, a_, b_, 6.0, G['CAB_H'] - 1.5, material('GAP'), 'door_reveal')
+            px = b_ - 2.0 if j == 0 else a_ + 2.0
+            wcyl(IF - 0.6, px, G['CAB_H'] - 7.0, 0.25, 6.0, 'z', brass, 'pull')
+        wbox(IF - 1.0, E, ya, yb, G['CAB_H'], G['CAB_H'] + G['TOP_T'], ws, 'cab_top', soft=0.15)
+        case(ya, yb, G['CAB_H'] + G['TOP_T'], G['BELT0'])
+        wbox(IF - 1.5, E, ya, yb, G['BELT0'], G['BELT1'], trim, 'belt', soft=0.2)
+        wcyl(IF - 2.6, (ya + yb) / 2, (G['BELT0'] + G['BELT1']) / 2, 0.625, yb - ya - 1.0, 'y', brass, 'ladder_rail')
+        wbox(IF, E, ya, yb, G['BELT1'], G['FF2'] - 1.5, case_m, 'panel_band')
+        wbox(IF - 0.6, IF, ya + 4, yb - 4, G['BELT1'] + 4, G['FF2'] - 5.5, case_m, 'panel', soft=0.25)
+        wbox(IF - 1.2, E, ya, yb, G['FF2'] - 1.5, G['FF2'], trim, 'cap', soft=0.15)
+        case(ya, yb, G['FF2'], G['CL_HEAD'])
+        wbox(IF, E, ya, yb, G['CL_HEAD'], G['CROWN_B'], case_m, 'frieze')
+    # rolling ladder, parked at the north end: two oak stiles leaning from the floor to the brass rail, rungs on the shelf pitch
+    oak = material('OAK-STAINED'); lx0 = 248.0; rz = (G['BELT0'] + G['BELT1']) / 2
+    for yy in (Yw(3.0) - 1.75, Yw(21.0)):
+        dx = (IF - 2.6) - lx0
+        o = wbox(-0.875, 0.875, -0.875, 0.875, 0.0, math.hypot(dx, rz), oak, 'ladder_stile')
+        if o:
+            o.location = (lx0 * IN, (yy + 0.875) * IN, 0.0); o.rotation_euler = (0, math.atan2(dx, rz), 0)
+    for k in range(1, 8):
+        f_ = k / 8.0
+        x_ = lx0 + f_ * ((IF - 2.6) - lx0); z_ = f_ * rz
+        wbox(x_ - 0.6, x_ + 0.6, Yw(21.0), Yw(3.0) - 1.75 + 1.75, z_ - 0.5, z_ + 0.5, oak, 'ladder_rung')
+    wcyl(lx0, Yw(3.0) - 0.9, 1.2, 1.2, 1.0, 'y', brass, 'ladder_wheel'); wcyl(lx0, Yw(21.0) + 0.9, 1.2, 1.2, 1.0, 'y', brass, 'ladder_wheel')
+    # CM-02 crown held 4 in. under the ceiling on the east wall (cases and breast), LED cove on its top
+    def crown_run(x_face, ya, yb, top):
+        for k, (dz, pr) in enumerate(((0.0, 1.0), (3.0, 2.5), (6.0, 4.0), (9.0, 5.5))):
+            wbox(x_face - pr, x_face, ya, yb, top - 12.0 + dz, top - 12.0 + dz + 3.0, trim, 'crown', soft=0.6)
+        wbox(x_face - 5.0, x_face - 4.4, ya, yb, top, top + 0.4, material('LAMP'), 'cove_led')
+    top = Hh - G['COVE']
+    crown_run(IF, Yw(RD), Yw(B1), top); crown_run(BF, Yw(B1), Yw(B0), top); crown_run(IF, Yw(B0), Yw(0.0), top)
+    # ---- the window wall: FOR's 3-panel slider and 3-lite clerestory, divided lites, dark bronze frames, drywall returns
+    fr = material('FRAME-BLK'); gl = material('GLASS-CLEAR')
+    def glazed(x0, x1, z0, z1, n, operable, y_face=RD + 2.5):
+        pw = (x1 - x0) / n
+        wbox(x0, x1, RD, RD + 6.0, z0, z0 + 0.5, fr, 'sill')
+        for i in range(n):
+            a_ = x0 + i * pw; b_ = a_ + pw
+            yo = y_face + (0 if not operable else (i % 2) * 1.6)        # the sliding panels on their own tracks
+            for r_ in ((a_, a_ + 2.5, z0, z1), (b_ - 2.5, b_, z0, z1), (a_, b_, z0, z0 + 3.0), (a_, b_, z1 - 2.5, z1)):
+                wbox(r_[0], r_[1], yo, yo + 2.0, r_[2], r_[3], fr, 'frame', soft=0.08)
+            gx0, gx1, gz0, gz1 = a_ + 2.5, b_ - 2.5, z0 + 3.0, z1 - 2.5
+            wbox(gx0, gx1, yo + 0.9, yo + 1.1, gz0, gz1, gl, 'glass')
+            cols, rows = 3, 7
+            for c in range(1, cols):
+                mx = gx0 + (gx1 - gx0) * c / cols; wbox(mx - 0.4375, mx + 0.4375, yo + 0.3, yo + 1.7, gz0, gz1, fr, 'muntin')
+            for r in range(1, rows):
+                mz = gz0 + (gz1 - gz0) * r / rows; wbox(gx0, gx1, yo + 0.3, yo + 1.7, mz - 0.4375, mz + 0.4375, fr, 'muntin')
+            if operable and i > 0:
+                wbox(a_ + 0.8, a_ + 1.6, yo - 1.2, yo, 38.0, 46.0, fr, 'pull')
+    glazed(G['SL0'], G['SL1'], 0.0, G['SL_HEAD'], 3, True)
+    glazed(G['SL0'], G['SL1'], G['BELT1'], G['CL_HEAD'], 3, False)
+    # FOR's 22'-4" band at the window wall with the 5 in. drapery pocket 14 in. past each jamb; CM-02 under the band beside it
+    PK0, PK1 = G['SL0'] - 15, G['SL1'] + 15
+    wbox(G['GFW'], E, RD - G['BAND_W'], RD, G['BAND'], Hh + 0.01, material(R('ceiling', 'PT-01')), 'band')
+    wbox(PK0, PK1, RD - 7.0, RD - 2.0, G['BAND'] - 0.01, Hh, material('GAP'), 'drapery_pocket')
+    for (a_, b_) in ((G['GFW'], PK0), (PK1, IF)):
+        for k, (dz, pr) in enumerate(((0.0, 1.0), (3.0, 2.5), (6.0, 4.0), (9.0, 5.5))):
+            wbox(a_, b_, RD - pr, RD, G['BAND'] - G['COVE'] - 12.0 + dz, G['BAND'] - G['COVE'] - 9.0 + dz, trim, 'crown', soft=0.6)
+    for (a_, b_) in ((G['GFW'], G['SL0']), (G['SL1'], IF)):
+        wbox(a_, b_, RD - 0.6, RD, 0.0, 8.5, trim, 'base', soft=0.15)
+    # ---- galleries: floor 2 over the west end and the south end, the fascia, cap and steel picket guard
+    pt1 = material(R('ceiling', 'PT-01'))
+    wbox(0.0, G['GFW'], 0.0, RD, G['SOFFIT'], G['FF2'], pt1, 'gallery_slab_w')
+    wbox(0.0, E, -60.0, 0.0, G['SOFFIT'], G['FF2'], pt1, 'gallery_slab_s')
+    wbox(0.0, G['GFW'] - 3, 0.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')
+    wbox(0.0, E, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')
+    wbox(G['GFW'] - 0.6, G['GFW'], 0.0, RD, G['SOFFIT'], G['FF2'], trim, 'fascia_w')
+    wbox(G['GFW'], E, -0.6, 0.0, G['SOFFIT'], G['FF2'], trim, 'fascia_s')
+    wbox(G['GFW'] - 1.5, G['GFW'] + 0.5, 0.0, RD, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_w')
+    wbox(G['GFW'], E, -1.5, 0.5, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_s')
+    wbox(0.0, G['GFW'] - 3.0, 0.0, RD, G['SOFFIT'] - 8.0, G['SOFFIT'], trim, 'crown_w_end')   # CM-01 in the west end, simplified
+    def guard(axis, a0, a1, c):
+        for k in range(int((a1 - a0) / 4.5) + 1):
+            p = a0 + k * 4.5
+            if axis == 'y': wbox(c - 0.375, c + 0.375, p, p + 0.75, G['FF2'] + 2.0, G['GT'] - 1.5, steel, 'picket')
+            else: wbox(p, p + 0.75, c - 0.375, c + 0.375, G['FF2'] + 2.0, G['GT'] - 1.5, steel, 'picket')
+        for z0, z1 in ((G['FF2'] + 2.0, G['FF2'] + 3.5), (G['GT'] - 2.5, G['GT'])):
+            if axis == 'y': wbox(c - 0.75, c + 0.75, a0, a1, z0, z1, steel, 'guard_rail')
+            else: wbox(a0, a1, c - 0.75, c + 0.75, z0, z1, steel, 'guard_rail')
+        posts = [a0] + [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]
+        for p in posts:
+            if axis == 'y': wbox(c - 1.0, c + 1.0, p, p + 2.0, G['FF2'], G['GT'], steel, 'guard_post')
+            else: wbox(p, p + 2.0, c - 1.0, c + 1.0, G['FF2'], G['GT'], steel, 'guard_post')
+    guard('y', 0.0, RD - 1.0, G['GFW'] - 2.0); guard('x', G['GFW'], E - 1.0, -2.0)
+    wbox(0.0, E, -60.0, -54.0, G['FF2'], Hh, wallm, 'hall_wall_s')
+    wbox(0.0, 4.0, -60.0, RD, G['FF2'], Hh, wallm, 'hall_wall_w_face')
+    # ---- staging (captioned): a sofa with its back on the west gallery line facing the TV, a rug and a coffee table
+    fab = material('FAB-SOFA'); rug = material('FAB-RUG'); wood = material('WOOD-FURN')
+    cy = yc
+    wbox(110.0, 232.0, cy - 54, cy + 54, 0.0, 0.4, rug, 'rug', soft=0.15)
+    sx0 = G['GFW'] + 1.0
+    wbox(sx0, sx0 + 38, cy - 48, cy + 48, 4.0, 17.0, fab, 'sofa_base', soft=2.0)
+    wbox(sx0, sx0 + 10, cy - 48, cy + 48, 17.0, 31.0, fab, 'sofa_back', soft=3.0)
+    for sy in (-1, 1): wbox(sx0, sx0 + 38, cy + sy * 48 - (8 if sy > 0 else 0), cy + sy * 48 + (0 if sy > 0 else 8), 17.0, 25.0, fab, 'sofa_arm', soft=3.0)
+    for k in range(3): wbox(sx0 + 10, sx0 + 36, cy - 40 + k * 26.7 + 0.5, cy - 40 + (k + 1) * 26.7 - 0.5, 17.0, 21.0, fab, 'cushion', soft=2.5)
+    wbox(160.0, 196.0, cy - 22, cy + 22, 0.0, 15.0, wood, 'coffee_table', soft=0.6)
+    import_model('wooden_bowl_01', 2.5, 176.0, cy - 6, 15.0, 0); import_model('ceramic_vase_01', 8.0, 184.0, cy + 10, 15.0, 0)
+    # ---- outside (FOR A-100 at 1/8 in., A-303): X = 92 + (site x - 773) / 0.75, Y = 202 + (705 - site y) / 0.75
+    ext = material('STUCCO-EXT'); deck = material('DECK-01'); hedge = material('HEDGE')
+    wbox(-200.0, 360.0, RD + 6.0, 830.0, -6.0, -0.5, deck, 'deck')
+    wbox(-193.0, 86.0, RD + 6.0, 481.0, -6.0, 300.0, ext, 'dining_wing')            # the kitchen and dining wing, its east face on the notch
+    # the pool: 6'-8" x 11'-0" (A-100), stone coping 12 in., water 6 in. below the coping
+    px0, px1, py0, py1 = 197.0, 277.0, 286.0, 418.0
+    for r_ in ((px0 - 12, px1 + 12, py0 - 12, py0), (px0 - 12, px1 + 12, py1, py1 + 12), (px0 - 12, px0, py0, py1), (px1, px1 + 12, py0, py1)):
+        wbox(r_[0], r_[1], r_[2], r_[3], -0.5, 1.0, st1, 'coping', soft=0.4)
+    pp = material('POOL-PLASTER')
+    wbox(px0, px1, py0, py1, -54.0, -52.0, pp, 'pool_floor')
+    for r_ in ((px0 - 1, px0, py0, py1), (px1, px1 + 1, py0, py1), (px0, px1, py0 - 1, py0), (px0, px1, py1, py1 + 1)):
+        wbox(r_[0], r_[1], r_[2], r_[3], -54.0, 1.0, pp, 'pool_wall')
+    wbox(px0, px1, py0, py0 + 20, -54.0, -18.0, pp, 'pool_bench')        # the step and bench at the house end (A-100 lines)
+    wm = bpy.data.materials.new('POOL-WATER'); wm.use_nodes = True; bw_ = wm.node_tree.nodes['Principled BSDF']
+    bw_.inputs['Base Color'].default_value = (0.78, 0.93, 0.95, 1); bw_.inputs['Roughness'].default_value = 0.03
+    bw_.inputs['Transmission Weight'].default_value = 1.0; bw_.inputs['IOR'].default_value = 1.33
+    tex = wm.node_tree.nodes.new('ShaderNodeTexNoise'); tex.inputs['Scale'].default_value = 6.0
+    bump = wm.node_tree.nodes.new('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.08
+    wm.node_tree.links.new(tex.outputs['Fac'], bump.inputs['Height']); wm.node_tree.links.new(bump.outputs['Normal'], bw_.inputs['Normal'])
+    wbox(px0, px1, py0, py1, -6.5, -6.0, wm, 'pool_water')
+    # the side yard: fence 1 ft inside the east line with a hedge in front (landscape plan, placeholder)
+    wbox(338.0, 341.0, RD + 6.0, 818.0, 0.0, 72.0, ext, 'fence')
+    wbox(306.0, 338.0, RD + 30.0, 818.0, 0.0, 108.0, hedge, 'hedge', soft=6.0)
+    wbox(-200.0, 341.0, 818.0, 821.0, 0.0, 72.0, ext, 'fence_rear'); wbox(-200.0, 341.0, 790.0, 818.0, 0.0, 120.0, hedge, 'hedge_rear', soft=8.0)
+    # the ancillary structure (A-204, A-303): 28'-9" x 10'-3", slab 11'-0", parapet 14'-0"; its north face (toward the house):
+    # a full-lite door, a picture window; the exterior stair on its plan-east side to the roof deck, metal picket railing; pergola
+    ax0, ax1, ay0, ay1 = -129.0, 216.0, 575.0, 698.0
+    wbox(ax0, ax1, ay0, ay1, -6.0, 132.0, ext, 'ancillary')
+    wbox(ax0, ax1, ay0, ay0 + 6, 132.0, 168.0, ext, 'parapet'); wbox(ax0, ax1, ay1 - 6, ay1, 132.0, 168.0, ext, 'parapet')
+    wbox(ax0, ax0 + 6, ay0, ay1, 132.0, 168.0, ext, 'parapet'); wbox(ax1 - 6, ax1, ay0, ay1, 132.0, 150.0, ext, 'parapet')
+    wbox(23.0, 55.0, ay0 - 0.5, ay0 + 0.5, 0.0, 96.0, fr, 'anc_door_frame')
+    wbox(25.0, 53.0, ay0 - 0.7, ay0 - 0.4, 2.0, 94.0, material('GLASS-DARK'), 'anc_door_glass')
+    wbox(99.0, 178.0, ay0 - 0.5, ay0 + 0.5, 36.0, 96.0, fr, 'anc_window_frame')
+    wbox(101.0, 176.0, ay0 - 0.7, ay0 - 0.4, 38.0, 94.0, material('GLASS-DARK'), 'anc_window_glass')
+    for k in range(18):                                               # stair, 18 risers to the slab top, rising plan north
+        z_ = (k + 1) * 132.0 / 18.0; y_ = ay0 - 10 + k * 7.4
+        wbox(ax1, ax1 + 40.0, y_, y_ + 11.0, z_ - 1.5, z_, ext, 'anc_step')
+    wbox(ax1, ax1 + 40.0, ay0 - 10, ay0 + 120, -6.0, 6.0, material('ST-05'), 'anc_stair_base')
+    for k in range(30):
+        y_ = ay0 - 6 + k * 4.4; z_ = max(0.0, (y_ - ay0 + 10) / 7.4 * 132.0 / 18.0)
+        wbox(ax1 + 38.5, ax1 + 39.25, y_, y_ + 0.75, z_, z_ + 36.0, steel, 'anc_picket')
+    for (x_, y_) in ((-40.0, 590.0), (130.0, 590.0), (-40.0, 683.0), (130.0, 683.0)):   # pergola by others (A-303: top 19'-0")
+        wbox(x_, x_ + 6, y_, y_ + 6, 132.0, 228.0, material('WOOD-FURN'), 'pergola_post')
+    for k in range(14):
+        wbox(-46.0, 142.0, 586.0 + k * 7.5, 588.0 + k * 7.5, 222.0, 228.0, material('WOOD-FURN'), 'pergola_slat')
+    # daylight through the slider and the clerestory: portals (the shell has no glass doors for photoreal to find), and the sun
+    for (x0, x1, z0, z1) in ((G['SL0'] + 2, G['SL1'] - 2, 3.0, G['SL_HEAD'] - 3), (G['SL0'] + 2, G['SL1'] - 2, G['BELT1'] + 3, G['CL_HEAD'] - 3)):
+        ld = bpy.data.lights.new('portal', 'AREA'); ld.shape = 'RECTANGLE'; ld.size = (x1 - x0) * IN; ld.size_y = (z1 - z0) * IN
+        ld.cycles.is_portal = True
+        po = bpy.data.objects.new('portal', ld); bpy.context.collection.objects.link(po)
+        po.location = ((x0 + x1) / 2 * IN, (RD + 7.0) * IN, (z0 + z1) / 2 * IN); po.rotation_euler = (math.radians(90), 0, 0)
+    if not any(o.type == 'LIGHT' and o.data.type == 'SUN' for o in bpy.data.objects):
+        sun_d = bpy.data.lights.new('sun', 'SUN'); sun_d.energy = 10.0; sun_d.color = (1.0, 0.96, 0.9)
+        sun_o = bpy.data.objects.new('sun', sun_d); bpy.context.collection.objects.link(sun_o)
+
+
+STAGES['living'] = stage_living

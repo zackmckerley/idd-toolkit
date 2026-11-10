@@ -354,13 +354,15 @@
  "CAL-MONET": {
   "name": "CALACATTA MONET MARBLE, POLISHED",
   "hex": "#F4F0E8",
-  "rough": 0.1,
-  "kind": "marble",
+  "rough": 0.12,
+  "kind": "stone",
   "vein": "#5C4858",
   "vein2": "#9A7A44",
   "veins": 1.0,
   "status": "PICKED",
-  "source": "owner 11.09.26; creamy white with painterly violet, gold and grey veins"
+  "source": "owner 11.09.26; creamy white with painterly violet, gold and grey veins | 11.09.26 night: one full 126 x 63 in. generated slab, render/make_slab.py (dramatic veining at true scale; stand-in until the selected slab is photographed)",
+  "texture": "slabs/CAL-MONET",
+  "size_in": 126.0
  },
  "CAL-MONET-HONED": {
   "name": "CALACATTA MONET MARBLE, HONED",
@@ -378,12 +380,14 @@
   "name": "CALACATTA VIOLA MARBLE",
   "hex": "#F3F0EB",
   "rough": 0.12,
-  "kind": "marble",
+  "kind": "stone",
   "vein": "#5E1433",
   "vein2": "#7B2E58",
   "veins": 1.0,
   "status": "PICKED",
-  "source": "owner 11.09.26, powder room"
+  "source": "owner 11.09.26, powder room | 11.09.26 night: one full 126 x 63 in. generated slab, render/make_slab.py (dramatic veining at true scale; stand-in until the selected slab is photographed)",
+  "texture": "slabs/CAL-VIOLA",
+  "size_in": 126.0
  },
  "BSP-01": {
   "name": "BACKSPLASH TILE, LIGHT NEUTRAL GLAZED 4x12",
@@ -740,20 +744,156 @@
   "source": "inspiration image"
  },
  "ST-03-INSPO": {
-  "name": "KITCHEN STONE AS THE OWNER'S INSPIRATION: WARM CREAM WITH SOFT TAUPE AND CARAMEL VEINS",
-  "hex": "#F1EDE7",
-  "rough": 0.25,
-  "kind": "marble",
-  "honed": true,
-  "vein": "#9A8470",
-  "vein2": "#B79A72",
-  "veins": 0.9,
+  "name": "KITCHEN STONE AS THE OWNER'S INSPIRATION: WARM CREAM WITH SOFT TAUPE AND CARAMEL VEINS (SCANNED MARBLE STAND-IN)",
+  "hex": "#EDE4D6",
+  "rough": 0.2,
+  "kind": "stone",
+  "texture": "slabs/ST-03-INSPO",
   "status": "OWNER INSPIRATION",
-  "source": "inspiration image 11.09.26 (Calacatta Monet pick reads violet: owner to confirm)"
+  "source": "inspiration image 11.09.26; ambientCG Marble014 (CC0) scan as the stand-in slab, 2.0 m repeat. 11.09.26 night: the procedural veins were sub-pixel hairlines at 75 percent contrast and AgX's highlight shoulder flattened them on the lit counter; a photographed slab carries real veining at every scale. Replace with the selected slab's photo when the owner picks one. | 11.09.26 night: one full 126 x 63 in. generated slab, render/make_slab.py (dramatic veining at true scale; stand-in until the selected slab is photographed)",
+  "size_in": 126.0
  },
  "ALABASTER": {
   "name": "ALABASTER PENDANT (PLACEHOLDER, FIXTURE OPEN)",
   "kind": "lamp",
   "emit": 1.6
+ },
+ "GLASS-CLEAR": {
+  "name": "CLEAR INSULATED GLASS (FOR D03, G)",
+  "kind": "glass",
+  "status": "THIRD-PARTY",
+  "source": "FOR A-600"
+ },
+ "FRAME-BLK": {
+  "name": "WINDOW AND DOOR FRAMES, DARK BRONZE ALUMINUM",
+  "hex": "#2B2824",
+  "rough": 0.45,
+  "kind": "metal",
+  "lin": [
+   0.03,
+   0.027,
+   0.024
+  ],
+  "status": "PLACEHOLDER",
+  "source": "frame finish not on FOR A-600: confirm"
+ },
+ "STEEL-PT": {
+  "name": "PAINTED STEEL, GUARD AND SHELF FLATS",
+  "hex": "#1E1E1D",
+  "rough": 0.5,
+  "kind": "plastic",
+  "status": "PLACEHOLDER",
+  "source": "ID-231 guard and shelf flats, color open"
+ },
+ "STUCCO-EXT": {
+  "name": "EXTERIOR STUCCO, SMOOTH, WHITE",
+  "hex": "#ECEAE4",
+  "rough": 0.85,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "FOR A-301 E-1 stucco, color open"
+ },
+ "DECK-01": {
+  "name": "POOL DECK PAVERS",
+  "hex": "#E2D8C8",
+  "rough": 0.7,
+  "kind": "stone",
+  "texture": "acg/Travertine004",
+  "tint": [
+   1.0,
+   0.97,
+   0.93
+  ],
+  "status": "PLACEHOLDER",
+  "source": "FOR A-100 paved pool deck, material per landscape plan L-2"
+ },
+ "POOL-PLASTER": {
+  "name": "POOL INTERIOR, WHITE PLASTER",
+  "hex": "#D8E6E4",
+  "rough": 0.6,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "pool drawings under separate permit"
+ },
+ "HEDGE": {
+  "name": "HEDGE AND PLANTING (LANDSCAPE PLAN L-2)",
+  "hex": "#3E5634",
+  "rough": 0.95,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "massing only; species per landscape plan"
+ },
+ "ART-01": {
+  "name": "ART-MODE TV IMAGE (STAGING)",
+  "hex": "#B9AC98",
+  "rough": 0.6,
+  "kind": "fabric",
+  "texture": "rough_linen",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-0": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#C9BBA4",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-1": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#8C8274",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-2": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#E6DFD2",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-3": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#6F7A6E",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-4": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#A26F55",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-5": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#3F4650",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-6": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#D6C7A8",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
+ },
+ "BOOK-7": {
+  "name": "BOOKS (STAGING)",
+  "hex": "#9A9183",
+  "rough": 0.7,
+  "kind": "plastic",
+  "status": "STAGING",
+  "source": ""
  }
 }
