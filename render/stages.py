@@ -290,10 +290,17 @@ def stage_closet():
 def stage_kitchen():
     """The island (FOR's position, owner's 42 in. aisle): carcass, 2 in. Calacatta Monet top with waterfall ends and a 15 in.
     seating overhang, the working-side cabinets from ID-243 view captures, three pendants, four stools."""
-    ISL_X, ISL_N, ISL_L, ISL_W, WF, OV = 72.625, 67.0, 110.9375, 49.0, 2.0, 15.0
+    # the island where the drawing records it (K.island_place in the working-side view); Casa Grove's numbers only as a fallback
+    rec = next((c['args'] for v in ALL for c in v.get('calls', []) if c['comp'] == 'island_place'), None)
+    if rec:
+        ISL_X, ISL_N, ISL_L, ISL_W = rec['x'], rec['from_north'], rec['length'], rec['cab_depth']
+        WF, TOPD, TOFF = rec.get('waterfall', 2.0), rec['top_depth'], rec.get('top_offset', 1.0)
+    else:
+        print('WARNING no island_place call in the views: Casa Grove island position used')
+        ISL_X, ISL_N, ISL_L, ISL_W, WF, TOPD, TOFF = 72.625, 67.0, 110.9375, 49.0, 2.0, 65.0, 1.0
     yN = DEP - ISL_N; yS = yN - ISL_L
     stone = material(R('counter', 'CAL-MONET')); cab = material(R('cabinet', 'CAB-01'), '-trim')
-    top_x0, top_x1 = ISL_X - 1.0, ISL_X - 1.0 + 65.0
+    top_x0, top_x1 = ISL_X - TOFF, ISL_X - TOFF + TOPD
     wbox(top_x0, top_x1, yS, yN, 34.0, 36.0, stone, 'island_top')
     wbox(top_x0, top_x1, yS, yS + WF, 0.0, 34.0, stone, 'waterfall'); wbox(top_x0, top_x1, yN - WF, yN, 0.0, 34.0, stone, 'waterfall')
     wbox(ISL_X + 0.5, ISL_X + ISL_W, yS + WF, yN - WF, 4.5, 34.0, cab, 'island_body')
@@ -319,12 +326,13 @@ def stage_kitchen():
             wbox(ISL_X + ISL_W, ISL_X + ISL_W + 0.3, p0, p1, q0, q1, cab, 'seat_panel_frame')
     # faucet at the sink (bridge gooseneck), brass
     br = material(R('metal', 'METAL-BRASS'))
-    sink_y = yN - 2.0 - 35.25 - 18.0
+    sk = next((c['args'] for v in ALL if v['view'] == 'ISLAND - WORKING SIDE' for c in v.get('calls', []) if c['comp'] == 'sink_cab' and c['depth'] == 0), None)
+    sink_y = yN - (sk['x'] + sk['w'] / 2) if sk else yN - 2.0 - 35.25 - 18.0      # the sink on its cabinet's centre, from the drawing
     wcyl(ISL_X + 3.0, sink_y, 36 + 5.5, 0.6, 11.0, 'z', br, 'faucet'); wcyl(ISL_X + 3.0 + 4.0, sink_y, 36 + 11.2, 0.5, 8.0, 'x', br, 'spout')
     wcyl(ISL_X + 3.0 + 8.0, sink_y, 36 + 9.5, 0.45, 3.5, 'z', br, 'spout_tip')
     wbox(ISL_X + 4.0, ISL_X + 22.0, sink_y - 15.0, sink_y + 15.0, 35.9, 36.01, material('GAP'), 'sink_bowl')
     # pendants over the island: three brass and opal globes on the island axis
-    px = top_x0 + 65.0 / 2
+    px = top_x0 + TOPD / 2
     pend = [(l_['X'], l_['Y']) for l_ in (LIGHTPLAN or []) if l_['type'] == 'pendant'] or [(px, yN - ISL_L / 2 + dy) for dy in (-33.0, 0.0, 33.0)]
     for (px, py) in pend:          # P1 at the lighting plan's J-boxes (ID-121)
         # P1 (fixture open): an alabaster cylinder on a brass stem, as in the owner's inspiration image, glowing softly

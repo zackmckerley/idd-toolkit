@@ -390,8 +390,10 @@ def b_undercounter_appliance(a, ctx):
     'ice' a shaker panel. Bar pull, a dark grille in the recessed toe."""
     x, w, top, bottom = a['x'], a['w'], a.get('top', 34.75), a.get('bottom', 4.5); D = float(a.get('depth') or 24.0)
     S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125)); SB = max(S, 0.75)   # the liner band behind touching fronts
-    box(x, x + w, 0.0, bottom, 0.0, D - 3.0, cab_mat(), 'toe')
-    box(x + 1.0, x + w - 1.0, 0.6, bottom - 0.6, D - 2.98, D - 2.9, material('GRATE'), 'toe_grille')
+    box(x, x + w, 0.0, bottom, 0.0, D - 3.0, cab_mat(), 'toe')   # the run's toe, continuous, in the cabinet finish
+    for k in range(int((w - 3.0) / 1.5)):                          # the appliance's grille: thin slots in the toe face, not a black plate
+        sx = x + 1.5 + k * 1.5
+        box(sx, sx + 0.35, 1.4, bottom - 1.4, D - 3.01, D - 2.99, material('GAP'), 'grille_slot')
     if a.get('kind') == 'beverage':
         m = cab_mat(); lm = material('CERAMIC-WHITE')
         box(x, x + w, bottom, top, 0.0, D - 22.0, m, 'bev_box')                       # the appliance body behind its liner

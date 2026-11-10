@@ -553,9 +553,10 @@ def b_outlet(a, ctx):
             box(cx - 0.18, cx - 0.1, yy - 0.22, yy + 0.22, 0.31, 0.33, gap, 'slot'); box(cx + 0.1, cx + 0.2, yy - 0.22, yy + 0.22, 0.31, 0.33, gap, 'slot')
         box(cx - 0.35, cx + 0.35, cy - 0.12, cy + 0.12, 0.32, 0.36, pm, 'btn')
     else:
-        for yy in ((cy + 1.1, cy - 1.1) if not hz else (cy, cy)):
-            cyl(cx, yy, 0.27, 0.62, 0.14, 'd', pm, 'face')
-            box(cx - 0.2, cx - 0.12, yy - 0.18, yy + 0.18, 0.33, 0.35, gap, 'slot'); box(cx + 0.12, cx + 0.2, yy - 0.18, yy + 0.18, 0.33, 0.35, gap, 'slot')
+        # a horizontal duplex has its two receptacles side by side (both were built at the centre, one inside the other: the audit's DUPLICATE)
+        for (xx, yy) in (((cx, cy + 1.1), (cx, cy - 1.1)) if not hz else ((cx - 1.1, cy), (cx + 1.1, cy))):
+            cyl(xx, yy, 0.27, 0.62, 0.14, 'd', pm, 'face')
+            box(xx - 0.2, xx - 0.12, yy - 0.18, yy + 0.18, 0.33, 0.35, gap, 'slot'); box(xx + 0.12, xx + 0.2, yy - 0.18, yy + 0.18, 0.33, 0.35, gap, 'slot')
 
 
 def b_switch(a, ctx):
@@ -885,6 +886,10 @@ def wall_matrix(direction):
     return Matrix.Translation((tr[0] * IN, tr[1] * IN, 0)) @ Matrix.Rotation(math.radians(rot), 4, 'Z') @ Matrix.Translation((SHIFT.get(direction, 0.0) * IN, 0, 0))
 
 
+# builders that build their children themselves; a child call under one of these is not built again (a parent missing from this set, such
+# as door_pair (jamb only) or vanity_furniture (no faucet), relies on its children being built)
+OWNS_CHILDREN = {'filler_panel', 'sink_cab', 'window', 'outlet_splash', 'undercounter_appliance', 'door_pair_cab', 'single_door_cab',
+                 'drawer_stack', 'veneer_door'}
 PORTALS = []
 # ---- joint audit (owner 11.09.26 night: "joints between cabinets and walls flush with no differences in width / height that are not
 # intentionally supposed to be there"). Every box that forms a face of the millwork is listed per wall in wall inches before the
@@ -922,6 +927,16 @@ def joint_report(path):
                         if grp == 'body' and abs(a[4] - b[4]) > 0.06 and abs(a[4] - b[4]) < 3.0:
                             lines.append(f'{view}: body TOP STEP {abs(a[4] - b[4]):.2f} in. at x {a[2]:.2f} ({a[0]} top {a[4]:.2f} / {b[0]} top {b[4]:.2f})'); n += 1
                         covered.append((max(a[3], b[3]), min(a[4], b[4])))           # the nearest neighbour only, per height band
+    # any two meshes occupying exactly the same box are a duplicate build: they render as black (shared faces with the bevel shader)
+    from mathutils import Vector as _V2
+    seen_ = {}
+    for o in bpy.data.objects:
+        if o.type != 'MESH' or o.hide_render: continue
+        bb = [o.matrix_world @ _V2(c) for c in o.bound_box]
+        key = tuple(round(f(getattr(p_, ax) for p_ in bb) / IN * 20) for ax in 'xyz' for f in (min, max))
+        if key in seen_ and (key[1] - key[0]) * (key[3] - key[2]) * (key[5] - key[4]) > 0:
+            lines.append(f'DUPLICATE {o.name} and {seen_[key]} occupy the same box (inches {[k / 20 for k in key]})'); n += 1
+        else: seen_[key] = o.name
     open(path, 'w').write('\n'.join(lines) + ('\n' if lines else 'no unintended steps or gaps\n'))
     print('joint audit:', n, 'findings ->', path)
 
@@ -952,6 +967,8 @@ def build_wall(vi, M, front_room_depth):
     for c in V.get('calls', []):
         fn = BUILDERS.get(c['comp'], 'missing')
         if c['comp'] in SKIP: continue
+        if c.get('parent') in OWNS_CHILDREN: continue   # that parent's builder builds its own children: building them again stacked a second
+                                                         # toe under every filler (black slots, 11.09.26), a second sink door pair, outlet, casing
         if fn == 'missing':
             if c['depth'] == 0: MISSING.add(c['comp'])
             continue
@@ -992,6 +1009,15 @@ if ROOM_MODE:
         if o.get('col_id') in _drop: o.hide_render = True   # hidden, not removed: removing segfaulted later passes
     if _drop: print('duplicate corner columns built once:', sorted(_drop))
     joint_report(out + '.joints.txt')
+    if os.environ.get('PR_DUMP'):   # debugging: list the objects inside a world box (inches) and stop before rendering
+        bx_ = [float(t) for t in os.environ['PR_DUMP'].split(',')]
+        for o in bpy.data.objects:
+            if o.type != 'MESH': continue
+            bb = [o.matrix_world @ _V(c) for c in o.bound_box]
+            lo_ = [min(getattr(p_, a_) for p_ in bb) / IN for a_ in 'xyz']; hi_ = [max(getattr(p_, a_) for p_ in bb) / IN for a_ in 'xyz']
+            if all(lo_[i] < bx_[2 * i + 1] and hi_[i] > bx_[2 * i] for i in range(3)):
+                print('DUMP', o.name, o.hide_render, [round(v, 2) for v in lo_], [round(v, 2) for v in hi_], o.active_material.name if o.active_material else '')
+        sys.exit(0)
     OPEN_SIDES = [d_ for d_ in DIRS if d_ not in WALLS and (not WALLMAP or d_ in OPEN)]
     PLAIN_SIDES = [d_ for d_ in DIRS if WALLMAP and d_ not in WALLS and d_ not in OPEN]
     V = ALL[idx]; roles = dict(room['roles'])
@@ -1145,6 +1171,8 @@ exec(open(os.path.join(HERE, 'stages.py')).read())
 if PERSP:
     if STAGE == 'bath' and ROOM_MODE: stage_bath()
     elif STAGE in STAGES: STAGES[STAGE]()
+    if ROOM_MODE: joint_report(out + '.joints.txt')   # again with the staging (island, built-ins) in, so its duplicates are caught too
+    if os.environ.get('PR_STAGECHECK'): print('stage built, objects', len(bpy.data.objects)); sys.exit(0)   # build-only check
     cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'PERSP'; cam_d.lens = LENS; cam_d.sensor_width = 36.0; cam_d.sensor_fit = 'HORIZONTAL'
     cam_d.clip_start = max(0.01, CLIP * IN); cam_d.clip_end = 60.0
     cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)

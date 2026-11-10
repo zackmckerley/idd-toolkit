@@ -1,0 +1,116 @@
+[
+ {
+  "doc": 0,
+  "page": 0,
+  "origin": [
+   0,
+   0
+  ],
+  "k": 3.0,
+  "room": "LIVING ROOM",
+  "ceiling": 272.0,
+  "prims": [],
+  "labels": [],
+  "calls": [],
+  "pdf": "build_great_rev1b.py",
+  "view": "NORTH ELEVATION - LIVING SHELL",
+  "length": 280.0,
+  "openings": [
+   {
+    "kind": "window",
+    "x0": 120,
+    "x1": 252,
+    "y0": 0,
+    "y1": 117,
+    "ctx": [
+     "window"
+    ]
+   },
+   {
+    "kind": "window",
+    "x0": 120,
+    "x1": 252,
+    "y0": 124,
+    "y1": 250,
+    "ctx": [
+     "window"
+    ]
+   },
+   {
+    "kind": "opening",
+    "x0": 17,
+    "x1": 75,
+    "y0": 0,
+    "y1": 86,
+    "ctx": [
+     "opening"
+    ]
+   }
+  ]
+ },
+ {
+  "doc": 0,
+  "page": 0,
+  "origin": [
+   0,
+   0
+  ],
+  "k": 3.0,
+  "room": "LIVING ROOM",
+  "ceiling": 272.0,
+  "prims": [],
+  "labels": [],
+  "calls": [],
+  "pdf": "build_great_rev1b.py",
+  "view": "EAST ELEVATION - LIVING SHELL",
+  "length": 194.0,
+  "openings": []
+ },
+ {
+  "doc": 0,
+  "page": 0,
+  "origin": [
+   0,
+   0
+  ],
+  "k": 3.0,
+  "room": "LIVING ROOM",
+  "ceiling": 272.0,
+  "prims": [],
+  "labels": [],
+  "calls": [],
+  "pdf": "build_great_rev1b.py",
+  "view": "SOUTH ELEVATION - LIVING SHELL",
+  "length": 280.0,
+  "openings": [
+   {
+    "kind": "window",
+    "x0": 0,
+    "x1": 188,
+    "y0": 154,
+    "y1": 268,
+    "ctx": [
+     "window"
+    ]
+   }
+  ]
+ },
+ {
+  "doc": 0,
+  "page": 0,
+  "origin": [
+   0,
+   0
+  ],
+  "k": 3.0,
+  "room": "LIVING ROOM",
+  "ceiling": 272.0,
+  "prims": [],
+  "labels": [],
+  "calls": [],
+  "pdf": "build_great_rev1b.py",
+  "view": "WEST ELEVATION - LIVING SHELL",
+  "length": 194.0,
+  "openings": []
+ }
+]

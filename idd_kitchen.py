@@ -261,3 +261,11 @@ def undercounter_appliance(v, x, w, kind='beverage', top=BOX_TOP, bottom=TOE, de
         frame_opening(v, x + STILE, bottom + STILE, x + w - STILE, top - STILE, style)
         _line(v, (x + w / 2 - 4, top - 4.5), (x + w / 2 + 4, top - 4.5), OUTLINE)
     for gx in range(1, int(w // 1.5)): _line(v, (x + gx * 1.5, 0.8), (x + gx * 1.5, bottom - 0.8), FINE, MID)   # toe grille
+
+
+def island_place(v, x, from_north, length, cab_depth, top_depth, top_offset=1.0, waterfall=2.0, top_t=2.0, working='W'):
+    """Records the island's position in plan for the 3-D render; draws nothing. x: the working face from the west wall; from_north: the
+    north end (waterfall face) from the north wall; length along N-S; cab_depth and top_depth E-W; the top 1 in. proud of the working face;
+    waterfalls the full depth. Call it once in the island's working-side view so a new kitchen renders its island where the plan has it
+    (11.09.26: the Casa Grove island was hard-coded in the renderer's staging)."""
+    return None

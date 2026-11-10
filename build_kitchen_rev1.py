@@ -130,7 +130,7 @@ TALL_W = (TALLS[1] - TALLS[0]) / 2           # 19-1/2 each
 MIDS = (RET[1], TALLS[0])                    # 69 to 140.96: the middle section takes the difference (owner: "you can make the middle section longer"), 5'-11-15/16"
 MID_DR = (MIDS[1] - MIDS[0] - 24.0 - 15.0) / 2   # drawer stacks each side of A13 and A14 (C33), 16-1/2
 S_RUN_D = 25.0                               # FOR's south run, 2'-1" deep (y 502.92 to 540.42)
-LINING = 0.75
+LINING = 0.0          # owner 11.09.26: the leaf meets the column with the 1/8 in. reveal like every other front; the 3/4 in. jamb lining is set back behind the leaf, not seen
 GAP = 0.125
 LEAF_W = (VEST[1] - VEST[0] - LINING - 3 * GAP) / 2     # 18-15/16
 LEAF_H = TOP - 0.5 - GAP
@@ -358,7 +358,7 @@ def south_wall(v):
     C._rect(v, X(RET[1]), 0, X(RET[0]), H - CR, C.OUTLINE)
     # the pantry entrance: a pair of swing doors faced as cabinetry, closing the vestibule
     lx = X(VEST[1]) + GAP; fake_leaf(v, lx, LEAF_W, 'L'); fake_leaf(v, lx + LEAF_W + GAP, LEAF_W, 'R')
-    K.filler_panel(v, X(VEST[0] + LINING), LINING, 0, TOP, depth=25.0)          # the jamb lining on the column, a component so the render closes the 7/8 in. gap
+    if LINING > 0: K.filler_panel(v, X(VEST[0] + LINING), LINING, 0, TOP, depth=25.0)   # a visible jamb lining, as a component
     tag(v, X((VEST[0] + VEST[1]) / 2), 17.0, f'SWING DOORS, PAIR {ft(VEST[1] - VEST[0])}', 5.0, INK, box=True)
     tag(v, X((VEST[0] + VEST[1]) / 2), 11.5, 'HARMON HINGES', 5.0, INK, box=True)       # owner 11.09.26 (C32)
     cloud(v, X(TALLS[1]), 0, X(VEST[0]), TOP, pad=0.6)                               # C29 to C33: the whole run
@@ -396,7 +396,7 @@ def south_wall(v):
             'JAMB. THEN THE PANTRY ENTRY: A PAIR OF ONE-WAY SWING DOORS IN THE CABINET FACE PLANE, EACH LEAF '
             f'{inch(LEAF_W)} x {ft(LEAF_H)} x 1-3/4" (VENEERED MDF CORE, HARDWOOD EDGES, BALANCED BOTH FACES), 1/2" UNDERCUT, 1/8" GAPS, FACED AS CABINETRY: THE '
             'TALL CABINETS\' 3\'-0" AND 7\'-0" BREAKS ROUTED IN, THE BOTTOM 4-1/2" FINISHED AS THE TOE, CABINET PULLS AT THE MEETING STILES, FLAT RECESSED PULLS '
-            'ON THE PANTRY FACES. HINGED AT A 3/4" HARDWOOD JAMB LINING ON THE COLUMN AND AT THE RETURN, TOP AND BOTTOM PIVOTS (MILLWORKER TO PROPOSE, OWNER TO '
+            'ON THE PANTRY FACES. HINGED AT A 3/4" HARDWOOD JAMB LINING SET BACK BEHIND THE LEAF ON THE COLUMN (THE LEAF MEETS THE COLUMN WITH A 1/8" REVEAL) AND AT THE RETURN, TOP AND BOTTOM PIVOTS (MILLWORKER TO PROPOSE, OWNER TO '
             'APPROVE), A 3/4" HARDWOOD HEAD JAMB WITH A STOP ON THE VESTIBULE SIDE AND MAGNETIC CATCHES, BOTTOM PIVOT PLATES SET IN WD-01, A MAGNETIC HOLD-OPEN ON '
             f'EACH SIDE. THEY SWING INTO A {ft(VEST[1] - VEST[0])} x 2\'-0" VESTIBULE AND PARK AGAINST ITS SIDES, BEHIND THEM FOR\'S 3\'-2" x 8\'-1" WALL OPENING, '
             f'{ft(P_OPEN[0])} TO {ft(P_OPEN[1])} FROM THE WEST WALL (CENTER {ft(sum(P_OPEN) / 2)}), WITH DRYWALL RETURNS AND NO DOOR, IN PLACE OF FOR\'S HIDDEN '
@@ -748,6 +748,7 @@ def west_wall(v):
 def island_work(v):
     """West face, looking east from the aisle, north at the left: waterfall, drawers, the sink cabinet on the range axis, dishwasher, trash, waterfall."""
     L = ISL_L; floor_line(v, 0, L)
+    K.island_place(v, B.ISL_X, B.ISL_N, B.ISL_L, B.ISL_W, B.ISL_TOP, 1.0, WF, 2.0, 'W')   # the island in plan, recorded for the render
     cx = WF; xs = []
     for w in ISL_BAYS2: xs.append(cx); cx += w
     base_run(v, WF, WF + ISL_CAB, list(zip(ISL_BAYS2, ('drawers', 'blank', 'sink', 'dw', 'blank'))))

@@ -71,12 +71,17 @@ def make(code):
                 frag = np.clip((fbm((hs, ws), rng, 4, 10.0) - 0.52) * 7.0, 0, 1)
                 vein = np.maximum(vein, inside * frag * strength * 0.9 * runs)
 
-    span = (ws / hs) * 0.6 + 0.6
-    prim = sorted(rng.uniform(0.2, span - 0.1, 3 if dr > 0.8 else 2))
-    family(34, prim, 0.30, 0.032 * (0.6 + 0.8 * dr), 0.95, None, 0.6 * dr, band=0.09 * dr, rough=0.016)   # bold primaries: wide, smoky wash, breccia band
-    family(36, [prim[0] + 0.06], 0.30, 0.012, 0.7, 0.45, 0.25 * dr, rough=0.01)                          # a companion vein riding the main one
-    family(48, sorted(rng.uniform(0.0, span, 6)), 0.30, 0.0060, 0.8, 0.48, rough=0.006)       # secondaries in runs, branching off
-    family(22, sorted(rng.uniform(0.0, span, 12)), 0.25, 0.0022, 0.5, 0.55, wobble=0.07, rough=0.004)   # hairlines and crazing
+    # veins spread over the whole slab (owner 11.09.26: "veins in some areas and then no veins in other areas"): the field F runs from
+    # about -0.4 to 2.6 across the slab, so the levels are spaced evenly over that range with jitter, primaries every ~0.55, secondaries
+    # between them in runs, hairlines everywhere
+    lo, hi = -0.35, (ws / hs) * 0.85 + 0.55
+    def spread(n, jit):
+        st = (hi - lo) / n; return [lo + st * (k + 0.5) + rng.uniform(-jit, jit) * st for k in range(n)]
+    prim = spread(5 if dr > 0.8 else 4, 0.25)
+    family(34, prim, 0.30, 0.026 * (0.6 + 0.8 * dr), 0.95, 0.30, 0.5 * dr, band=0.07 * dr, rough=0.016)   # bold primaries in long runs, smoky wash, breccia
+    family(36, [p_ + 0.05 for p_ in prim[::2]], 0.30, 0.010, 0.7, 0.42, 0.2 * dr, rough=0.01)             # companions riding some primaries
+    family(50, spread(10, 0.35), 0.30, 0.0055, 0.75, 0.40, rough=0.006)                                  # secondaries in runs, across the slab
+    family(22, spread(22, 0.4), 0.25, 0.0020, 0.5, 0.45, wobble=0.07, rough=0.004)                        # hairlines and crazing everywhere
     img = img * (1 - wash[..., None] * 0.5) + halo * (wash[..., None] * 0.5)
     acc_w = np.clip((fbm((hs, ws), rng, 3, 1.0) - 0.5) * 3.0, 0, 1)[..., None]       # where a vein turns gold or sage along its length
     vcol = core * (1 - 0.55 * acc_w) + acc * (0.55 * acc_w)
