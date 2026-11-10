@@ -472,7 +472,7 @@
  },
  "FAB-SOFA": {
   "name": "SOFA FABRIC (STAGING)",
-  "hex": "#E3DDD2",
+  "hex": "#85765F",
   "rough": 0.9,
   "kind": "fabric",
   "texture": "acg/Fabric086",
@@ -481,7 +481,7 @@
  },
  "FAB-RUG": {
   "name": "RUG (STAGING)",
-  "hex": "#D7CFC1",
+  "hex": "#A89E8D",
   "rough": 0.95,
   "kind": "fabric",
   "texture": "acg/Carpet016",
@@ -805,11 +805,12 @@
    0.93
   ],
   "status": "PLACEHOLDER",
-  "source": "FOR A-100 paved pool deck, material per landscape plan L-2"
+  "source": "FOR A-100 paved pool deck, material per landscape plan L-2",
+  "size_in": 48
  },
  "POOL-PLASTER": {
   "name": "POOL INTERIOR, WHITE PLASTER",
-  "hex": "#D8E6E4",
+  "hex": "#BFDCDC",
   "rough": 0.6,
   "kind": "paint",
   "status": "PLACEHOLDER",
@@ -895,5 +896,39 @@
   "kind": "plastic",
   "status": "STAGING",
   "source": ""
+ },
+ "FAB-PILLOW-A": {
+  "name": "THROW PILLOW (STAGING)",
+  "hex": "#6B675A",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "acg/Fabric086",
+  "status": "STAGING",
+  "source": "staging only"
+ },
+ "FAB-PILLOW-B": {
+  "name": "THROW PILLOW (STAGING)",
+  "hex": "#4E4A43",
+  "rough": 0.9,
+  "kind": "fabric",
+  "texture": "acg/Fabric086",
+  "status": "STAGING",
+  "source": "staging only"
+ },
+ "SOFA-PLINTH": {
+  "name": "SOFA PLINTH (STAGING)",
+  "hex": "#3B3631",
+  "rough": 0.6,
+  "kind": "paint",
+  "status": "STAGING",
+  "source": "staging only"
+ },
+ "PAVER-JOINT": {
+  "name": "PAVER JOINT",
+  "hex": "#8C8376",
+  "rough": 0.95,
+  "kind": "paint",
+  "status": "PLACEHOLDER",
+  "source": "24 in. pavers, landscape plan L-2"
  }
 }

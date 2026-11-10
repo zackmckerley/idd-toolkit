@@ -55,6 +55,7 @@ DUSK = '--dusk' in args
 # --sun ELEV,AZ: the sun's altitude and its azimuth in plan degrees (clockwise from plan north), from the site's true north,
 # latitude, date and hour. Default 32, 250: a late-afternoon sun from the plan west-southwest.
 SUN = [float(v) for v in args[args.index('--sun') + 1].split(',')] if '--sun' in args else None
+ENVROT = float(args[args.index('--envrot') + 1]) if '--envrot' in args else 0.0   # degrees about Z: turns the garden HDRI so the open, bright side is the one the windows look at
 V = json.load(open(views_path))[idx]
 _ppi = args[args.index('--ppi') + 1] if '--ppi' in args else 'auto'
 PPI = float(V['k']) * 17.0 / 1892.0 * 300.0 if _ppi == 'auto' else float(_ppi)
@@ -236,7 +237,12 @@ def material(code, variant=''):
         # plus a Fresnel reflection. Refractive glass would block shadow rays with caustics off and leave the room dark.
         out_n = nt.nodes['Material Output']; tr = nt.nodes.new('ShaderNodeBsdfTransparent'); gl = nt.nodes.new('ShaderNodeBsdfGlossy')
         gl.inputs['Roughness'].default_value = 0.0; fr = nt.nodes.new('ShaderNodeFresnel'); fr.inputs['IOR'].default_value = 1.52
-        mx = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(fr.outputs['Fac'], mx.inputs['Fac'])
+        # the reflection on the front face only: a pane's back face, seen from inside the glass, takes Fresnel as total internal
+        # reflection past 41 degrees and bounces to black (the living room's window wall, seen obliquely, 11.10.26)
+        geo_ = nt.nodes.new('ShaderNodeNewGeometry'); inv_ = nt.nodes.new('ShaderNodeMath'); inv_.operation = 'SUBTRACT'; inv_.inputs[0].default_value = 1.0
+        nt.links.new(geo_.outputs['Backfacing'], inv_.inputs[1]); fm_ = nt.nodes.new('ShaderNodeMath'); fm_.operation = 'MULTIPLY'
+        nt.links.new(fr.outputs['Fac'], fm_.inputs[0]); nt.links.new(inv_.outputs['Value'], fm_.inputs[1])
+        mx = nt.nodes.new('ShaderNodeMixShader'); nt.links.new(fm_.outputs['Value'], mx.inputs['Fac'])
         nt.links.new(tr.outputs['BSDF'], mx.inputs[1]); nt.links.new(gl.outputs['BSDF'], mx.inputs[2]); nt.links.new(mx.outputs['Shader'], out_n.inputs['Surface'])
         return m
     elif kind == 'lamp':
@@ -902,7 +908,9 @@ def _local_bbox(o):
     xs = [v.co.x / IN for v in o.data.vertices]; ys = [v.co.z / IN for v in o.data.vertices]; ds = [-v.co.y / IN for v in o.data.vertices]
     return (min(xs), max(xs), min(ys), max(ys), min(ds), max(ds))
 
+COPLANAR_ = []
 def joint_report(path):
+    COPLANAR_.clear()
     lines = []; n = 0
     for view, items in JOINT_AUDIT:
         for grp in ('body', 'soffit', 'toe'):
@@ -937,6 +945,31 @@ def joint_report(path):
         if key in seen_ and (key[1] - key[0]) * (key[3] - key[2]) * (key[5] - key[4]) > 0:
             lines.append(f'DUPLICATE {o.name} and {seen_[key]} occupy the same box (inches {[k / 20 for k in key]})'); n += 1
         else: seen_[key] = o.name
+    # two boxes that overlap and share a face on the same side (a fascia laid on a slab edge, flush): the shared face renders
+    # black in Cycles (the living room gallery edge, 11.10.26). Boxes only (8 vertices); faces over 1 sq in. (a 1-1/2 in. lapped bead corner showed black), same-named pieces included; floor contacts skipped.
+    bxs = []
+    for o in bpy.data.objects:
+        if o.type != 'MESH' or o.hide_render or len(o.data.vertices) != 8: continue
+        bb = [o.matrix_world @ _V2(c) for c in o.bound_box]
+        bxs.append((o.name, [min(getattr(p_, ax) for p_ in bb) / IN for ax in 'xyz'], [max(getattr(p_, ax) for p_ in bb) / IN for ax in 'xyz']))
+    cop = 0
+    for ax in range(3):
+        o1, o2 = [a_ for a_ in range(3) if a_ != ax]
+        for side in (0, 1):
+            grp_ = {}
+            for nm, lo_, hi_ in bxs:
+                grp_.setdefault(round((hi_ if side else lo_)[ax] * 50), []).append((nm, lo_, hi_))
+            for k_, its in grp_.items():
+                if len(its) < 2 or len(its) > 400: continue
+                for i, (na, la, ha) in enumerate(its):
+                    for nb, lb, hb in its[i + 1:]:
+                        w1 = min(ha[o1], hb[o1]) - max(la[o1], lb[o1]); w2 = min(ha[o2], hb[o2]) - max(la[o2], lb[o2])
+                        if w1 > 0.4 and w2 > 0.4 and w1 * w2 > 1.0 and not (ax == 2 and side == 0 and abs(k_ / 50) < 0.6):
+                            # kept for the camera check: most shared faces are hidden (against a wall, inside a carcass); only
+                            # the ones the camera sees are findings (coplanar_visible, after the camera is placed)
+                            c_ = [0.0, 0.0, 0.0]; c_[ax] = k_ / 50
+                            c_[o1] = (max(la[o1], lb[o1]) + min(ha[o1], hb[o1])) / 2; c_[o2] = (max(la[o2], lb[o2]) + min(ha[o2], hb[o2])) / 2
+                            COPLANAR_.append((na, nb, ax, side, tuple(c_), w1, w2, o1, o2)); cop += 1
     open(path, 'w').write('\n'.join(lines) + ('\n' if lines else 'no unintended steps or gaps\n'))
     print('joint audit:', n, 'findings ->', path)
 
@@ -963,7 +996,7 @@ def build_wall(vi, M, front_room_depth):
                 PORTALS.append((o['x0'] + 2, o['x1'] - 2, 9.0, o['y1'] - 5, -3.0))
                 continue
             box(o['x0'] - 24, o['x1'] + 24, 0, H, -60, -59, wall_mat(), 'beyond')
-            box(o['x0'] - 24, o['x1'] + 24, -2, 0, -60, 0, material(R('floor', 'WD-01')), 'beyond_floor')
+            box(o['x0'] - 24, o['x1'] + 24, -2, 0, -60, (-12 if ROOM_MODE else -6), material(R('floor', 'WD-01')), 'beyond_floor')   # meets the room floor's edge (-12 in a room, -6 for one wall), no shared top
     for c in V.get('calls', []):
         fn = BUILDERS.get(c['comp'], 'missing')
         if c['comp'] in SKIP: continue
@@ -1009,7 +1042,7 @@ if ROOM_MODE:
         if o.get('col_id') in _drop: o.hide_render = True   # hidden, not removed: removing segfaulted later passes
     if _drop: print('duplicate corner columns built once:', sorted(_drop))
     joint_report(out + '.joints.txt')
-    if os.environ.get('PR_DUMP'):   # debugging: list the objects inside a world box (inches) and stop before rendering
+    if os.environ.get('PR_DUMP') and STAGE == 'none':   # debugging: list the objects inside a world box (inches) and stop before rendering
         bx_ = [float(t) for t in os.environ['PR_DUMP'].split(',')]
         for o in bpy.data.objects:
             if o.type != 'MESH': continue
@@ -1173,6 +1206,16 @@ if PERSP:
     elif STAGE in STAGES: STAGES[STAGE]()
     if ROOM_MODE: joint_report(out + '.joints.txt')   # again with the staging (island, built-ins) in, so its duplicates are caught too
     if os.environ.get('PR_STAGECHECK'): print('stage built, objects', len(bpy.data.objects)); sys.exit(0)   # build-only check
+    if os.environ.get('PR_DUMP'):   # the same dump, with the staging built
+        from mathutils import Vector as _V3
+        bx_ = [float(t) for t in os.environ['PR_DUMP'].split(',')]
+        for o in bpy.data.objects:
+            if o.type != 'MESH': continue
+            bb = [o.matrix_world @ _V3(c) for c in o.bound_box]
+            lo_ = [min(getattr(p_, a_) for p_ in bb) / IN for a_ in 'xyz']; hi_ = [max(getattr(p_, a_) for p_ in bb) / IN for a_ in 'xyz']
+            if all(lo_[i] < bx_[2 * i + 1] and hi_[i] > bx_[2 * i] for i in range(3)):
+                print('DUMP', o.name, o.hide_render, [round(v, 2) for v in lo_], [round(v, 2) for v in hi_], o.active_material.name if o.active_material else '')
+        sys.exit(0)
     cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'PERSP'; cam_d.lens = LENS; cam_d.sensor_width = 36.0; cam_d.sensor_fit = 'HORIZONTAL'
     cam_d.clip_start = max(0.01, CLIP * IN); cam_d.clip_end = 60.0
     cam = bpy.data.objects.new('cam', cam_d); bpy.context.collection.objects.link(cam)
@@ -1186,8 +1229,49 @@ if PERSP:
     cam_d.shift_y = rise / (2 * math.tan(big_fov / 2))
     cam.location = loc; sc.camera = cam
     sc.render.resolution_x, sc.render.resolution_y = W_r, H_r
+    def coplanar_visible(path):
+        # a shared face is a finding when the camera sees it: rays to five points on the shared patch land on one of the pair
+        bpy.context.view_layer.update(); dg_ = bpy.context.evaluated_depsgraph_get(); eye = cam.matrix_world.translation
+        found = []
+        for na, nb, ax, side, c_, w1, w2, o1, o2 in COPLANAR_:
+            if (eye[ax] / IN > c_[ax]) != bool(side): continue                       # the face looks away from the camera
+            hits = 0
+            for f1, f2 in ((0, 0), (-0.35, -0.35), (0.35, -0.35), (-0.35, 0.35), (0.35, 0.35)):
+                p_ = list(c_); p_[o1] += f1 * w1; p_[o2] += f2 * w2
+                tgt = Vector(p_) * IN; d_ = tgt - eye; dist = d_.length
+                ok, loc_, _, _, ob_, _ = sc.ray_cast(dg_, eye, d_.normalized())
+                if ok and ob_.name in (na, nb) and abs((loc_ - eye).length - dist) < 0.1 * IN: hits += 1
+            if hits: found.append(f'COPLANAR (seen) {na} and {nb} share the {"+-"[1 - side]}{"xyz"[ax]} face at {c_[ax]:.2f} in. over {w1:.1f} x {w2:.1f} in.')
+        with open(path, 'a') as fh: fh.write('\n'.join(found) + ('\n' if found else 'no shared faces in view\n'))
+        print('coplanar faces in view:', len(found), 'of', len(COPLANAR_), '->', path)
+    if COPLANAR_: coplanar_visible(out + '.joints.txt')
+    if os.environ.get('PR_HIDE'):   # debugging: leave objects out of the render by name prefix (comma list), to find what darkens a view
+        for o in bpy.data.objects:
+            if any(o.name.startswith(t) for t in os.environ['PR_HIDE'].split(',')): o.hide_render = True
+    if os.environ.get('PR_PICK'):   # debugging: name what each listed pixel sees (fractions of the frame, 0,0 top left), then stop
+        bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+        fr_ = cam_d.view_frame(scene=sc); mw = cam.matrix_world
+        for tok in os.environ['PR_PICK'].split(';'):
+            fx, fy = [float(t) for t in tok.split(',')]
+            # view_frame corners: 0 top right, 1 bottom right, 2 bottom left, 3 top left (camera space)
+            top = fr_[3].lerp(fr_[0], fx); bot = fr_[2].lerp(fr_[1], fx); p_ = top.lerp(bot, fy)
+            d_w = (mw.to_3x3() @ p_).normalized()
+            o_ = mw.translation.copy(); chain = []
+            for _k in range(6):   # through glass and other clear things to the first opaque surface
+                hit, loc_, nor_, _, ob_, _ = sc.ray_cast(dg, o_, d_w)
+                if not hit: chain.append('sky'); break
+                mn = ob_.active_material.name if ob_.active_material else ''
+                chain.append(f'{ob_.name} {[round(v / IN, 1) for v in loc_]} {mn}')
+                if not any(t in mn for t in ('GLASS', 'WATER')): break
+                o_ = loc_ + d_w * 0.002
+            print('PICK', tok, ' -> '.join(chain))
+        sys.exit(0)
     # the garden outside the windows: an outdoor HDRI in place of the studio one, so the glass shows planting and sky
     env.image = bpy.data.images.load(os.path.join(ASSETS, 'green_sanctuary_2k.hdr'))
+    if ENVROT:
+        tc_ = w.node_tree.nodes.new('ShaderNodeTexCoord'); mp_ = w.node_tree.nodes.new('ShaderNodeMapping')
+        mp_.inputs['Rotation'].default_value = (0.0, 0.0, math.radians(ENVROT))
+        w.node_tree.links.new(tc_.outputs['Generated'], mp_.inputs['Vector']); w.node_tree.links.new(mp_.outputs['Vector'], env.inputs['Vector'])
     w.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.5 if DUSK else 7.0
     # late-afternoon sun, low from the west-southwest, through the windows and glass doors: long patches on the floor and
     # the lower walls, the contrast every interior photograph is built on
@@ -1200,6 +1284,8 @@ if PERSP:
             o.rotation_euler = (math.radians(90 - el_), 0, math.radians(180 - az_))
     for o in bpy.data.objects:                                   # walls for the exposure mask
         if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1
+        # window glass that looks outdoors (exterior glazing, not a cabinet's): pass index 2, for the window pull in grade.py
+        if o.type == 'MESH' and o.name.split('.')[0] == 'glass' and o.active_material and o.active_material.name == 'GLASS-CLEAR' and o.get('exterior'): o.pass_index = 2
 else:
     cam_d = bpy.data.cameras.new('cam'); cam_d.type = 'ORTHO'; cam_d.sensor_fit = 'HORIZONTAL'; cam_d.ortho_scale = L * IN
     # the camera sees only the 36 in. in front of this wall (deeper than anything mounted on it); the rest of the room is
@@ -1317,6 +1403,14 @@ print('gain', [round(v, 3) for v in gain])
 if PERSP and MASK_PATH:
     for nd in list(ntc.nodes):
         if nd.bl_idname in ('CompositorNodeOutputFile', 'CompositorNodeIDMask'): ntc.nodes.remove(nd)
+    if any(o.pass_index == 2 for o in bpy.data.objects if o.type == 'MESH'):
+        # the window pull: a mask of the exterior glass written beside the final, so grade.py --win can bring the view outside down to
+        # where the eye sees it (a camera exposed for the room blows the garden out; archviz pulls the windows back in post)
+        sc.view_layers[0].pass_alpha_threshold = 0.0      # transparent glass is the first hit in the index pass (default 0.5 skipped it)
+        idw = ntc.nodes.new('CompositorNodeIDMask'); idw.index = 2; idw.use_antialiasing = True
+        fw = ntc.nodes.new('CompositorNodeOutputFile'); fw.base_path = out + '_win'; fw.file_slots[0].path = 'win'
+        fw.format.file_format = 'PNG'; fw.format.color_mode = 'BW'
+        ntc.links.new(rl.outputs['IndexOB'], idw.inputs['ID value']); ntc.links.new(idw.outputs['Alpha'], fw.inputs[0])
 if not PREVIEW:
     sc.render.resolution_percentage = 100; sc.cycles.samples = SAMPLES
 else:
@@ -1324,3 +1418,13 @@ else:
 sc.render.filepath = out
 bpy.ops.render.render(write_still=True)
 print('rendered', out, sc.render.resolution_x * sc.render.resolution_percentage // 100, 'built', sorted(BUILT), 'MISSING', sorted(MISSING), 'staged', STAGED)
+if '--winpull' in args and PERSP:
+    # the bracket for the window pull: the same frame exposed EV stops down, at few samples (the exterior is bright and converges fast);
+    # grade.py --win MASK --ext THIS puts it inside the exterior glass so the garden, pool and pool house read
+    ev_ = float(args[args.index('--winpull') + 1])
+    for nd in list(ntc.nodes):
+        if nd.bl_idname in ('CompositorNodeOutputFile', 'CompositorNodeIDMask'): ntc.nodes.remove(nd)
+    sc.view_settings.exposure = -ev_; sc.cycles.samples = 24
+    sc.render.filepath = out[:-4] + '_ext.png'
+    bpy.ops.render.render(write_still=True)
+    print('window pull bracket', sc.render.filepath, -ev_, 'EV')

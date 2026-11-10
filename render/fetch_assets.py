@@ -10,7 +10,7 @@ def get(u, out=None):
     return r.stdout
 TEX = ['oak_veneer_01', 'wood_floor', 'marble_01', 'painted_plaster_wall', 'rough_linen', 'laminate_floor_02', 'plank_flooring_02', 'terry_cloth']
 HDRI = ['white_home_studio', 'modern_bathroom', 'green_sanctuary', 'garden_nook']
-MODELS = ['potted_plant_01', 'potted_plant_04', 'ceramic_vase_01', 'ceramic_vase_03', 'wooden_bowl_01', 'wicker_basket_02', 'wooden_stool_02']
+MODELS = ['potted_plant_01', 'potted_plant_04', 'ceramic_vase_01', 'ceramic_vase_03', 'wooden_bowl_01', 'wicker_basket_02', 'wooden_stool_02', 'potted_plant_02', 'modern_arm_chair_01']
 for a in TEX:
     d = json.loads(get('https://api.polyhaven.com/files/' + a)); os.makedirs(os.path.join(HERE, a), exist_ok=True)
     for m in ('Diffuse', 'nor_gl', 'Rough'):

@@ -41,10 +41,11 @@
     "x0": 17,
     "x1": 75,
     "y0": 0,
-    "y1": 86,
+    "y1": 101.5,
     "ctx": [
      "opening"
-    ]
+    ],
+    "note": "kitchen arch: rectangle to 1 in. over the apex (100.75); stage_living fills the spandrels and adds the casing"
    }
   ]
  },

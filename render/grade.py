@@ -58,4 +58,34 @@ if '--ref' in a_:
         out[..., c] = ls[..., c] * (1 - k) + moved * k
     im = Image.fromarray(_from_lab(out).astype(np.uint8))
     print('graded to', a_[a_.index('--ref') + 1], 'at', k)
+if '--win' in a_:
+    # window pull: inside the exterior-glass mask, take the view outside down by --win-ev stops (default 1.5) in linear light and give
+    # back a little contrast, so the garden, pool and pool house read instead of a white sheet
+    m = np.asarray(Image.open(a_[a_.index('--win') + 1]).convert('L').resize(im.size), np.float32)[..., None] / 255.0
+    c = np.asarray(im, np.float32) / 255.0
+    if '--ext' in a_:   # the bracketed exterior render from photoreal.py --winpull: real detail, not a darkened white
+        ext_ = np.asarray(Image.open(a_[a_.index('--ext') + 1]).convert('RGB').resize(im.size), np.float32) / 255.0
+        bev = float(a_[a_.index('--ext-ev') + 1]) if '--ext-ev' in a_ else 3.0
+        # merge, do not swap: a dark view out (shaded planting) keeps the main exposure; only where the main frame clips does the
+        # bracket's value (scaled back up by its stops) stand in; then one smooth shoulder brings the sky and the white pool house
+        # under white. A straight swap darkened the already dark garden to black in the oblique view (11.10.26)
+        _lin = lambda v: np.where(v > 0.04045, ((v + 0.055) / 1.055) ** 2.4, v / 12.92)
+        _srgb = lambda v: np.where(v > 0.0031308, 1.055 * np.clip(v, 0, None) ** (1 / 2.4) - 0.055, 12.92 * v)
+        ml_, el_ = _lin(c), _lin(ext_) * (2.0 ** bev)
+        t_ = np.clip((ml_.max(axis=2, keepdims=True) - 0.55) / 0.35, 0, 1)          # how near the main frame is to clipping
+        L_ = ml_ * (1 - t_) + np.maximum(el_, ml_) * t_
+        # the shoulder: shadows (under 0.05 linear) as shot, the bracket's top (2^EV) to 0.92 (0.7 read as tinted glass), a power curve between them;
+        # close to the plain bracket in the bright sky and the white pool house, and it never darkens shade (a log curve washed out)
+        knee, Lm, top = 0.05, 2.0 ** bev, 0.92; g_ = np.log(knee / top) / np.log(knee / Lm)
+        sh_ = top * (np.clip(L_, knee, None) / Lm) ** g_
+        pulled = np.clip(_srgb(np.where(L_ < knee, L_, sh_)), 0, 1)
+        ev = f'bracket merge ({bev:g} EV)'
+    else:
+        ev = float(a_[a_.index('--win-ev') + 1]) if '--win-ev' in a_ else 1.5
+        lin_ = np.where(c > 0.04045, ((c + 0.055) / 1.055) ** 2.4, c / 12.92) * (2.0 ** -ev)
+        pulled = np.where(lin_ > 0.0031308, 1.055 * np.clip(lin_, 0, None) ** (1 / 2.4) - 0.055, 12.92 * lin_)
+        pulled = np.clip((pulled - 0.5) * 1.12 + 0.5, 0, 1)
+    m = m * (float(a_[a_.index('--win-strength') + 1]) if '--win-strength' in a_ else 1.0)   # 0.5: half the pull (full read as tinted glass in the living room)
+    im = Image.fromarray((np.clip(c * (1 - m) + pulled * m, 0, 1) * 255).astype(np.uint8))
+    print('window pull', ev, 'stops on', round(float(m.mean()) * 100, 1), 'percent of the frame')
 im.save(a_[2])
