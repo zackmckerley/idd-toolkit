@@ -80,7 +80,17 @@ def _carcass(x, w, y0, y1, D, interior=False):
 def b_toe(a, ctx):
     # the kick in the cabinet finish, 3 in. back from the cabinet face (owner 11.09.26 PM: "the toe kicks need to match the cabinets")
     D = float(a.get('depth') or 24.0)
-    box(a['x0'], a['x1'], 0.0, 4.5, 0.0, D - 3.0, cab_mat(), 'toe')
+    # the run's toe leaves out the spans of undercounter appliances, which build their own toe round a grille: two toes on one face
+    # z-fought into black triangles (owner 11.10.26)
+    import __main__ as _M
+    calls = (getattr(_M, 'V', None) or {}).get('calls', [])
+    cut = sorted((c['args']['x'], c['args']['x'] + c['args']['w']) for c in calls if c.get('comp') == 'undercounter_appliance' and c.get('depth', 0) == 0)
+    xs = a['x0']
+    for c0, c1 in cut:
+        if c1 <= xs or c0 >= a['x1']: continue
+        if c0 - xs > 0.01: box(xs, c0, 0.0, 4.5, 0.0, D - 3.0, cab_mat(), 'toe')
+        xs = max(xs, c1)
+    if a['x1'] - xs > 0.01: box(xs, a['x1'], 0.0, 4.5, 0.0, D - 3.0, cab_mat(), 'toe')
 
 
 def b_frame_opening(a, ctx):
@@ -335,11 +345,12 @@ def b_drywall_column(a, ctx):
     x, w, dp = a['x'], a['w'], float(a.get('depth') or 26.0)
     COL_N[0] += 1; objs = []
     tm = trim_mat(); hb = T['base']; cd = T['crown']
+    top = min(float(a.get('H') or H), H)   # a return that stops under a soffit records its own top; the soffit's crown covers it
     if a.get('finish') == 'millwork':   # clad as cabinetry: a flat panel in the cabinet finish on the runs' recessed toe
-        objs += [box(x, x + w, 4.5, H, 0.0, dp, cab_mat(), 'column_panel'), box(x, x + w, 0.0, 4.5, 0.0, dp - 3.0, cab_mat(), 'toe')]
+        objs += [box(x, x + w, 4.5, top, 0.0, dp, cab_mat(), 'column_panel'), box(x, x + w, 0.0, 4.5, 0.0, dp - 3.0, cab_mat(), 'toe')]
     else:
-        objs += [box(x, x + w, 0.0, H, 0.0, dp, wall_mat(), 'wall_column'), box(x - 0.01, x + w + 0.01, 0.0, hb, dp, dp + 0.75, tm, 'column_base')]
-    objs.append(sweep([(x + w, H), (x, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'column_crown'))
+        objs += [box(x, x + w, 0.0, top, 0.0, dp, wall_mat(), 'wall_column'), box(x - 0.01, x + w + 0.01, 0.0, hb, dp, dp + 0.75, tm, 'column_base')]
+    if top >= H - 1.0: objs.append(sweep([(x + w, H), (x, H)], [(q, d_ + dp) for q, d_ in crown_profile(cd, T['crown_proj'])], material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'column_crown'))
     for o in objs:
         if o is not None: o['col_id'] = COL_N[0]
 
@@ -390,10 +401,15 @@ def b_undercounter_appliance(a, ctx):
     'ice' a shaker panel. Bar pull, a dark grille in the recessed toe."""
     x, w, top, bottom = a['x'], a['w'], a.get('top', 34.75), a.get('bottom', 4.5); D = float(a.get('depth') or 24.0)
     S = float(a.get('stile', 2.0)); r_ = float(a.get('reveal', 0.125)); SB = max(S, 0.75)   # the liner band behind touching fronts
-    box(x, x + w, 0.0, bottom, 0.0, D - 3.0, cab_mat(), 'toe')   # the run's toe, continuous, in the cabinet finish
-    for k in range(int((w - 3.0) / 1.5)):                          # the appliance's grille: thin slots in the toe face, not a black plate
-        sx = x + 1.5 + k * 1.5
-        box(sx, sx + 0.35, 1.4, bottom - 1.4, D - 3.01, D - 2.99, material('GAP'), 'grille_slot')
+    # the run's toe in the cabinet finish, framing the appliance's grille: a dark plate 1/2 in. back with vertical fins every 3/4 in.
+    # (owner 11.10.26: slots laid on the toe face z-fought into black triangles). No two faces within 1/2 in. of each other.
+    gx0, gx1, gz0, gz1 = x + 2.0, x + w - 2.0, 1.0, bottom - 1.0
+    box(x, x + w, 0.0, gz0, 0.0, D - 3.0, cab_mat(), 'toe'); box(x, x + w, gz1, bottom, 0.0, D - 3.0, cab_mat(), 'toe')
+    box(x, gx0, gz0, gz1, 0.0, D - 3.0, cab_mat(), 'toe_frame'); box(gx1, x + w, gz0, gz1, 0.0, D - 3.0, cab_mat(), 'toe_frame')
+    gm = material('GRILLE'); box(gx0, gx1, gz0, gz1, 0.0, D - 3.5, gm, 'grille_plate')
+    fx = gx0 + 0.5
+    while fx < gx1 - 0.5:
+        box(fx, fx + 0.12, gz0, gz1, D - 3.5, D - 3.15, gm, 'grille_fin'); fx += 0.75
     if a.get('kind') == 'beverage':
         m = cab_mat(); lm = material('CERAMIC-WHITE')
         box(x, x + w, bottom, top, 0.0, D - 22.0, m, 'bev_box')                       # the appliance body behind its liner

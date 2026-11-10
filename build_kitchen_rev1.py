@@ -199,7 +199,7 @@ def north_wall(v):
     shell(v, L, crown=[(0, L)], base=[(RE, N_LEAF_X - CS), (N_LEAF_X + N_LEAF + CS, L)])
     pantry_w = (RE - DW_COL - 2 * COL_W - 4.5) / 2                    # 39.49 each, between the drywall column and the jog
     K.drywall_column(v, 0.0, DW_COL, H, CR, depth=25.0)             # the NW drywall column, flush with the run face
-    C.tile_grid(v, 0.0, DW_COL, K.COUNTER, TOP, module=(4.0, 4.0), setout='center', face_d=25.0)   # TL-05 wraps the column return (owner 11.09.26 night)
+    C.tile_grid(v, 0.0, DW_COL, K.COUNTER, TOP, module=(3.0, 12.0), grout=0.0625, setout='center', face_d=25.0)   # TL-05 wraps the column return (owner 11.09.26 night)
     def R(a, b, y0, y1): C._rect(v, a, y0, b, y1, C.OUTLINE, fill=SEC)   # the range wall run in front of it, cut (grey), as at the SW (ID-743)
     R(0, BASE_D - 3, 0, K.TOE); R(0, BASE_D, K.TOE, K.BOX_TOP); R(0, BASE_D + 1, K.BOX_TOP, K.COUNTER); R(0, 0.75, K.COUNTER, TOP)
     for y in B.SHELF_Y: R(0, 12.0, y, y + B.SHELF_T)
@@ -326,7 +326,7 @@ def tall_cab(v, x, w, hinge):
 def south_wall(v):
     L = ROOM_W
     def X(w): return L - w                                              # plan inches from the west wall to view inches (east at the left)
-    shell(v, L, crown=[(0, L)], base=[(0, X(ARCH[1] + CS)), (X(WPIER[1]), X(WPIER[0])), (X(RET[1]), X(RET[0]))])
+    shell(v, L, crown=[(0, L)], base=[(0, X(ARCH[1] + CS)), (X(WPIER[1]), X(WPIER[0]))])   # no base at the return: it is cabinet-clad with the toe
     # arched opening to the hall, cased, segmental head, a 12 in. pier each side
     ax, aw = X(ARCH[1]), ARCH[1] - ARCH[0]
     arched_cased_opening(v, ax, aw, 86.0, aw * 0.62)
@@ -354,8 +354,9 @@ def south_wall(v):
     tag(v, (m0 + m1) / 2, 66, 'OPEN SHELVES, LIT', 5.0, INK, box=True)
     for ox in (m0 + 8, m1 - 8): K.outlet_splash(v, ox)
 
-    # the drywall return, the doors' east jamb
-    C._rect(v, X(RET[1]), 0, X(RET[0]), H - CR, C.OUTLINE)
+    # the drywall return, the doors' east jamb: clad in the cabinet finish, flush with the 25 in. face plane, the toe running through
+    # (owner 11.10.26: drawn as raw linework it was never built and rendered as a 4 in. slot to the wall between the bar and the doors)
+    K.drywall_column(v, X(RET[1]), RET[1] - RET[0], TOP, depth=25.0, finish='millwork')   # to the soffit, which runs over it
     # the pantry entrance: a pair of swing doors faced as cabinetry, closing the vestibule
     lx = X(VEST[1]) + GAP; fake_leaf(v, lx, LEAF_W, 'L'); fake_leaf(v, lx + LEAF_W + GAP, LEAF_W, 'R')
     if LINING > 0: K.filler_panel(v, X(VEST[0] + LINING), LINING, 0, TOP, depth=25.0)   # a visible jamb lining, as a component
@@ -372,7 +373,7 @@ def south_wall(v):
     # the SW drywall column, its face above the range wall run, which the view cuts below the counter (grey)
     c0 = X(DW_COL)
     K.drywall_column(v, c0, L - c0, H, CR, depth=25.0)
-    C.tile_grid(v, c0, L, K.COUNTER, TOP, module=(4.0, 4.0), setout='center', face_d=25.0)   # TL-05 wraps the column return (owner 11.09.26 night)
+    C.tile_grid(v, c0, L, K.COUNTER, TOP, module=(3.0, 12.0), grout=0.0625, setout='center', face_d=25.0)   # TL-05 wraps the column return (owner 11.09.26 night)
     K.soffit(v, t0, c0, TOP, H, depth=25.0, crown_drop=CR)                            # owner 11.09.26 PM: drywall and crown out to the cabinet face
     def R(a, b, y0, y1): C._rect(v, X(b), y0, X(a), y1, C.OUTLINE, fill=SEC)
     R(0, BASE_D - 3, 0, K.TOE); R(0, BASE_D, K.TOE, K.BOX_TOP); R(0, BASE_D + 1, K.BOX_TOP, K.COUNTER); R(0, 0.75, K.COUNTER, TOP)
@@ -700,11 +701,11 @@ def west_wall(v):
     K.pro_range(v, rx, RANGE_W, B.RANGE_H); tag(v, RC, 14, 'A1', 5.5, INK, box=True)
     K.drywall_column(v, 0.0, s0, H, CR, depth=25.0); K.drywall_column(v, tall_x, L - tall_x, H, CR, depth=25.0)   # owner 11.03.26, built out floor to crown
     for x in (0.0, tall_x): tag(v, x + TALL_D / 2, 66, 'DRYWALL', 5.0, INK, box=True); tag(v, x + TALL_D / 2, 60, 'COLUMN', 5.0, INK, box=True)
-    # owner 11.09.26 (C26): TL-05 decorative tile (to select) on the splash and the wall at the shelves, column to column, counter to the scribe line;
+    # owner 11.10.26: TL-05 is a 3x12 cream gloss tile in a vertical stack (inspiration image). 11.09.26 (C26): TL-05 on the splash and the wall at the shelves, column to column, counter to the scribe line;
     # the hood breast clad in ST-03, the counter stone, one slab face with book-matched veins, mitered returns
     for a, b, top_ in ((s0, bx, TOP), (bx, bx1, B.HOOD_B), (bx1, tall_x, TOP)):
         C._rect(v, a, K.COUNTER, b, top_, C.MED)
-        C.tile_grid(v, a, b, K.COUNTER, top_, module=(4.0, 4.0), setout='center')
+        C.tile_grid(v, a, b, K.COUNTER, top_, module=(3.0, 12.0), grout=0.0625, setout='center')
     K.hood_breast(v, bx, BREAST_W, B.HOOD_B, H, style='stone', crown_drop=CR + 1.0, depth=27.0)   # owner 11.09.26 PM: rectangular, wrapped in ST-03
     ht = H - CR - 1.0
     for i in range(3):                                                                    # stone veining, mirrored about the axis
@@ -736,7 +737,7 @@ def west_wall(v):
             f'{ft(bx - s0)} OF OPEN STONE WALL EACH SIDE OF THE BREAST. FOR DRAWS A 26" RANGE AND A 32" HOOD: THE 48" RANGE AND THE BREAST ARE THE OWNER\'S AND ARE '
             'LISTED FOR FOR ON ID-741. 54" HOOD LINER A2 IN A RECTANGULAR BREAST 60" WIDE AND 27" DEEP, STRAIGHT SIDES, NO TAPER, WRAPPED ON THE FACE, BOTH SIDES AND '
             'THE UNDERSIDE IN ST-03 (CALACATTA MONET, THE COUNTER STONE), BOOK-MATCHED FACE, MITERED CORNERS (OWNER 11.09.26 PM; VERIFY AGAINST THE LINER\'S '
-            'ENCLOSURE DRAWING), 6\'-0" TO THE CROWN. TL-05 TILE COUNTER TO SCRIBE LINE, WRAPPED ONTO THE COLUMN RETURNS. TWO 2" ST-03 FLOATING SHELVES EACH SIDE ON STEEL RODS, '
+            'ENCLOSURE DRAWING), 6\'-0" TO THE CROWN. TL-05 3x12 CREAM GLOSS TILE IN A VERTICAL STACK, COUNTER TO SCRIBE LINE, WRAPPED ONTO THE COLUMN RETURNS. TWO 2" ST-03 FLOATING SHELVES EACH SIDE ON STEEL RODS, '
             f'{ft(sh_l)} LONG, UNDERSIDES AT 6\'-0" (FLUSH WITH THE HOOD BOTTOM) AND 7\'-6" (OWNER 11.09.26, RAISED FROM 4\'-6" AND 6\'-0"), 4" CLEAR OF THE COLUMNS AND THE BREAST, EACH WITH A MILLED LED CHANNEL AT THE '
             'BACK EDGE (2700K, 90 CRI, FROSTED DIFFUSER, DIMMED WITH THE HOOD LIGHTS), FED THROUGH ONE HOLLOW ROD AND A 3/4" HOLE IN THE SLAB TO DRIVERS IN THE END '
             'BASE CABINETS (BEHIND THE BOTTOM DRAWERS, ACCESS PANEL). NO UPPER CABINETS, NO SCONCES, NO WINDOWS: FOR REV 1 STILL SHOWS TWO WEST WINDOWS, BOTH '

@@ -13,7 +13,8 @@
    "metal": "METAL-NICKEL",
    "shade": "SHADE",
    "tile": "CAL-MONET-HONED",
-   "floor": "WD-01"
+   "floor": "WD-01",
+   "ceiling": "PT-CEIL"
   },
   "views": {
    "SHOWER*": {
@@ -36,7 +37,8 @@
    "cabinet": "CAB-CREAM",
    "counter": "ST-03-INSPO",
    "tile": "BSP-01",
-   "hood": "HOOD-PLASTER"
+   "hood": "HOOD-PLASTER",
+   "grout": "GROUT-CREAM"
   }
  },
  "LIVING ROOM": {
@@ -47,7 +49,7 @@
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "WD-01",
-   "ceiling": "PT-01",
+   "ceiling": "PT-CEIL",
    "cabinet": "PT-01-SATIN",
    "counter": "ST-01"
   }
@@ -60,7 +62,7 @@
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "ST-02",
-   "ceiling": "PT-01",
+   "ceiling": "PT-CEIL",
    "counter": "CAL-VIOLA",
    "mirror_frame": "METAL-BRASS"
   },
@@ -87,7 +89,7 @@
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "WD-HB",
-   "ceiling": "PT-01"
+   "ceiling": "PT-CEIL"
   }
  },
  "MASTER CLOSET": {
@@ -98,20 +100,20 @@
    "crown": "MW-01",
    "metal": "BRONZE",
    "floor": "WD-HB",
-   "ceiling": "PT-01",
+   "ceiling": "PT-CEIL",
    "counter": "CAL-MONET",
    "cabinet": "MW-01"
   }
  },
  "POOL HOUSE OFFICE": {
   "roles": {
-   "wall": "PT-05",
+   "wall": "PT-02",
    "trim": "PT-01-SATIN",
    "door": "PT-01-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "ST-05",
-   "ceiling": "PT-01"
+   "ceiling": "PT-CEIL"
   }
  }
 }

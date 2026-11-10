@@ -1,28 +1,28 @@
 {
  "_note": "Finish code to render material. hex is sRGB as published by the maker, converted to linear in the renderer; 'lin' (metals) is measured linear reflectance from physicallybased.info used as is, 'f82' the edge tint. status: VERIFIED (maker data, source given), THIRD-PARTY (published by a paint database, confirm on the maker's page), PLACEHOLDER (no pick yet). Roughness by sheen is an estimate (no published gloss-unit to roughness map): flat 0.7, eggshell 0.55, satin 0.4, semi-gloss 0.25, high gloss 0.08.",
  "PT-01": {
-  "name": "SW 7005 PURE WHITE",
-  "hex": "#EDECE6",
+  "name": "SW 7042 SHOJI WHITE",
+  "hex": "#E6DFD3",
   "rough": 0.55,
   "kind": "paint",
-  "status": "VERIFIED",
-  "source": "RGB 237,236,230 in sherwin-williams.com page data (11.07.26); LRV not published on the page, about 84 by luminance"
+  "status": "OWNER INSPIRATION",
+  "source": "owner 11.10.26: the ceiling of his dining-room inspiration image; nearest named paint by CIEDE2000 after removing the photo's warm cast (dE 4.0). Was SW 7005 Pure White"
  },
  "PT-01-SATIN": {
-  "name": "SW 7005 PURE WHITE, SATIN",
-  "hex": "#EDECE6",
+  "name": "SW 7042 SHOJI WHITE, SATIN",
+  "hex": "#E6DFD3",
   "rough": 0.4,
   "kind": "paint",
   "status": "VERIFIED",
   "source": "follows PT-01, satin"
  },
  "PT-02": {
-  "name": "SW 9571 SOLSTICE (OPTION 1)",
-  "hex": "#DBD9D2",
+  "name": "SW 7036 ACCESSIBLE BEIGE",
+  "hex": "#D1C7B8",
   "rough": 0.55,
   "kind": "paint",
-  "status": "VERIFIED",
-  "source": "Sherwin-Williams official Emerald Designer Edition data: SW 9571 Solstice, RGB 219/217/210 (#DBD9D2), LRV 69.3 (11.08.26). The finish plans read SW 5971, which does not exist: confirm SW 9571 with the owner. Option 2 SW 9583 Sanctuary #E6E2D9, LRV 76.4 (same official file)"
+  "status": "OWNER INSPIRATION",
+  "source": "owner 11.10.26: the wall beige of his dining-room inspiration image, 'throughout'; nearest named paint after removing the photo's warm cast (dE 3.6). Was SW 9571 Solstice"
  },
  "PT-03": {
   "name": "BM 2041-10 HUNTER GREEN, HIGH GLOSS",
@@ -158,17 +158,17 @@
   "source": "generic"
  },
  "WD-01": {
-  "name": "WOOD FLOOR, LIGHT WHITE OAK (OWNER INSPIRATION 11.09.26)",
-  "hex": "#DBCBB7",
+  "name": "WOOD FLOOR, HONEY WHITE OAK (OWNER INSPIRATION 11.10.26)",
+  "hex": "#A97F55",
   "rough": 0.35,
   "kind": "wood",
   "status": "PLACEHOLDER",
-  "source": "species and stain open",
+  "source": "owner 11.10.26: the floor color of his dining-room inspiration image, Floor 1 throughout including the kitchen, color only (plank layout as drawn); scan WoodFloor062 tinted to #A97F55",
   "texture": "acg/WoodFloor062",
   "tint": [
-   1.0,
-   0.95,
-   0.88
+   1.15,
+   1.28,
+   1.44
   ]
  },
  "BLACK": {
@@ -390,12 +390,13 @@
   "size_in": 126.0
  },
  "BSP-01": {
-  "name": "BACKSPLASH TILE, LIGHT NEUTRAL GLAZED 4x12",
-  "hex": "#EEEAE2",
-  "rough": 0.2,
-  "kind": "tile",
-  "status": "PLACEHOLDER",
-  "source": "owner 11.09.26: neutral and light; product open"
+  "name": "TL-05 GLAZED CERAMIC 3x12, CREAM, HANDMADE GLOSS, VERTICAL STACK",
+  "hex": "#E9E0D0",
+  "hex2": "#D8CBB5",
+  "rough": 0.06,
+  "kind": "glaze",
+  "status": "OWNER INSPIRATION",
+  "source": "owner 11.10.26: the arched-niche tile image (cream, gloss, handmade, 3x12 laid vertical stack); product to select"
  },
  "CAB-01": {
   "name": "KITCHEN CABINET PAINT (PICK OPEN)",
@@ -728,29 +729,29 @@
   "kind": "ceramic"
  },
  "CAB-CREAM": {
-  "name": "KITCHEN CABINETRY, WARM CREAM MATTE (OWNER INSPIRATION 11.09.26)",
-  "hex": "#DBD0C2",
+  "name": "KITCHEN CABINETRY, SW 9109 NATURAL LINEN, MATTE",
+  "hex": "#DFD3C3",
   "rough": 0.45,
   "kind": "paint",
   "status": "OWNER INSPIRATION",
-  "source": "sampled from the owner's kitchen inspiration image 11.09.26, corrected to its ceiling white"
+  "source": "owner 11.10.26: the cabinets of his kitchen inspiration image; nearest named paint (dE 2.5)"
  },
  "PT-CEIL": {
-  "name": "CEILING, WARM WHITE (OWNER INSPIRATION 11.09.26)",
-  "hex": "#EDE6DC",
+  "name": "SW 7042 SHOJI WHITE, FLAT (CEILINGS)",
+  "hex": "#E6DFD3",
   "rough": 0.85,
   "kind": "paint",
   "status": "OWNER INSPIRATION",
-  "source": "inspiration image"
+  "source": "follows PT-01 (owner 11.10.26)"
  },
  "ST-03-INSPO": {
-  "name": "KITCHEN STONE AS THE OWNER'S INSPIRATION: WARM CREAM WITH SOFT TAUPE AND CARAMEL VEINS (SCANNED MARBLE STAND-IN)",
-  "hex": "#EDE4D6",
+  "name": "KITCHEN MARBLE AS THE OWNER'S INSPIRATION (11.10.26): CREAM WITH A BLACK-BROWN FRACTURE NETWORK AND GOLD STAINING",
+  "hex": "#EDE6DB",
   "rough": 0.2,
   "kind": "stone",
   "texture": "slabs/ST-03-INSPO",
   "status": "OWNER INSPIRATION",
-  "source": "inspiration image 11.09.26; ambientCG Marble014 (CC0) scan as the stand-in slab, 2.0 m repeat. 11.09.26 night: the procedural veins were sub-pixel hairlines at 75 percent contrast and AgX's highlight shoulder flattened them on the lit counter; a photographed slab carries real veining at every scale. Replace with the selected slab's photo when the owner picks one. | 11.09.26 night: one full 126 x 63 in. generated slab, render/make_slab.py (dramatic veining at true scale; stand-in until the selected slab is photographed)",
+  "source": "owner 11.10.26 kitchen inspiration image. render/make_network_slab.py: one full 126 x 63 in. slab at 32 px/in., a three-scale wandering fracture net (9, 4 and 1-3/4 in. clasts), crisp charcoal veins, gold iron staining, the ground's grain from a CC0 network-marble scan (ambientCG Marble023, inverted). Stand-in until the selected slab is photographed: the photo then replaces Diffuse.jpg.",
   "size_in": 126.0
  },
  "ALABASTER": {
@@ -930,5 +931,19 @@
   "kind": "paint",
   "status": "PLACEHOLDER",
   "source": "24 in. pavers, landscape plan L-2"
+ },
+ "GRILLE": {
+  "name": "APPLIANCE TOE GRILLE, DARK GRAPHITE",
+  "hex": "#2E2D2B",
+  "rough": 0.5,
+  "kind": "paint",
+  "status": "THIRD-PARTY",
+  "source": "Sub-Zero / Scotsman toe grille, finish by maker"
+ },
+ "GROUT-CREAM": {
+  "name": "GROUT, WARM CREAM (TL-05)",
+  "hex": "#DDD3C3",
+  "rough": 0.85,
+  "kind": "plastic"
  }
 }

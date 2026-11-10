@@ -55,6 +55,8 @@ DUSK = '--dusk' in args
 # --sun ELEV,AZ: the sun's altitude and its azimuth in plan degrees (clockwise from plan north), from the site's true north,
 # latitude, date and hour. Default 32, 250: a late-afternoon sun from the plan west-southwest.
 SUN = [float(v) for v in args[args.index('--sun') + 1].split(',')] if '--sun' in args else None
+try: open(args[2] + '.cmd.txt', 'w').write('photoreal.py ' + ' '.join(args) + '\n')   # the exact command, so a view can be shot again
+except Exception: pass
 ENVROT = float(args[args.index('--envrot') + 1]) if '--envrot' in args else 0.0   # degrees about Z: turns the garden HDRI so the open, bright side is the one the windows look at
 V = json.load(open(views_path))[idx]
 _ppi = args[args.index('--ppi') + 1] if '--ppi' in args else 'auto'
@@ -253,6 +255,19 @@ def material(code, variant=''):
         bb = nt.nodes.new('ShaderNodeBlackbody'); bb.inputs['Temperature'].default_value = 3000
         nt.links.new(bb.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = spec.get('emit', 2.5)
         bevel_r = 0.05
+    elif kind == 'glaze':
+        # handmade glossy tile (owner 11.10.26): each piece its own tone between hex and hex2 (Object Info random), a wavy glaze
+        # surface (noise bump, about 1/2 in. waves), pooled glaze at the eased edges (bevel), high gloss
+        oi = nt.nodes.new('ShaderNodeObjectInfo'); cr_ = nt.nodes.new('ShaderNodeValToRGB')
+        cr_.color_ramp.elements[0].color = (*rgb, 1); cr_.color_ramp.elements[1].color = (*hex_lin(spec.get('hex2', spec.get('hex'))), 1)
+        nt.links.new(oi.outputs['Random'], cr_.inputs['Fac']); nt.links.new(cr_.outputs['Color'], b.inputs['Base Color'])
+        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.0 / (0.5 * IN); nz.inputs['Detail'].default_value = 3.0
+        nt.links.new(obj, nz.inputs['Vector'])
+        bm_ = nt.nodes.new('ShaderNodeBump'); bm_.inputs['Strength'].default_value = 0.35; bm_.inputs['Distance'].default_value = 0.002
+        nt.links.new(nz.outputs['Fac'], bm_.inputs['Height'])
+        b.inputs['Roughness'].default_value = spec.get('rough', 0.08); b.inputs['Coat Weight'].default_value = 0.8; b.inputs['Coat Roughness'].default_value = 0.02
+        _bevel_normal(nt, b, 0.09, bm_.outputs['Normal'])
+        return m
     elif kind in ('ceramic', 'tile'):
         b.inputs['Coat Weight'].default_value = 0.6; b.inputs['Coat Roughness'].default_value = 0.03
     elif kind == 'gap':
@@ -695,7 +710,7 @@ def b_tile_grid(a, ctx):
     """Tile or slab on the wall: each piece a 3/8 in. body with eased edges, set out exactly as the drawing sets it out,
     grout behind; only inside the `show` windows when the drawing limits them (cabinets and mirrors in front)."""
     x0, x1, y0, y1 = a['x0'], a['x1'], a['y0'], a['y1']; tw, th = a.get('module') or (24, 12); g = a.get('grout', 0.125) or 0.125
-    m = material(R('tile', 'WT-02')); grout = material('GROUT')
+    m = material(R('tile', 'WT-02')); grout = material(R('grout', 'GROUT'))
     fd = float(a.get('face_d') or 0.0)    # a column return seen face-on: the tile sits on that face, not on the wall
     box(x0, x1, y0, y1, fd - 0.01, fd + 0.2, grout, 'grout')
     Lx = x1 - x0; n = int(Lx / tw); rem = Lx - n * tw
@@ -895,7 +910,7 @@ def wall_matrix(direction):
 
 # builders that build their children themselves; a child call under one of these is not built again (a parent missing from this set, such
 # as door_pair (jamb only) or vanity_furniture (no faucet), relies on its children being built)
-OWNS_CHILDREN = {'filler_panel', 'sink_cab', 'window', 'outlet_splash', 'undercounter_appliance', 'door_pair_cab', 'single_door_cab',
+OWNS_CHILDREN = {'drywall_column', 'filler_panel', 'sink_cab', 'window', 'outlet_splash', 'undercounter_appliance', 'door_pair_cab', 'single_door_cab',
                  'drawer_stack', 'veneer_door'}
 PORTALS = []
 # ---- joint audit (owner 11.09.26 night: "joints between cabinets and walls flush with no differences in width / height that are not
@@ -919,12 +934,17 @@ def joint_report(path):
             for i, a in enumerate(its):
                 covered = []
                 for b in its[i + 1:]:
-                    if b[1] > a[2] + 1.0: break
+                    if b[1] > a[2] + 12.0: break
                     if min(a[4], b[4]) - max(a[3], b[3]) < 1.0: continue          # not side by side
                     lo_, hi_ = max(a[3], b[3]), min(a[4], b[4])
                     if any(c0 <= lo_ + 0.5 and hi_ - 0.5 <= c1 for c0, c1 in covered): continue   # a nearer piece already meets a here
                     if b[1] < a[2] - 0.5: continue                                   # overlapping along the wall, not a joint
                     gap = b[1] - a[2]
+                    if 1.0 < gap <= 12.0:
+                        # a slot to the wall between two pieces in the same face band (owner 11.10.26: a 4 in. drywall return drawn as
+                        # raw linework was never built and read as a gap): fill it in the drawing with a component
+                        lines.append(f'{view}: {grp} OPEN SLOT {gap:.2f} in. between {a[0]} and {b[0]} at x {a[2]:.2f}, y {max(a[3], b[3]):.1f} to {min(a[4], b[4]):.1f}'); n += 1
+                        covered.append((max(a[3], b[3]), min(a[4], b[4]))); continue
                     if -0.02 <= gap <= 1.0:
                         # intentional by the drawing: a 1/8 in. reveal between leaves, and a base under a counter beside a column whose face
                         # is flush with the counter edge (the range wall, owner 11.09.26 PM)
@@ -959,11 +979,16 @@ def joint_report(path):
         for side in (0, 1):
             grp_ = {}
             for nm, lo_, hi_ in bxs:
-                grp_.setdefault(round((hi_ if side else lo_)[ax] * 50), []).append((nm, lo_, hi_))
-            for k_, its in grp_.items():
-                if len(its) < 2 or len(its) > 400: continue
-                for i, (na, la, ha) in enumerate(its):
+                grp_.setdefault(round((hi_ if side else lo_)[ax] * 10), []).append((nm, lo_, hi_))
+            for k10, its0 in grp_.items():
+                # faces within 0.008 in. on the same side z-fight like shared ones (grille slots laid on a toe face, 11.10.26)
+                its = its0 + grp_.get(k10 + 1, [])
+                if len(its) < 2 or len(its) > 600: continue
+                for i, (na, la, ha) in enumerate(its0):
                     for nb, lb, hb in its[i + 1:]:
+                        fa, fb = (ha if side else la)[ax], (hb if side else lb)[ax]
+                        if abs(fa - fb) > 0.008: continue   # 0.2 mm: closer than that, Cycles cannot tell the two faces apart
+                        k_ = round(fa * 50)
                         w1 = min(ha[o1], hb[o1]) - max(la[o1], lb[o1]); w2 = min(ha[o2], hb[o2]) - max(la[o2], lb[o2])
                         if w1 > 0.4 and w2 > 0.4 and w1 * w2 > 1.0 and not (ax == 2 and side == 0 and abs(k_ / 50) < 0.6):
                             # kept for the camera check: most shared faces are hidden (against a wall, inside a carcass); only
