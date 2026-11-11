@@ -329,7 +329,7 @@ def b_bed_curved(a, ctx):
     dress_bed(cx, top, 7.5, 86.0, 76.0, lin)
 
 
-def _cloth(o, scale_in=9.0, amp_in=0.9, sub=5, bevel_in=2.6, seed='cloth'):
+def _cloth(o, scale_in=7.0, amp_in=1.6, sub=5, bevel_in=2.6, seed='cloth'):
     """Soft goods: subdivide flat, round the edges, smooth, then wrinkle with a cloud displacement (a slab with a bevel
     read as foam, owner 11.11.26)."""
     if o is None: return None
@@ -376,8 +376,8 @@ def dress_bed(cx, top, d_head, d_foot, mw, lin):
     oat = material('FAB-LINEN-OAT'); vel = material(R('upholstery', 'FAB-VELVET-MOCHA'))
     hw = mw / 2 + 1.2                                                        # the duvet hangs 1.2 in. past the mattress
     d0 = d_head + 37.0                                                       # where the duvet starts (cuff fold)
-    _cloth(box(cx - hw, cx + hw, 17.5, top + 1.3, d0, d_foot + 1.4, lin, 'duvet'), seed='duvet')
-    _cloth(box(cx - hw - 0.3, cx + hw + 0.3, top + 1.0, top + 2.6, d0 - 0.6, d0 + 12.0, lin, 'duvet_cuff'), amp_in=0.3,
+    _cloth(box(cx - hw, cx + hw, 17.5, top + 2.6, d0, d_foot + 1.4, lin, 'duvet'), bevel_in=3.4, seed='duvet')   # a down duvet, 2-1/2 in. lofted
+    _cloth(box(cx - hw - 0.3, cx + hw + 0.3, top + 2.3, top + 4.4, d0 - 0.6, d0 + 12.0, lin, 'duvet_cuff'), amp_in=0.6,
            bevel_in=0.75, sub=4, seed='cuff')
     for k in (-1, 0, 1):                                                     # euro shams 26 x 26
         th = 12.0

@@ -7,3 +7,5 @@ render/assets/
 __pycache__/
 *.prev*.pdf
 !render/paint/official/*.zip
+render/house_geom.json
+render/house_geom_f*.png

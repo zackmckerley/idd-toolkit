@@ -421,26 +421,25 @@ def stage_kitchen():
     ev = next((v for v in ALL if v['view'].startswith('EAST ELEVATION - SLIDER')), None)
     if ev:
         fr_ = material('FRAME-BLK'); gl_ = material('GLASS-CLEAR'); E_ = WID
+        SH_ = 111.5                                                         # head lowered from 9'-9" so the 8-1/4" crown runs over it (owner 11.11.26)
         gz = sorted((c['args']['x0'], c['args']['x1']) for c in ev['calls'] if c['comp'] == 'glazing')
         Yv = lambda x: DEP - (x - 24.0)
         edges = [52.0] + [q for g in gz for q in g] + [241.0]
         for k in range(0, len(edges), 2):                                   # jambs and mullions between the lites
             a_, b_ = edges[k], edges[k + 1]
-            if b_ - a_ > 0.2: wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, 117.0, fr_, 'slider_stile')
+            if b_ - a_ > 0.2: wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, SH_, fr_, 'slider_stile')
         for (a_, b_) in gz:
-            wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, 3.0, fr_, 'slider_sill'); wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 114.5, 117.0, fr_, 'slider_head')
-            wbox(E_ + 2.6, E_ + 2.85, Yv(b_), Yv(a_), 3.0, 114.5, gl_, 'slider_glass')
+            wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, 3.0, fr_, 'slider_sill'); wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), SH_ - 2.5, SH_, fr_, 'slider_head')
+            wbox(E_ + 2.6, E_ + 2.85, Yv(b_), Yv(a_), 3.0, SH_ - 2.5, gl_, 'slider_glass')
             wcyl(E_ + 0.6, Yv(b_) + 2.5, 40.0, 0.35, 14.0, 'z', fr_, 'slider_pull')
-        dk = material('DECK-01') if 'DECK-01' in MATS else material('ST-01')
-        wbox(E_ + 6.0, E_ + 186.0, -60.0, DEP + 60.0, -6.0, -0.5, dk, 'kitchen_deck')
-        MATS.setdefault('HEDGE-K', {'hex': '#2F4A26', 'rough': 0.9, 'kind': 'paint'})
-        leafy([wbox(E_ + 150.0, E_ + 186.0, -60.0, DEP + 60.0, -0.5, 84.0, material('HEDGE-K'), 'kitchen_hedge', soft=6.0)])
+        # outside: render with --context living, which brings the deck, the pool, the living wing and the yard (stage_living)
     MATS.setdefault('FAB-VELVET-CAMEL', {'hex': '#A07A52', 'rough': 0.74, 'kind': 'fabric', 'texture': 'acg/Fabric062'})
     camel = material('FAB-VELVET-CAMEL')
     DX_ = ISL_X - TOFF + TOPD + 58.0 + 20.0; DY_ = yN - ISL_L / 2
     dining_table(DX_, DY_, 94.0, 40.0, 'y')
     for dy in (-28.0, 0.0, 28.0):
         dining_chair(DX_ - 27.6, DY_ + dy, '+x', camel, 'dchair_w'); dining_chair(DX_ + 27.6, DY_ + dy, '-x', camel, 'dchair_e')
+    dining_chair(DX_, DY_ + 53.5, '-y', camel, 'dchair_n'); dining_chair(DX_, DY_ - 53.5, '+y', camel, 'dchair_s')   # one at each end (owner 11.11.26)
     oval_rod_chandelier(DX_, DY_, 63.0, H, 60.0, 30.0, 'y')
 
 
@@ -1081,7 +1080,7 @@ def cove_w(axis, c, a0, a1, side, top, P=14.0, F=None, crown=True, name='cove'):
         # area lights shine down their -Z; tip it out of the slot toward the room (side) and 25 deg up
         tilt = _m.radians(115)
         o_.rotation_euler = ((0, -side * tilt, 0) if axis == 'y' else (side * tilt, 0, 0))
-    if crown:
+    if crown and os.environ.get('PR_COVECROWN', '1') != '0':
         zc = top - 0.02; pr = [(0.0, zc), (0.0, zc - 3.75), (0.5, zc - 3.75), (0.6, zc - 3.25)]
         for i in range(1, 13):
             t = i / 12.0; pr.append((0.6 + 2.65 * (0.5 - 0.5 * _m.cos(_m.pi * t)), zc - 3.25 + 2.75 * t))
@@ -1391,10 +1390,11 @@ def stage_living():
     for pos_, col_ in ((0.30, (0.55, 0.38, 0.20, 1)), (0.42, (0.36, 0.40, 0.30, 1)), (0.55, (0.52, 0.55, 0.48, 1)), (0.70, (0.74, 0.70, 0.62, 1))):
         e_ = el.new(pos_); e_.color = col_
     al.new(aad.outputs['Value'], arp.inputs['Fac']); al.new(arp.outputs['Color'], ab_.inputs['Base Color'])
-    # paintings (owner 11.11.26): a tall narrow canvas on the breast over the TV, 36 x 96, its foot 16 in. over the set and its
+    # paintings (owner 11.11.26): a tall narrow canvas on the breast over the TV, 36 x 96 to the frame's outside, aligned top and
+    # foot with the upper cases (owner: centre it on the top section of shelves); before that its foot sat 16 in. over the set and its
     # middle level with the band each side; the two drawn ART, N.I.C. places under the galleries (ID-231 view 2, ID-233
     # view 4), hung above the wainscot rail with brass picture lights
-    painting('landscape', BF, yc, 158.0, 36.0, 96.0, '-x', frame='oak', light=False, name='art_breast')
+    painting('landscape', BF, yc, (G['BELT1'] + G['CL_HEAD']) / 2, 34.25, 94.25, '-x', frame='oak', light=False, name='art_breast')   # owner 11.11.26: top and foot on the upper cases' 12'-10" and 20'-10"
     painting('abstract', 0.0, 134.5, 78.0, 48.0, 48.0, '+x', frame=None, name='art_west')
     painting('pinkfield', 46.0, 0.0, 76.0, 36.0, 48.0, '+y', frame='black', name='art_south')
     # ---- the built-ins each side: base cabinet, open cases, belt with the brass rail, the panel band, cap, upper cases, frieze
@@ -1629,6 +1629,13 @@ def stage_living():
         wbox(-193.0, 86.0, RD + 6.0, 481.0, -6.0, 300.0, ext, 'dining_wing')            # the kitchen and dining wing, its east face on the notch
         wbox(-195.0, 88.0, RD + 4.0, 483.0, 300.0, 304.0, material('ST-05'), 'wing_coping')   # stone coping (FOR A-301 parapet cap)
         wbox(86.0, 86.3, RD + 6.0, 481.0, 154.0, 155.0, material('POCKET'), 'wing_reveal')   # floor-line reveal in the stucco
+    # the living wing's own north face, seen from the kitchen's slider across the deck (owner 11.11.26: the dining view showed
+    # no building): stucco over the window wall's outside from the kitchen wing's notch to the east corner, cut round FOR's
+    # slider and clerestory, the floor-line reveal and the stone coping
+    for (x0_, x1_, z0_, z1_) in ((86.0, G['SL0'], -6.0, 300.0), (G['SL1'], E + 6.0, -6.0, 300.0), (G['SL0'], G['SL1'], G['SL_HEAD'], 124.0),
+                                 (G['SL0'], G['SL1'], 250.0, 300.0)):
+        wbox(x0_, x1_, RD + 6.0, RD + 7.0, z0_, z1_, ext, 'living_facade')
+    wbox(86.0, E + 8.0, RD + 4.0, RD + 9.0, 300.0, 304.0, material('ST-05'), 'living_coping')
     # the pool: 6'-8" x 11'-0" (A-100), stone coping 12 in., water 6 in. below the coping
     px0, px1, py0, py1 = 197.0, 277.0, 286.0, 418.0
     for r_ in ((px0 - 12, px1 + 12, py0 - 12, py0), (px0 - 12, px1 + 12, py1, py1 + 12), (px0 - 12, px0, py0, py1), (px1, px1 + 12, py0, py1)):
@@ -1957,3 +1964,6 @@ def rod_flush(X, Y, ceiling, D=22.0, H_=7.0, name='flush'):
         ld = bpy.data.lights.new(name, 'POINT'); ld.energy = 14.0; ld.shadow_soft_size = 1.0 * IN; ld.color = (1.0, 0.83, 0.62)
         o_ = bpy.data.objects.new(name + '_lamp', ld); bpy.context.collection.objects.link(o_)
         o_.location = ((X + 4.5 * _m.cos(_m.pi * k / 2)) * IN, (Y + 4.5 * _m.sin(_m.pi * k / 2)) * IN, (ceiling - H_ / 2) * IN)
+
+
+exec(open(os.path.join(HERE, 'house_stage.py')).read())   # the whole property (owner 11.11.26)

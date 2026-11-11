@@ -466,6 +466,7 @@ def b_base(a, ctx):
 
 
 PANE = 1.75   # divided-lite pane scale, each way (owner 11.11.26); lite counts = round(drawn / PANE)
+MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 2.2})   # the cove strip shows through the open slot: lit, not the black fallback
 COVE = {'P': 14.0, 'B': 0.625, 'SET': 3.0, 'crown_drop': 3.75, 'crown_proj': 3.25, 'w_per_ft': 3.0}   # FOR A-401 section 2
 
 
@@ -481,7 +482,8 @@ def b_crown(a, ctx):
         clg = material(R('ceiling', 'PT-01'))
         COVE['n'] = COVE.get('n', 0) + 1; dz = 0.03 * (COVE['n'] % 3)       # walls meeting at a corner overlap 14 x 14: no shared faces
         box(a['x0'], a['x1'], Hh + dz, Hh + B + dz, 0.0, P, clg, 'cove_soffit')                        # closed board, capped ends
-        sweep([(a['x1'], Hh - 0.02), (a['x0'], Hh - 0.02)], crown_profile(COVE['crown_drop'], COVE['crown_proj']), tm, 'crown')
+        if os.environ.get('PR_COVECROWN', '1') != '0':   # the crown-under-the-soffit study (owner 11.11.26)
+            sweep([(a['x1'], Hh - 0.02), (a['x0'], Hh - 0.02)], crown_profile(COVE['crown_drop'], COVE['crown_proj']), tm, 'crown')
         L_ = a['x1'] - a['x0']
         box(a['x0'], a['x1'], Hh + B + dz, H - 0.01, P - S_ - 1.5, P - S_, clg, 'cove_hanger')          # the slot's back
         for xe in (a['x0'], a['x1'] - 0.75):                                                     # close the slot at the run's ends
@@ -1466,7 +1468,10 @@ if PERSP:
         os.makedirs(os.path.join(HERE, 'rooms'), exist_ok=True)
         dst_ = os.path.join(HERE, 'rooms', os.environ['PR_SAVEROOM'] + '.blend')
         bpy.ops.wm.save_as_mainfile(filepath=dst_, copy=True); print('saved room', dst_); sys.exit(0)
+    PRE_CTX = set(o.name for o in bpy.data.objects)
     if CONTEXT: load_context(CONTEXT)
+    if os.environ.get('PR_GLB'):   # the walk-through model: export the built scene (shell, site, loaded rooms) as one glTF and stop
+        exec(open(os.path.join(HERE, 'export_walk.py')).read()); export_walk(os.environ['PR_GLB']); sys.exit(0)
     if ROOM_MODE: joint_report(out + '.joints.txt')   # again with the staging (island, built-ins) in, so its duplicates are caught too
     if os.environ.get('PR_STAGECHECK'): print('stage built, objects', len(bpy.data.objects)); sys.exit(0)   # build-only check
     if os.environ.get('PR_DUMP'):   # the same dump, with the staging built
@@ -1531,11 +1536,13 @@ if PERSP:
         sys.exit(0)
     # the garden outside the windows: an outdoor HDRI in place of the studio one, so the glass shows planting and sky
     env.image = bpy.data.images.load(os.path.join(ASSETS, 'green_sanctuary_2k.hdr'))
+    if STAGE == 'house':   # the whole property outdoors: a pure sky (no baked-in ground or buildings), the sun its own lamp
+        env.image = bpy.data.images.load(os.path.join(ASSETS, os.environ.get('PR_SKYHDR', 'kloofendal_48d_partly_cloudy_puresky') + '_2k.hdr'))
     if ENVROT:
         tc_ = w.node_tree.nodes.new('ShaderNodeTexCoord'); mp_ = w.node_tree.nodes.new('ShaderNodeMapping')
         mp_.inputs['Rotation'].default_value = (0.0, 0.0, math.radians(ENVROT))
         w.node_tree.links.new(tc_.outputs['Generated'], mp_.inputs['Vector']); w.node_tree.links.new(mp_.outputs['Vector'], env.inputs['Vector'])
-    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.5 if DUSK else 7.0
+    w.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.5 if DUSK else (float(os.environ.get('PR_SKY', '1.0')) if STAGE == 'house' else 7.0)
     # late-afternoon sun, low from the west-southwest, through the windows and glass doors: long patches on the floor and
     # the lower walls, the contrast every interior photograph is built on
     if not LIGHTS_ON:   # a daytime photograph: downlights off, sconces on low
@@ -1546,7 +1553,7 @@ if PERSP:
             el_, az_ = SUN[:2] if SUN else (32.0, 250.0)
             o.rotation_euler = (math.radians(90 - el_), 0, math.radians(180 - az_))
     for o in bpy.data.objects:                                   # walls for the exposure mask
-        if o.type == 'MESH' and o.name.startswith('wall'): o.pass_index = 1
+        if o.type == 'MESH' and (o.name.startswith('wall') or (STAGE == 'house' and o.name.startswith('house_wall'))): o.pass_index = 1
         # window glass that looks outdoors (exterior glazing, not a cabinet's): pass index 2, for the window pull in grade.py
         if o.type == 'MESH' and o.name.split('.')[0] == 'glass' and o.active_material and o.active_material.name == 'GLASS-CLEAR' and o.get('exterior'): o.pass_index = 2
 else:
@@ -1648,6 +1655,8 @@ if PERSP:
     MASK_PATH = os.path.join(out + '_mask', 'mask%04d.png' % sc.frame_current)
     WALL_EXPOSURE = 0.82     # a bright interior photograph; the sun patches roll off in AgX
     tgt = [WALL_EXPOSURE * v for v in (MATS.get(R('wall', 'PT-02'), {}).get('lin') or hex_lin(MATS.get(R('wall', 'PT-02'), {}).get('hex', '#BCBCBC')))]
+    if STAGE == 'house':   # an exterior: the stucco, part sun and part shade, set a little under its colour
+        tgt = [0.62 * v for v in hex_lin(MATS.get('STUCCO-HOUSE', {}).get('hex', '#F1EEE7'))]
 sc.render.resolution_percentage = 25; sc.cycles.samples = 24; sc.render.filepath = out + '.cal.png'
 gain = [1.0, 1.0, 1.0]
 for it in range(4):   # measured after the view transform, so iterate: highlight roll-off makes one step undershoot
