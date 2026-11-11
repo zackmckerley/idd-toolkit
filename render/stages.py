@@ -466,6 +466,16 @@ STAGES = {'pool': stage_pool, 'closet': stage_closet, 'kitchen': stage_kitchen, 
 
 
 # ================================================================== living room (ID-230 to ID-234, owner's pick 11.09.26)
+def wprism_yz(pts, x0, x1, mat, name='prism'):
+    """A flat shape in a plane across X (Y, Z points in order) extruded along X from x0 to x1: raked rails, the knee wall."""
+    n = len(pts); v = [(x0 * IN, y_ * IN, z_ * IN) for y_, z_ in pts] + [(x1 * IN, y_ * IN, z_ * IN) for y_, z_ in pts]
+    f = [tuple(range(n)), tuple(range(2 * n - 1, n - 1, -1))] + [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+    me = bpy.data.meshes.new(name); me.from_pydata(v, [], f); me.update()
+    bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bmesh.ops.triangulate(bm, faces=[f_ for f_ in bm.faces if len(f_.verts) > 4]); bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
+
+
 def wbox_abs(x0, x1, y0, y1, z0, z1, mat, name):
     """A box whose object coordinates are world coordinates, like the room floor: a board floor continues across the seam."""
     v = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0), (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
@@ -516,6 +526,154 @@ def ceiling_can(X_, Y_, z_, watts=14.0):
     wbox_abs(X_ - 1.8, X_ + 1.8, Y_ - 1.8, Y_ + 1.8, z_ - 0.08, z_ - 0.04, material('LENS'), 'downlight_lens')
 
 
+def SE_open_stair(wallm, trim, wd, ys, CH, UOP, UKW):
+    """The stair opened (owner 11.10.26, ID-235): the lower flight with an aluminum picket guard on its open side, the knee wall
+    under the east flight with the flight's painted cut stringer and oak treads above it, the guard up the flight to the 10'-8"
+    head, wall handrails, the landings. u = inches south of the gallery line (Y = -u). FOR A-411: 21 risers at 7-5/16", 11" treads."""
+    RS, TR, ST = 7.3125, 11.0, 12.0
+    LSE, LNE = 7 * RS, 17 * RS
+    UTOP, UBOT = 45.1, 45.1 + 9 * TR
+    XS, XE = 230.75, 280.0
+    nose = lambda u: LSE + RS + (UBOT - u) * RS / TR
+    under = lambda u: nose(u) - ST
+    XL0, XL1 = 169.4, 235.4                                   # the lower flight's bottom and top risers
+    nlf = lambda X: RS + (X - XL0) * (LSE - RS) / (XL1 - XL0)
+    MATS.setdefault('ALU-BLK', {'hex': '#141414', 'rough': 0.42, 'kind': 'paint'})   # powder-coated matte black aluminum
+    alu = material('ALU-BLK')
+    # knee wall on the east flight's underside
+    wprism_yz([(-UOP, 0.0), (-UOP, under(UOP)), (-UBOT, under(UBOT)), (-UBOT, LSE - ST), (-UKW, LSE - ST), (-UKW, 0.0)], 230.7, 236.7, wallm, 'knee_wall')
+    # east flight: painted blocks (the cut stringer flush with the knee wall), oak treads returned past it; north of the opening
+    # the treads stop inside the wall
+    def tread(x0, x1, y0, y1, z):
+        if y1 > -UOP and y0 < -UOP:
+            wbox(x0, x1, y0, -UOP, z - 1.0, z, wd, 'tread'); wbox(236.7, x1, -UOP, y1, z - 1.0, z, wd, 'tread')
+        elif y0 >= -UOP: wbox(236.7, x1, y0, y1, z - 1.0, z, wd, 'tread')
+        else: wbox(x0, x1, y0, y1, z - 1.0, z, wd, 'tread')
+    for i in range(1, 10):
+        u_i = UBOT - TR * (i - 1); z_i = LSE + i * RS
+        wbox(XS, XE, -u_i, -u_i + TR, 0.0, z_i - 1.0, trim, 'stair_step')
+        tread(XS - 0.75, XE, -u_i - 1.0, -u_i + TR, z_i)
+    wbox(XS, XE, -UTOP, -6.0, 0.0, LNE - 1.0, trim, 'landing_ne'); tread(236.7, XE, -UTOP - 1.0, -6.0, LNE)
+    # the lower flight, its north stringer 2" wider for the guard posts, and the southeast landing
+    for k in range(1, 7):
+        x0_ = XL0 + (k - 1) * TR
+        wbox(x0_, x0_ + TR, ys, -150.3, 0.0, k * RS - 1.0, trim, 'stair_step')
+        wbox(x0_ - 0.75, x0_ + TR, ys, -149.55, k * RS - 1.0, k * RS, wd, 'tread')
+    wbox(XL1, XE, ys, -UBOT, 0.0, LSE - 1.0, trim, 'landing_se'); wbox(XL1 - 0.75, XE, ys, -UBOT, LSE - 1.0, LSE, wd, 'tread')
+    wbox(XS, XL1, -150.3, -UBOT, 0.0, LSE - 1.0, wallm, 'landing_se_w'); wbox(XS - 0.75, XL1, -150.3, -UBOT, LSE - 1.0, LSE, wd, 'tread')
+    # ---- the guard: 2" posts, 1-1/2 x 2-1/2 top rail 36" over the nosings, 1-1/2 bottom rail 3-1/2" over, 3/4" pickets at 3-3/4" clear
+    def pickets_between(a, b, zbot, ztop, place):
+        lo, hi = a + 1.0, b - 1.0
+        n = max(1, _m.ceil((hi - lo - 3.75) / 4.5 - 1e-6)); clr = (hi - lo - n * 0.75) / (n + 1); t = lo + clr
+        for _ in range(n):
+            c = t + 0.375; z0, z1 = zbot(c), min(ztop(c), CH)
+            if z1 > z0: place(t, z0, z1)
+            t += 0.75 + clr
+    # lower flight, along Y -151.3
+    GY = -151.3; px = [XL0 + 1.0, (XL0 + 1.0 + 231.75) / 2, 231.75]
+    step_top = lambda X: (min(6, int((X - XL0) // TR) + 1)) * RS
+    for X in px: wbox(X - 1.0, X + 1.0, GY - 1.0, GY + 1.0, step_top(X), nlf(X) + 36.75, alu, 'guard_post')
+    for z_lo, h in ((1.0, 1.5), (33.5, 2.5)):
+        wprism_xz([(px[0], nlf(px[0]) + z_lo), (px[-1], nlf(px[-1]) + z_lo), (px[-1], nlf(px[-1]) + z_lo + h), (px[0], nlf(px[0]) + z_lo + h)], GY - 0.75, GY + 0.75, alu, 'guard_rail')
+    for a, b in zip(px, px[1:]):
+        pickets_between(a, b, lambda X: nlf(X) + 2.5, lambda X: nlf(X) + 33.5,
+                        lambda t, z0, z1: wbox(t, t + 0.75, GY - 0.375, GY + 0.375, z0, z1, alu, 'picket'))
+    # round the landing's edge and up the east flight, along X 231.75; clipped at the 10'-8" head where the rail meets the header
+    GX = 231.75
+    gz = lambda u: LSE if u >= UBOT else nose(u)
+    us = [-GY, UBOT - 1.0]
+    n_ = max(1, _m.ceil((UBOT - 1.0 - (UOP + 1.0)) / 72.0)); us += [UBOT - 1.0 - j * (UBOT - UOP - 2.0) / n_ for j in range(1, n_ + 1)]
+    for u in us[1:]:
+        step_i = max(1, min(9, int((UBOT - u) // TR) + 1)); z0 = LSE + step_i * RS
+        wbox(GX - 1.0, GX + 1.0, -u - 1.0, -u + 1.0, z0, min(gz(u) + 36.75, CH), alu, 'guard_post')
+    for z_lo, h in ((1.0, 1.5), (33.5, 2.5)):
+        wbox(GX - 0.75, GX + 0.75, -us[0], -us[1], LSE + z_lo, LSE + z_lo + h, alu, 'guard_rail')        # level over the landing edge
+        ua, ub = us[1], us[-1]
+        zt = lambda u: nose(u) + z_lo + h
+        if zt(ub) > CH: ub = UBOT - (CH - z_lo - h - LSE - RS) * TR / RS          # where the rail meets the head
+        wprism_yz([(-ua, nose(ua) + z_lo), (-ub, nose(ub) + z_lo), (-ub, nose(ub) + z_lo + h), (-ua, nose(ua) + z_lo + h)], GX - 0.75, GX + 0.75, alu, 'guard_rail')
+    for a, b in zip(sorted(us), sorted(us)[1:]):
+        pickets_between(a, b, lambda u: gz(u) + 2.5, lambda u: gz(u) + 33.5 if gz(u) + 36.0 <= CH else CH - 1.5,
+                        lambda t, z0, z1: wbox(GX - 0.375, GX + 0.375, -t - 0.75, -t, z0, z1, alu, 'picket'))
+    uc_ = UBOT - (CH - 36.0 - LSE - RS) * TR / RS                # where the top rail meets the head: a channel takes the pickets from there
+    wbox(GX - 0.75, GX + 0.75, -uc_, -(UOP), CH - 1.5, CH - 0.01, alu, 'guard_channel')
+    # wall handrails, 1-1/2", 3'-0" over the nosings (FOR A-411), black to match
+    wprism_yz([(-UBOT, nose(UBOT) + 34.5), (-UTOP, nose(UTOP) + 34.5), (-UTOP, nose(UTOP) + 36.0), (-UBOT, nose(UBOT) + 36.0)], 277.0, 278.5, alu, 'handrail')
+    wbox(277.0, 278.5, ys + 2.0, -UBOT, LSE + 34.5, LSE + 36.0, alu, 'handrail', soft=0.5)
+    wbox(XL1, 277.0, ys + 2.0, ys + 3.5, LSE + 34.5, LSE + 36.0, alu, 'handrail', soft=0.5)
+    wprism_xz([(XL0, nlf(XL0) + 34.5), (XL1, nlf(XL1) + 34.5), (XL1, nlf(XL1) + 36.0), (XL0, nlf(XL0) + 36.0)], ys + 2.0, ys + 3.5, alu, 'handrail')
+    # the stairwell: its east wall, the floor 2 wall over the opening's head, the cap at the floor 2 ceiling
+    wbox(XE, XE + 6.0, ys - 6.0, -6.0, 0.0, 272.0, wallm, 'stairwell_e')
+    wbox(230.7, 236.7, -158.0, -UTOP, CH + 24.0, 268.0, wallm, 'stairwell_w')
+    wbox(236.7, XE + 6.0, ys - 6.0, ys, CH, 272.0, wallm, 'stairwell_s')
+    wbox(230.7, XE + 6.0, ys - 6.0, -60.0, 268.0, 272.0, material('PT-CEIL') if 'PT-CEIL' in MATS else wallm, 'stairwell_cap')   # the floor 2 hall ceiling covers north of -60
+
+
+def grand_piano(xb, yk):
+    """Staging, owner 11.10.26 ("one rendering with a grand piano", then "rotate the piano about 90 degrees counterclockwise so it
+    takes up minimal space but still looks comfortable"): a 6'-2" grand in black polish, its straight (bass) side along the knee
+    wall a foot off it, keyboard at the north end (the pianist faces south, toward the arch), tail to the south, the lid open
+    toward the room. xb: the bass side (world X); yk: the keyboard's front edge (world Y). Local x across (0 bass, east .. 58
+    treble, west), y along (0 keyboard .. 74 tail, south)."""
+    MATS.setdefault('PIANO-BLK', {'hex': '#070707', 'rough': 0.06, 'kind': 'paint'})
+    MATS.setdefault('PIANO-KEY', {'hex': '#F2EFE6', 'rough': 0.25, 'kind': 'paint'})
+    MATS.setdefault('PIANO-RIM-IN', {'hex': '#5A3A22', 'rough': 0.35, 'kind': 'paint'})
+    MATS.setdefault('BRASS', {'hex': '#B08D57', 'rough': 0.25, 'kind': 'metal'})
+    blk, key, brass = material('PIANO-BLK'), material('PIANO-KEY'), material('BRASS')
+    W_ = lambda lx, ly: (xb - lx, yk - ly)                        # local to world X, Y
+    outline = [(0, 0), (58, 0), (58, 12), (57.5, 20), (55, 27), (50, 34), (44, 41), (38.5, 48), (34, 55), (30.5, 62), (26.5, 68),
+               (20, 72.5), (12, 74), (0, 74)]
+    def solid(poly, z0, z1, mat, name):
+        pts = [W_(*p) for p in poly]
+        bm = bmesh.new()
+        bot = [bm.verts.new((x * IN, y * IN, z0 * IN)) for x, y in pts]; top = [bm.verts.new((x * IN, y * IN, z1 * IN)) for x, y in pts]
+        bm.faces.new(bot[::-1]); bm.faces.new(top)
+        for i in range(len(pts)): bm.faces.new((bot[i], bot[(i + 1) % len(pts)], top[(i + 1) % len(pts)], top[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
+        me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+        o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat)
+        bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 0.25 * IN; bv.segments = 2; bv.limit_method = 'ANGLE'
+        return o
+    # case: the rim 11" deep from 23" up; the plate and strings inside read dark under the open lid (an inner floor 3" down)
+    solid(outline, 23.0, 34.0, blk, 'piano_rim')
+    inner = [(1.5 + (x - 29) * 0.94 + 27.5, y * 0.96 + 1.5) for x, y in outline]
+    solid(inner, 30.9, 31.0, material('BRASS'), 'piano_plate')
+    # keyboard: 88 keys, 48" across, on a keybed projecting 6" in front of the case, cheek blocks each side
+    solid([(3.0, -6.0), (55.0, -6.0), (55.0, 2.0), (3.0, 2.0)], 24.0, 27.0, blk, 'piano_keybed')
+    for lx0, lx1 in ((0.0, 5.0), (53.0, 58.0)): solid([(lx0, -6.5), (lx1, -6.5), (lx1, 2.0), (lx0, 2.0)], 24.0, 30.0, blk, 'piano_cheek')
+    kx0, kw = 5.0, 48.0 / 52
+    for k in range(52): solid([(kx0 + k * kw + 0.04, -6.0), (kx0 + (k + 1) * kw - 0.04, -6.0), (kx0 + (k + 1) * kw - 0.04, 0.0), (kx0 + k * kw + 0.04, 0.0)], 27.0, 27.9, key, 'piano_key')
+    for k in range(51):
+        if k % 7 in (2, 6): continue
+        c = kx0 + (k + 1) * kw; solid([(c - 0.26, -2.3), (c + 0.26, -2.3), (c + 0.26, 0.0), (c - 0.26, 0.0)], 27.9, 28.4, blk, 'piano_key_b')
+    solid([(5.0, 0.0), (53.0, 0.0), (53.0, 3.0), (5.0, 3.0)], 27.0, 31.0, blk, 'piano_fallboard')
+    # music desk, tilted back, and the lid open on its prop (hinged on the bass side, lifted on the treble side, 38 degrees)
+    solid([(14.0, 5.0), (44.0, 5.0), (44.0, 6.0), (14.0, 6.0)], 34.0, 46.0, blk, 'piano_desk')
+    lid = solid(outline, 0.0, 0.75, blk, 'piano_lid')
+    import mathutils
+    hx, hy = W_(0, 0)                                              # the hinge line runs along the bass side (world Y), at the rim top
+    ang = _m.radians(38.0)
+    lid.data.transform(mathutils.Matrix.Translation((-hx * IN, -hy * IN, 0)))
+    lid.data.transform(mathutils.Matrix.Rotation(ang, 4, 'Y'))  # local x is world -X: lift the treble (west) edge
+    lid.location = (hx * IN, hy * IN, 34.0 * IN)
+    # the prop stick from the rim's treble side up to the lid
+    px_, py_ = W_(50.0, 34.0); h_ = 50.0 * _m.sin(ang)
+    wbox(px_ - 0.5, px_ + 0.5, py_ - 0.5, py_ + 0.5, 34.0, 34.0 + h_ * 0.97, blk, 'piano_prop')
+    # three legs with brass casters, the pedal lyre, a bench
+    for lx, ly in ((4.0, 3.0), (54.0, 3.0), (16.0, 66.0)):
+        X, Y = W_(lx, ly); wbox(X - 2.0, X + 2.0, Y - 2.0, Y + 2.0, 2.5, 23.0, blk, 'piano_leg', soft=0.4)
+        wbox(X - 1.0, X + 1.0, Y - 1.0, Y + 1.0, 0.0, 2.5, brass, 'piano_caster', soft=0.4)
+    X, Y = W_(29.0, 9.0)
+    wbox(X - 6.0, X + 6.0, Y - 1.0, Y + 1.0, 4.0, 23.0, blk, 'piano_lyre', soft=0.3)
+    wbox(X - 6.5, X + 6.5, Y - 2.0, Y + 2.0, 1.0, 4.0, blk, 'piano_lyre_box', soft=0.3)
+    for dx in (-3.0, 0.0, 3.0): wbox(X + dx - 0.6, X + dx + 0.6, Y + 2.0, Y + 6.0, 2.2, 2.8, brass, 'piano_pedal', soft=0.2)
+    BX, BY = W_(32.0, -22.0)                                       # the bench a little toward the treble, clear of door 27's swing
+    wbox(BX - 15.0, BX + 15.0, BY - 7.0, BY + 7.0, 17.0, 19.5, blk, 'bench_top', soft=0.5)
+    wbox(BX - 14.5, BX + 14.5, BY - 6.5, BY + 6.5, 19.5, 20.75, material('FAB-SOFA'), 'bench_cushion', soft=0.6)
+    for sx in (-13.5, 13.5):
+        for sy in (-5.5, 5.5): wbox(BX + sx - 0.75, BX + sx + 0.75, BY + sy - 0.75, BY + sy + 0.75, 0.0, 17.0, blk, 'bench_leg')
+
+
 def south_end(wallm, trim, pt1):
     """The south end under floor 2 (build_great_rev1b south_wall: OPEN TO THE SOUTH END UNDER THE GALLERY BEAM, HEAD 10'-8"),
     modelled so the living room sees into it (owner 11.10.26: through a door opening you must see the other room). World X east,
@@ -526,23 +684,24 @@ def south_end(wallm, trim, pt1):
     CH = 128.0; ys = -196.7; wd = material(R('floor', 'WD-01')); leafm = material('PT-01-SATIN')
     MATS.setdefault('STEEL-SS', {'hex': '#B8B5AE', 'rough': 0.3, 'kind': 'metal'})
     # floor: the living room's boards continue (world coordinates, same material: no seam); the foyer's checkerboard past the arch
-    wbox_abs(86.2, 268.0, ys - 6.0, -12.0, -2.0, 0.0, wd, 'south_floor')
+    wbox_abs(86.2, 280.0, ys - 6.0, -12.0, -2.0, 0.0, wd, 'south_floor')
     FW, FE, FS = 37.2, 247.0, -301.7       # the foyer: its tray (X 55.1..235.9) and the front wall the sconces sit on (plan RCP)
     wbox_abs(FW, FE, FS, ys - 6.0, -2.0, 0.0, material('TL-01'), 'foyer_floor')   # not R(): the room's floor role would give the living room's oak
     # west wall with door 12
     for y0_, y1_, z0_ in ((ys - 6.0, -122.0, 0.0), (-89.0, -6.0, 0.0), (-122.0, -89.0, 96.0)):
         wbox(86.2, 92.2, y0_, y1_, z0_, CH, wallm, 'se_wall_w')
     door_in_x_wall(92.2, 1, -122.0, -89.0, 96.0, trim, leafm)
-    # closet 27's wall (its face toward the room is west) with its door; the landing's north wall closes the upper flight off
-    for y0_, y1_, z0_ in ((-148.0, -88.0, 0.0), (-59.0, -6.0, 0.0), (-88.0, -59.0, 96.0)):
+    # closet 27's wall, opened (owner 11.10.26, ID-235): full height north of the opening with door 27 against FOR's concrete beam
+    # (13-5/8" south of the gallery line), then a knee wall on the east flight's underside, open above it to the 10'-8" head
+    UD0, UD1, UOP, UKW = 13.75, 41.75, 48.75, 147.3
+    for y0_, y1_, z0_ in ((-UOP, -UD1, 0.0), (-UD0, -6.0, 0.0), (-UD1, -UD0, 80.0)):
         wbox(230.7, 236.7, y0_, y1_, z0_, CH, wallm, 'se_wall_closet')
-    door_in_x_wall(230.7, -1, -88.0, -59.0, 96.0, trim, leafm)
-    wbox(236.7, 262.0, -148.0, -142.0, 51.2, CH, wallm, 'se_wall_landing')
-    wbox(262.0, 268.0, ys - 6.0, -142.0, 0.0, CH, wallm, 'se_wall_stair_e')
+    door_in_x_wall(230.7, -1, -UD1, -UD0, 80.0, trim, leafm, cs=3.5)
+    SE_open_stair(wallm, trim, wd, ys, CH, UOP, UKW)
     # south wall with the entry arch; the foyer beyond it
     AX, AW, AP = 103.0, 52.3, 100.75
     asp = AP - AW * 0.62 + _m.sqrt((AW * 0.62) ** 2 - (AW / 2) ** 2)
-    for x0_, x1_, z0_ in ((86.2, AX, 0.0), (AX + AW, 262.0, 0.0), (AX, AX + AW, AP + 1.0)):
+    for x0_, x1_, z0_ in ((86.2, AX, 0.0), (AX + AW, 286.0, 0.0), (AX, AX + AW, AP + 1.0)):
         wbox(x0_, x1_, ys - 6.0, ys, z0_, CH, wallm, 'se_wall_s')
     arch_xz(AX, AW, asp, AP + 1.0, ys - 6.0, ys, ys, ys + 0.75, wallm, trim)
     wbox(FW - 6.0, FW, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_w'); wbox(FE, FE + 6.0, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_e')
@@ -571,25 +730,11 @@ def south_end(wallm, trim, pt1):
     B_f(FW, DX0 - 4.5, FS, FS + 0.6); B_f(DX1 + 4.5, FE, FS, FS + 0.6)
     B_f(FW, FW + 0.6, FS + 0.6, ys - 6.0); B_f(FE - 0.6, FE, FS + 0.6, ys - 6.0)
     B_f(FW + 0.6, AX - 5.0, ys - 6.6, ys - 6.0); B_f(AX + AW + 5.0, FE - 0.6, ys - 6.6, ys - 6.0)
-    # the lower flight: oak treads stepping up east to the landing, a raking half wall on its north side, its top 36 in. over
-    # the nosings, a wood cap
-    RS, n_, x_b, x_t = 7.3125, 7, 169.3, 235.3
-    run = (x_t - x_b) / (n_ - 1)
-    for k in range(1, n_):
-        x0_ = x_b + (k - 1) * run
-        wbox(x0_, min(x0_ + run + 0.5, x_t), ys, -153.0, 0.0, k * RS - 1.0, wd, 'stair_step')   # the tread sits on it: no shared top
-        wbox(x0_ - 0.75, x0_ + run, ys, -153.0, k * RS - 1.0, k * RS, wd, 'tread')
-    wbox(x_t, 262.0, ys, -148.0, 0.0, n_ * RS, wd, 'landing')
-    hw = [(165.9, 0.0), (235.9, 0.0), (235.9, n_ * RS + 36.0), (x_b, RS + 36.0), (165.9, RS + 36.0)]
-    wprism_xz(hw, -153.0, -148.0, wallm, 'half_wall')
-    wprism_xz([(165.4, RS + 36.0), (x_b, RS + 36.0), (236.4, n_ * RS + 36.0), (236.4, n_ * RS + 37.25), (x_b, RS + 37.25), (165.4, RS + 37.25)],
-              -153.5, -147.5, material('WD-SHELF'), 'half_wall_cap')
     # base: stopped at every casing, none on the stair side
     B_ = lambda x0_, x1_, y0_, y1_: wbox(x0_, x1_, y0_, y1_, 0.0, 8.5, trim, 'se_base', soft=0.15)
     B_(92.2, 92.8, ys, -125.5); B_(92.2, 92.8, -85.5, 0.6)   # round the jamb return to the living room's base
-    B_(230.1, 230.7, -148.0, -91.5); B_(230.1, 230.7, -55.5, 0.6)
-    B_(92.8, AX - 5.0, ys, ys + 0.6); B_(AX + AW + 5.0, 165.9, ys, ys + 0.6)
-    B_(165.9, 230.1, -148.0, -147.4)
+    B_(230.1, 230.7, -150.3, -UD1 - 3.5); B_(230.1, 230.7, -UD0 + 3.5, 0.6)   # the knee wall runs on to the lower flight
+    B_(92.8, AX - 5.0, ys, ys + 0.6); B_(AX + AW + 5.0, 169.4, ys, ys + 0.6)
     # lights, from the plan's RCP (build_rcp.for_items, converted as above): in the south end a centre fixture at (161.3, -74.8),
     # wall washers along the west wall at X 113 and two cans by the stair and arch at Y -172; a sconce on the closet wall at
     # Y -119.5; in the foyer a pendant in the tray at (109.7, -244.5) and sconces each side of the entry at X 64.5 and 154.5
@@ -613,16 +758,18 @@ def south_end(wallm, trim, pt1):
         y0_, y1_ = sorted((yf + side * 1.0, yf + side * 5.5)); wbox(X_ - 2.25, X_ + 2.25, y0_, y1_, z_ - 3.0, z_ + 7.0, material('SHADE'), 'sconce_shade', soft=1.0)
         wpoint(X_, yf + side * 3.5, z_ + 2.0, watts, radius=1.5, color=(1.0, 0.86, 0.68))
     sconce_y(64.5, FS, 1); sconce_y(154.5, FS, 1)
-    # the closet-wall sconce: round backplate and a 5 in. opal cylinder, lit (a small white box read as an intercom, review 11.10.26)
-    xf_ = 230.7
-    bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=2.75 * IN, depth=0.75 * IN, location=((xf_ - 0.375) * IN, -119.5 * IN, 66.0 * IN), rotation=(0, _m.pi / 2, 0))
-    o_ = bpy.context.active_object; o_.name = 'sconce_plate'; o_.data.materials.append(material('STEEL-SS'))
-    wbox(xf_ - 3.0, xf_ - 0.75, -119.9, -119.1, 65.6, 66.4, material('STEEL-SS'), 'sconce_arm')
-    bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=2.5 * IN, depth=10.0 * IN, location=((xf_ - 5.25) * IN, -119.5 * IN, 67.0 * IN))
-    o_ = bpy.context.active_object; o_.name = 'sconce_shade'; o_.data.materials.append(material('SHADE'))
-    for pg in o_.data.polygons: pg.use_smooth = True
-    wpoint(xf_ - 5.25, -119.5, 67.0, 25.0, radius=1.5)
-    wbox(xf_ - 5.5, xf_ - 1.0, -121.75, -117.25, 63.0, 73.0, material('SHADE'), 'sconce_shade', soft=1.0); wpoint(xf_ - 3.5, -119.5, 68.0, 12.0, radius=1.5)
+    def sconce_x(xf, side, Y_, z_, watts):   # a round plate and an opal cylinder on a wall whose face is X = xf, the room on `side`
+        bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=2.75 * IN, depth=0.75 * IN, location=((xf + side * 0.375) * IN, Y_ * IN, z_ * IN), rotation=(0, _m.pi / 2, 0))
+        o_ = bpy.context.active_object; o_.name = 'sconce_plate'; o_.data.materials.append(material('STEEL-SS'))
+        x0_, x1_ = sorted((xf + side * 0.75, xf + side * 3.0)); wbox(x0_, x1_, Y_ - 0.4, Y_ + 0.4, z_ - 0.4, z_ + 0.4, material('STEEL-SS'), 'sconce_arm')
+        bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=2.5 * IN, depth=10.0 * IN, location=((xf + side * 5.25) * IN, Y_ * IN, (z_ + 1.0) * IN))
+        o_ = bpy.context.active_object; o_.name = 'sconce_shade'; o_.data.materials.append(material('SHADE'))
+        for pg in o_.data.polygons: pg.use_smooth = True
+        wpoint(xf + side * 5.25, Y_, z_ + 1.0, watts, radius=1.5)
+    LSE_ = 7 * 7.3125
+    # FOR's closet-wall sconce moves to the stairwell's east wall, 6'-6" over the nosings; FOR's C-1 at the southeast landing
+    sconce_x(280.0, -1, -95.0, 169.0, 25.0); sconce_y(257.7, ys, 1, LSE_ + 66.0, 14.0)
+    if os.environ.get('PR_PIANO'): grand_piano(218.0, -64.0)
 
 def stage_living():
     """The living room from build_great_rev1b's numbers: the fireplace wall (ID-231 view 1: plaster breast, WS-01 surround, flush
@@ -815,9 +962,12 @@ def stage_living():
     # ---- galleries: floor 2 over the west end and the south end, the fascia, cap and steel picket guard
     pt1 = material(R('ceiling', 'PT-01'))
     wbox(0.0, G['GFW'] - 0.6, 0.0, RD, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_w')   # stops at the fascia and the cap: no shared faces
-    wbox(0.0, E, -202.7, -6.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')   # its underside is the south end's 10'-8" ceiling
+    wbox(0.0, 236.7, -148.0, -6.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')   # its underside is the south end's 10'-8" ceiling
+    wbox(0.0, 213.0, -202.7, -148.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s2')
+    wbox(213.0, 236.7, -202.7, -148.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_lf')   # 11'-0" over the lower flight's top: 6'-8" headroom (FOR)
+    wbox(236.7, E, -202.7, -158.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_se')   # over the southeast landing, 6'-8" headroom (FOR); the stairwell open
     wbox(0.0, G['GFW'] - 3, 0.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')
-    wbox(0.0, E, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')
+    wbox(0.0, 236.7, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')   # the stairwell east of 236.7
     wbox(G['GFW'] - 0.6, G['GFW'], 0.0, RD, G['SOFFIT'], G['FF2'], trim, 'fascia_w')
     wbox(G['GFW'], E, 0.0, 0.25, G['SOFFIT'], G['FF2'], trim, 'fascia_s')   # proud of the wall below it: no shared face
     wbox(G['GFW'] - 1.5, G['GFW'] + 0.5, 0.0, RD, G['FF2'] - 1.5, G['FF2'], trim, 'fascia_cap_w')
@@ -840,7 +990,7 @@ def stage_living():
             if axis == 'y': wbox(c - 1.0, c + 1.0, p, p + 2.0, G['FF2'], G['GT'], steel, 'guard_post')
             else: wbox(p, p + 2.0, c - 1.0, c + 1.0, G['FF2'], G['GT'], steel, 'guard_post')
     guard('y', 0.0, RD - 1.0, G['GFW'] - 2.0); guard('x', G['GFW'], E - 1.0, -2.0)
-    wbox(0.0, E, -60.0, -54.0, G['FF2'], Hh, wallm, 'hall_wall_s')
+    wbox(0.0, 230.7, -60.0, -54.0, G['FF2'], Hh, wallm, 'hall_wall_s')
     wbox(0.0, E, -60.0, -11.0, 268.0, 272.0, material(R('ceiling', 'PT-01')), 'hall_ceiling')   # floor 2 hall, 9'-6" (FOR)
     wbox(0.0, 4.0, -60.0, RD, G['FF2'], Hh, wallm, 'hall_wall_w_face')
     wbox(E - 4.0, E, -60.0, 0.0, G['FF2'], Hh, wallm, 'hall_wall_e_face')   # the hall's east end (R6: it was open to the sky)

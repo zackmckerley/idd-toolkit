@@ -32,7 +32,7 @@ def ps(size):
 # Each room has a block of ten; the x0 sheet is its key plan; gaps are left so adding a sheet never renumbers another.
 # The generators still name sheets by their old 7xx numbers: every printed reference goes through remap().
 SHEET_MAP = {'771': '210', '772': '211', '773': '212',                                   # entry and powder room
-             '751': '230', '752': '231', '753': '232', '754': '233', '755': '234',       # living room
+             '751': '230', '752': '231', '753': '232', '754': '233', '755': '234', '756': '235',   # living room (235: the stair opened, 11.10.26)
              '741': '240', '742': '241', '743': '242', '744': '243', '745': '244',       # kitchen, dining and pantry
              '761': '250', '762': '251', '763': '252', '764': '253',                     # mudroom, laundry and dog room
              '738A': '261', '740': '262',                                                # guest bedroom and guest bath (key plan ID-260)

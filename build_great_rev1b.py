@@ -6,7 +6,9 @@ Output: 261105.HD102.LivingRoomPilot.pdf (the previous issue kept as 261105.HD10
 import sys; sys.path.insert(0, '/home/claude/flrwork'); sys.path.insert(0, '/home/claude/flrwork/rev1')
 import idd_std as _std, idd_sheet as _ish
 _std.PROJECT['base'] = 'FOR ARCHITECTURE CO., REV 1 10.23.26'
-_ish.EXTRA_REVS[:] = [('1', '11.05.26', 'BASE PLAN TO FOR REV 1'), ('2', '11.05.26', 'GALLERY AND STAIR, REV 1'), ('3', '11.06.26', 'METAL GUARD, REV 1 CHECK')]
+if ('3', '11.10.26', 'OWNER COMMENTS, STAIR OPENED') not in _ish.REVS: _ish.REVS = list(_ish.REVS) + [('3', '11.10.26', 'OWNER COMMENTS, STAIR OPENED')]
+_ish.PRINT_DATE = '11.10.26'
+_ish.EXTRA_REVS[:] = [('1', '11.05.26', 'BASE PLAN TO FOR REV 1'), ('2', '11.05.26', 'GALLERY AND STAIR, REV 1'), ('3', '11.06.26', 'METAL GUARD, REV 1 CHECK'), ('4', '11.10.26', 'STAIR OPENED, ALUMINUM GUARD')]
 
 import math
 from contextlib import contextmanager
@@ -578,21 +580,36 @@ def south_wall(v):
         C._line(v, (K1, SLOPE0), (GX, SLOPE0), C.MED)                         # the entry wall's top, 9'-0"
         C._line(v, (GX, SLOPE0), (GX - SLOPE_RUN, SOFFIT), C.FINE)          # the hip at the southwest corner, rising to the flat center
         C._line(v, (K1, SLOPE0), (K1 + SLOPE_RUN, SOFFIT), C.FINE)           # and at the half wall end
-        kt0, kt1 = nose_lf(K0) + 42.0, nose_lf(K1) + 42.0
-        C._poly(v, [(K0, 0), (K0, kt0), (K1, kt1), (K1, 0)], C.MED, fill=WHITE)
-        C._poly(v, [(K0, kt0), (K0, kt0 + 1.5), (K1, kt1 + 1.5), (K1, kt1)], C.MED, fill=WHITE)   # cap
-        C._line(v, (K0, 0), (K1, 0), C.MED)
-        hid(v, (K0, nose_lf(K0) + 36.0), (LF1, nose_lf(LF1) + 36.0), C.MED, GREY)          # the handrail, 1-1/2" round, on the stair side (hidden)
-        hid(v, (K0, nose_lf(K0) + 34.5), (LF1, nose_lf(LF1) + 34.5), C.FINE, GREY)
-        xm_ = (K0 + K1) / 2
-        C._line(v, (xm_, nose_lf(xm_) + 17.0), (xm_, nose_lf(xm_) + 35.5), C.FINE, GREY)
-        tag(v, xm_, nose_lf(xm_) + 13.5, 'HANDRAIL (HIDDEN)', 5.0, GREY)
+        # owner 11.10.26: FOR's 5" wall comes out; the lower flight's north stringer and oak treads seen from the room, the
+        # aluminum picket guard on it (matte black), the wall handrail on the entry wall beyond it (ID-756)
+        saw = [(LF1, 0), (LF1, R_RISER)]
+        for k_ in range(1, 7):
+            xk = LF1 - 11.0 * k_; saw += [(max(xk, K0), R_RISER * k_), (max(xk, K0), R_RISER * (k_ + 1))] if xk >= K0 else [(K0, R_RISER * k_)]
+            if xk < K0: break
+        C._poly(v, saw + [(K0, saw[-1][1]), (K0, 0)], C.MED, fill=WHITE)
+        for k_ in range(1, 7):
+            xk = LF1 - 11.0 * (k_ - 1)
+            if xk - 11.0 < K0 - 11.0: break
+            C._rect(v, max(xk - 11.0, K0), R_RISER * k_ - 1.0, xk + 1.0, R_RISER * k_, C.MED, fill=(0.86, 0.8, 0.72))
+        C._line(v, (K0, nose_lf(K0) + 36.0), (LF1, nose_lf(LF1) + 36.0), C.MED, GREY)     # the wall handrail beyond, 3'-0" (behind the guard's top rail)
+        GK = (0.3, 0.3, 0.3)
+        gp = [LF1 - 1.0, (LF1 + K0) / 2]
+        for z_off, h_ in ((36.0 - 2.5, 2.5), (1.0, 1.5)):
+            C._poly(v, [(K0, nose_lf(K0) + z_off), (LF1 - 1.0, nose_lf(LF1 - 1.0) + z_off), (LF1 - 1.0, nose_lf(LF1 - 1.0) + z_off + h_), (K0, nose_lf(K0) + z_off + h_)], C.FINE, GK, fill=GK)
+        for a_, b_ in ((K0, gp[1]), (gp[1], gp[0])):
+            lo, hi = a_ + (1.0 if a_ > K0 else 0.0), b_ - 1.0
+            n_ = max(1, math.ceil((hi - lo - 3.75) / 4.5 - 1e-6)); clr = (hi - lo - n_ * 0.75) / (n_ + 1); x_ = lo + clr
+            for _ in range(n_):
+                c_ = x_ + 0.375; C._rect(v, x_, nose_lf(c_) + 2.5, x_ + 0.75, nose_lf(c_) + 33.5, C.FINE, GK, fill=GK); x_ += 0.75 + clr
+        for c_ in gp: C._rect(v, c_ - 1.0, nose_lf(c_) - 1.0, c_ + 1.0, nose_lf(c_) + 36.75, C.FINE, GK, fill=GK)
         C.base(v, K1, E0 - 5.0); C.base(v, E1 + 5.0, GX)
         ew = E1 - E0; er = ew * 0.62                          # owner 11.09.26: arched, the same arch as the kitchen opening (top at 8'-4-3/4")
         arched_cased_opening(v, E0, ew, 100.75 - er + math.sqrt(er ** 2 - (ew / 2) ** 2), er)
         tag(v, (E0 + E1) / 2, 50, 'ARCHED OPENING, ENTRY BEYOND', 5.0, GREY)
         C.rev_cloud(v, E0 - 6, 1.5, E1 + 6, 104, pad=1.0)
-        tag(v, (K0 + K1) / 2, 24, 'STAIR UP BEHIND THE HALF WALL', 5.0, GREY)
+        xa_ = 78.0; C._line(v, (xa_, nose_lf(xa_) + 20.0), (68.0, 16.0), C.FINE, GREY)   # leader from the pickets to the painted stringer below
+        tag(v, 68.0, 14.0, 'ALUMINUM PICKET GUARD,', 5.0, GREY, box=True); tag(v, 68.0, 8.0, 'MATTE BLACK, ON A PAINTED', 5.0, GREY, box=True)
+        tag(v, 68.0, 2.0, 'STRINGER (ID-756)', 5.0, GREY, box=True)
         # floor 2 beyond the glass: the hall's south wall with the linen closet door 22 and the master bedroom door 18, the stairwell over the landing
         C._line(v, (T1, FF2), (GX, FF2), C.MED)
         u = up(v)
@@ -629,7 +646,7 @@ def south_wall(v):
     dim_h(v, 0, L, y2, E.snap_points([0, T0, T1, GX, L]))
     dim_v(v, 0, H, v.X(L) + 30, E.snap_points([0, 96, SOFFIT, FF2, GT, HALL_C, H]))
     return ('CLOSET 27 WALL, THEN OPEN TO THE SOUTH END UNDER THE GALLERY BEAM (HEAD 10\'-8", DRYWALL RETURNS). ARCHED CASED OPENING TO THE ENTRY, AS THE KITCHEN ARCH. ART ON THE WEST END WALL. FASCIA CARRIED ACROSS THE STAIR TOP, STEEL PICKET GUARD ON IT, LEVEL AT 3\'-6". '
-            'HANDRAILS 1-1/2" ROUND, 3\'-0" ABOVE THE NOSINGS, EVERY FLIGHT. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s. STAIR PER FOR A-411: 21 RISERS AT 7-5/16". '
+            'LOWER FLIGHT OPEN (OWNER 11.10.26): FOR\'S 5" WALL REPLACED BY AN ALUMINUM PICKET GUARD, MATTE BLACK, 3\'-0" OVER THE NOSINGS; CLOSET 27\'S WALL OPENED ABOVE A KNEE WALL ALONG THE EAST FLIGHT, SEE ID-756. HANDRAILS 1-1/2" ROUND, 3\'-0" ABOVE THE NOSINGS, EVERY FLIGHT. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s. STAIR PER FOR A-411: 21 RISERS AT 7-5/16". '
             'SOUTH END CEILING SLOPES FROM 9\'-0" AT THE WALLS TO 10\'-8" (FOR A-411), NO CROWN; THE ARCH CASING STOPS 2-1/4" UNDER THE 9\'-0" LINE.' % E.ftin(FUR))
 
 OFF5 = B0 - 6.0
@@ -953,7 +970,8 @@ def build():
          '4. FASCIA AND GUARD CARRIED LEVEL ACROSS THE STAIR TOP.',
          '5. TOP FLIGHT UNDERSIDE FURRED DOWN TO %s FOR %s WEST OF CLOSET 27.' % (E.ftin(FUR), E.ftin(FUR_X - 49.0)),
          '6. CEILING OVER THE SOUTHEAST LANDING %s MIN. (6\'-8" HEADROOM).' % E.ftin(q(LAND_SE + 80.0)),
-         '7. 5" WALL AT THE LOWER FLIGHT A HALF WALL, CAP 3\'-6" ABOVE THE NOSINGS.'],
+         '7. FOR\'S 5" WALL AT THE LOWER FLIGHT REMOVED: ALUMINUM PICKET GUARD, MATTE BLACK, 3\'-0" OVER THE NOSINGS (OWNER 11.10.26). SEE ID-756.',
+         '8. CLOSET 27\'S WEST WALL CUT TO A KNEE WALL ON THE EAST FLIGHT\'S UNDERSIDE, OPEN ABOVE TO 10\'-8", THE GUARD UP THE FLIGHT; CLOSET 27 STAYS; DOOR 27 MOVED ABOUT 3\'-10" NORTH, AGAINST FOR\'S CONCRETE BEAM; ITS SCONCE TO THE STAIRWELL\'S EAST WALL. SEE ID-756.'],
         [(True, 'LEGEND'),
          'BI  BUILT-IN, 14" DEEP, 30" CLOSED BASE CABINETS WITH WS-01 TOPS, OPEN SHELVES TO %s, EACH SIDE OF THE FIREPLACE BREAST.' % E.ftin(CL_HEAD), '',
          (True, 'COORDINATED WITH FOR REV 1 (11.09.26)'),
@@ -980,7 +998,10 @@ def build():
     # ---- ID-755 the fireplace stack
     sheet_views('ID-755', ['LIVING ROOM', 'FIREPLACE AND TV'], E.layout_cells(FRAME, 2, 1),
                 [(5, 'FIREPLACE STACK - ENLARGED ELEVATION', BW + 12.0, BELT1, stack_elev), (6, 'SECTION THROUGH THE BREAST', 30.0 + BD + 10.5, BELT1, stack_section)])
-    fix_soft_hyphen(doc); doc.set_metadata({'title': 'Casa Grove living room ID-751 to ID-755, FOR REV 1', 'author': 'Helios Development'})
+    # ---- ID-756 the stair opened (owner 11.10.26)
+    import build_stair_open as SO
+    SO.sheet(doc, rev)
+    fix_soft_hyphen(doc); doc.set_metadata({'title': 'Casa Grove living room ID-751 to ID-756, FOR REV 1', 'author': 'Helios Development'})
     doc.save(OUT, garbage=3, deflate=True); print('saved', OUT)
 
 if __name__ == '__main__':
