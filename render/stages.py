@@ -605,7 +605,7 @@ def SE_open_stair(wallm, trim, wd, ys, CH, UOP, UKW):
     # the stairwell: its east wall, the floor 2 wall over the opening's head, the cap at the floor 2 ceiling
     wbox(XE, XE + 6.0, ys - 6.0, -6.0, 0.0, 272.0, wallm, 'stairwell_e')
     wbox(230.7, 236.7, -158.0, -UTOP, CH + 24.0, 268.0, wallm, 'stairwell_w')
-    wbox(236.7, XE + 6.0, ys - 6.0, ys, CH, 272.0, wallm, 'stairwell_s')
+    wbox(236.7, XE + 6.0, ys - 6.0, ys, CH + 4.0, 272.0, wallm, 'stairwell_s')   # on top of the south wall (now to 11'-0")
     wbox(230.7, XE + 6.0, ys - 6.0, -60.0, 268.0, 272.0, material('PT-CEIL') if 'PT-CEIL' in MATS else wallm, 'stairwell_cap')   # the floor 2 hall ceiling covers north of -60
 
 
