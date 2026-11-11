@@ -657,8 +657,8 @@ def grand_piano(xb, yk):
     lid.data.transform(mathutils.Matrix.Rotation(ang, 4, 'Y'))  # local x is world -X: lift the treble (west) edge
     lid.location = (hx * IN, hy * IN, 34.0 * IN)
     # the prop stick from the rim's treble side up to the lid
-    px_, py_ = W_(50.0, 34.0); h_ = 50.0 * _m.sin(ang)
-    wbox(px_ - 0.5, px_ + 0.5, py_ - 0.5, py_ + 0.5, 34.0, 34.0 + h_ * 0.97, blk, 'piano_prop')
+    lx_ = 44.0; px_ = hx - lx_ * _m.cos(ang); py_ = W_(lx_, 34.0)[1]      # the lid swings in toward the hinge as it lifts: aim the stick at it
+    wbox(px_ - 0.5, px_ + 0.5, py_ - 0.5, py_ + 0.5, 34.0, 34.0 + lx_ * _m.sin(ang) - 0.2, blk, 'piano_prop')
     # three legs with brass casters, the pedal lyre, a bench
     for lx, ly in ((4.0, 3.0), (54.0, 3.0), (16.0, 66.0)):
         X, Y = W_(lx, ly); wbox(X - 2.0, X + 2.0, Y - 2.0, Y + 2.0, 2.5, 23.0, blk, 'piano_leg', soft=0.4)
@@ -689,7 +689,7 @@ def south_end(wallm, trim, pt1):
     wbox_abs(FW, FE, FS, ys - 6.0, -2.0, 0.0, material('TL-01'), 'foyer_floor')   # not R(): the room's floor role would give the living room's oak
     # west wall with door 12
     for y0_, y1_, z0_ in ((ys - 6.0, -122.0, 0.0), (-89.0, -6.0, 0.0), (-122.0, -89.0, 96.0)):
-        wbox(86.2, 92.2, y0_, y1_, z0_, CH, wallm, 'se_wall_w')
+        wbox(86.2, 92.2, y0_, y1_, z0_, CH + 4.0, wallm, 'se_wall_w')
     door_in_x_wall(92.2, 1, -122.0, -89.0, 96.0, trim, leafm)
     # closet 27's wall, opened (owner 11.10.26, ID-235): full height north of the opening with door 27 against FOR's concrete beam
     # (13-5/8" south of the gallery line), then a knee wall on the east flight's underside, open above it to the 10'-8" head
@@ -702,7 +702,7 @@ def south_end(wallm, trim, pt1):
     AX, AW, AP = 103.0, 52.3, 100.75
     asp = AP - AW * 0.62 + _m.sqrt((AW * 0.62) ** 2 - (AW / 2) ** 2)
     for x0_, x1_, z0_ in ((86.2, AX, 0.0), (AX + AW, 286.0, 0.0), (AX, AX + AW, AP + 1.0)):
-        wbox(x0_, x1_, ys - 6.0, ys, z0_, CH, wallm, 'se_wall_s')
+        wbox(x0_, x1_, ys - 6.0, ys, z0_, CH + 4.0, wallm, 'se_wall_s')
     arch_xz(AX, AW, asp, AP + 1.0, ys - 6.0, ys, ys, ys + 0.75, wallm, trim)
     wbox(FW - 6.0, FW, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_w'); wbox(FE, FE + 6.0, FS, ys - 6.0, 0.0, CH, wallm, 'foyer_wall_e')
     wbox(FW, 86.2, ys - 6.0, ys, 0.0, CH, wallm, 'foyer_wall_n'); wbox(262.0, FE, ys - 6.0, ys, 0.0, CH, wallm, 'foyer_wall_n')
@@ -710,7 +710,7 @@ def south_end(wallm, trim, pt1):
     DX0, DX1, DH = 109.5 - 36.0, 109.5 + 36.0, 96.0
     for x0_, x1_, z0_ in ((FW - 6.0, DX0, 0.0), (DX1, FE + 6.0, 0.0), (DX0, DX1, DH)):
         wbox(x0_, x1_, FS - 6.0, FS, z0_, CH, wallm, 'foyer_wall_s')
-    oak = material('WD-02')
+    oak = material('WD-SHELF')   # honey oak to the floor (WD-02, the border stain, read espresso)
     for a_, b_ in ((DX0, 109.4), (109.6, DX1)):
         wbox(a_, b_, FS - 2.75, FS - 1.0, 0.0, DH, oak, 'entry_leaf', soft=0.06)
         for z0_, z1_ in ((10.0, 38.0), (44.0, DH - 6.0)):
@@ -742,7 +742,7 @@ def south_end(wallm, trim, pt1):
     MATS.setdefault('SHADE', {'kind': 'lamp', 'emit': 3.0})
     can = ceiling_can
     for X_, Y_ in ((113.1, -29.0), (113.1, -60.0), (113.1, -151.0), (113.1, -177.0), (129.6, -172.1), (199.1, -172.1)):
-        can(X_, Y_, CH)
+        can(X_, Y_, CH if Y_ > -148.0 else 132.0)
     for X_, Y_ in ((241.8, -236.5), (48.7, -219.0), (48.7, -261.6)):
         can(X_, Y_, CH, 10.0)
     def drum(X_, Y_, zb, d, h, watts, rod_top):
@@ -768,7 +768,7 @@ def south_end(wallm, trim, pt1):
         wpoint(xf + side * 5.25, Y_, z_ + 1.0, watts, radius=1.5)
     LSE_ = 7 * 7.3125
     # FOR's closet-wall sconce moves to the stairwell's east wall, 6'-6" over the nosings; FOR's C-1 at the southeast landing
-    sconce_x(280.0, -1, -95.0, 169.0, 25.0); sconce_y(257.7, ys, 1, LSE_ + 66.0, 14.0)
+    sconce_x(280.0, -1, -95.0, 169.0, 70.0); sconce_y(257.7, ys, 1, LSE_ + 66.0, 20.0)   # the stairwell read black behind the pickets at 25 W (review 11.10.26)
     if os.environ.get('PR_PIANO'): grand_piano(218.0, -64.0)
 
 def stage_living():
@@ -963,8 +963,7 @@ def stage_living():
     pt1 = material(R('ceiling', 'PT-01'))
     wbox(0.0, G['GFW'] - 0.6, 0.0, RD, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_w')   # stops at the fascia and the cap: no shared faces
     wbox(0.0, 236.7, -148.0, -6.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')   # its underside is the south end's 10'-8" ceiling
-    wbox(0.0, 213.0, -202.7, -148.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s2')
-    wprism_xz([(213.0, G['SOFFIT']), (224.4, 132.0), (236.7, 132.0), (236.7, G['FF2'] - 1.5), (213.0, G['FF2'] - 1.5)], -202.7, -148.0, pt1, 'gallery_slab_lf')   # 11'-0" over the lower flight's top (6'-8" headroom, FOR), eased up from 10'-8": a step read as a dark slot
+    wbox(0.0, 236.7, -202.7, -148.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_s2')   # 11'-0" south of the stair line, over the lower flight (6'-8" headroom, FOR): one clean soffit line across the room
     wbox(236.7, E, -202.7, -158.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_se')   # over the southeast landing, 6'-8" headroom (FOR); the stairwell open
     wbox(0.0, G['GFW'] - 3, 0.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')
     wbox(0.0, 236.7, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')   # the stairwell east of 236.7

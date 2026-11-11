@@ -1,9 +1,11 @@
 """Casa Grove review draft (owner 11.07.26): cover with the front elevation and the sheet index, every sheet in walk-the-house order,
-printed on 11 x 17. Sheets are drawn 17:11 so they print edge to edge. Output: 261109.HD102.ReviewSet.pdf (11 x 17) and 261109.HD102.ReviewSet-FullSize.pdf."""
+printed on 11 x 17. Sheets are drawn 17:11 so they print edge to edge. Output: 261110.HD102.ReviewSet.pdf (11 x 17) and 261110.HD102.ReviewSet-FullSize.pdf."""
 import re, sys
 sys.path.insert(0, '/home/claude/flrwork')
 import pymupdf as fitz
 import idd_std, idd_sheet
+idd_sheet.PRINT_DATE = '11.10.26'
+if ('3', '11.10.26', 'OWNER COMMENTS, STAIR OPENED') not in idd_sheet.REVS: idd_sheet.REVS = list(idd_sheet.REVS) + [('3', '11.10.26', 'OWNER COMMENTS, STAIR OPENED')]
 from idd_sheet import Sheet, FR, TB_X, HDR_Y, fix_soft_hyphen, _FR, _FS
 from idd_std import INK, MID, LIGHT
 from elev_front import draw_front
@@ -80,7 +82,7 @@ def cover(doc, rows):
     sh.text(72, y + 34, '3350 THOMAS AVE, COCONUT GROVE, FLORIDA 33133', 14, raw=True)
     sh.line((72, y + 56), (850, y + 56), 0.6, INK)
     sh.text(72, y + 84, 'INTERIOR DESIGN DRAWINGS', 16, serif=True, spacing=1.5, raw=True)
-    sh.text(72, y + 106, 'REVIEW DRAFT, REVISION 2, COORDINATED WITH FOR REV 1, NOVEMBER 9, 2026', 12, raw=True)
+    sh.text(72, y + 106, 'REVIEW DRAFT, REVISION 3, OWNER COMMENTS, NOVEMBER 10, 2026', 12, raw=True)
     sh.text(72, y + 122, 'NOT FOR CONSTRUCTION', 10, MID, raw=True)
     assert y + 122 < FR.y1 - 8, ('cover project block runs off the sheet', y)
     # sheet index: two columns, grouped by floor and room, TBD sheets in grey
@@ -93,7 +95,7 @@ def cover(doc, rows):
         if sec != last[0]: items.append(('sec', sec)); last = (sec, None)
         if room and room != last[1]: items.append(('room', room)); last = (sec, room)
         items.append(('row', (num, title, drawn)))
-    H_ = {'sec': 34.0, 'room': 24.0, 'row': 18.5}
+    H_ = {'sec': 34.0, 'room': 24.0, 'row': 17.75}   # 17.75: ID-235 (the stair, 11.10.26) made column 1 run long
     total = sum(H_[k] for k, _ in items); top = 142.0; bottom = FR.y1 - 16
     # break the columns before a section or a room, at the first one past the middle
     acc = 0.0; brk = len(items)
@@ -116,7 +118,7 @@ def cover(doc, rows):
                 sh.text(x0 + 58, y, title, sz, c, raw=True)
                 if not drawn: sh.text(x1, y, 'TBD', 8.5, MID, bold=True, align='r', raw=True)
                 if num in NEW_SHEETS: idd_sheet.rev_cloud_pt(sh.p, fitz.Rect(x0 - 4, y - 9.5, x0 + 58 + _FR.text_length(title, fontsize=sz) + 6, y + 3.5), '1', bump=4.5, tag_at='br')
-                y += 18.5
+                y += 17.75
         assert y < bottom, ('index column runs off the sheet', col, y)
     return sh
 
@@ -146,7 +148,7 @@ def build():
         toc.append([3 if room else 2, '%s  %s' % (n, t), i])
     full.set_toc(toc)
     meta = {'title': 'Casa Grove, Interior Design Drawings, Review Draft 11.07.26', 'author': 'Helios Development', 'subject': 'HD102, 3350 Thomas Ave'}
-    full.set_metadata(meta); full.subset_fonts(); full.save(D + '261109.HD102.ReviewSet-FullSize.pdf', garbage=4, deflate=True, deflate_fonts=True, use_objstms=1)
+    full.set_metadata(meta); full.subset_fonts(); full.save(D + '261110.HD102.ReviewSet-FullSize.pdf', garbage=4, deflate=True, deflate_fonts=True, use_objstms=1)
     # 11 x 17: each 17:11 sheet scaled to the page, edge to edge
     small = fitz.open(); W, H = 1224.0, 792.0
     for p in full:
@@ -156,7 +158,7 @@ def build():
         pg.show_pdf_page(fitz.Rect((W - tw) / 2, (H - th) / 2, (W + tw) / 2, (H + th) / 2), full, p.number)
     small.set_toc(toc); small.set_metadata(meta)
     small.subset_fonts()                                   # fonts embedded once, subset: the set is small enough to email
-    small.save(D + '261109.HD102.ReviewSet.pdf', garbage=4, deflate=True, deflate_fonts=True, clean=True, use_objstms=1)
+    small.save(D + '261110.HD102.ReviewSet.pdf', garbage=4, deflate=True, deflate_fonts=True, clean=True, use_objstms=1)
     print('saved', len(full), 'sheets,', len(tbd), 'TBD rows')
 
 
