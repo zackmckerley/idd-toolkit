@@ -306,6 +306,138 @@ def b_nightstand(a, ctx):
     lamp(x + w / 2, h + 19, 10.0, watts=6.0, radius=2.0)
 
 
+def _bevel(o, w, seg=4):
+    if o is None: return o
+    bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = w * IN; bv.segments = seg; bv.limit_method = 'NONE'
+    for pg in o.data.polygons: pg.use_smooth = True
+    return o
+
+
+def b_bed_curved(a, ctx):
+    """Owner's reference (11.11.26): a mocha velvet king with a rounded headboard that wraps forward at its ends and a thick
+    rounded base rail the mattress sits down in; white bedding. 80 in. wide over a 76 x 80 mattress."""
+    MATS.setdefault('FAB-VELVET-MOCHA', {'hex': '#6E5446', 'rough': 0.72, 'kind': 'fabric', 'texture': 'acg/Fabric062'})
+    vel = material(R('upholstery', 'FAB-VELVET-MOCHA')); lin = material(R('bedding', 'FAB-BEDDING'))
+    cx, top = a['cx'], 24.0; W = 80.0; x0, x1 = cx - W / 2, cx + W / 2; Hh, r = 52.0, 13.0
+    pts = [(x0, 0.0), (x1, 0.0)] + [(x1 - r + r * math.cos(math.radians(t)), Hh - r + r * math.sin(math.radians(t))) for t in range(0, 91, 10)] \
+          + [(x0 + r + r * math.cos(math.radians(t)), Hh - r + r * math.sin(math.radians(t))) for t in range(90, 181, 10)]
+    _bevel(_prism(pts, 0.0, 7.0, vel, 'headboard'), 1.6)
+    for xa in (x0, x1 - 6.0):                                             # the wings: the headboard wraps forward at its ends
+        _soft(xa, xa + 6.0, 0.0, Hh - r - 2.0, 6.0, 15.0, vel, 2.8, 'headboard_wing')
+    _soft(x0 + 0.5, x1 - 0.5, 0.0, 16.0, 7.0, 88.0, vel, 4.5, 'bed_base')  # the thick rounded rail
+    _soft(cx - 37.5, cx + 37.5, 15.0, top - 0.4, 8.0, 86.0, lin, 1.5, 'mattress')
+    dress_bed(cx, top, 7.5, 86.0, 76.0, lin)
+
+
+def _cloth(o, scale_in=9.0, amp_in=0.9, sub=5, bevel_in=2.6, seed='cloth'):
+    """Soft goods: subdivide flat, round the edges, smooth, then wrinkle with a cloud displacement (a slab with a bevel
+    read as foam, owner 11.11.26)."""
+    if o is None: return None
+    m = o.modifiers.new('grid', 'SUBSURF'); m.subdivision_type = 'SIMPLE'; m.levels = m.render_levels = sub
+    b = o.modifiers.new('round', 'BEVEL'); b.width = bevel_in * IN; b.segments = 5; b.limit_method = 'ANGLE'
+    s_ = o.modifiers.new('smooth', 'SUBSURF'); s_.levels = s_.render_levels = 1
+    tx = bpy.data.textures.get('TX-' + seed) or bpy.data.textures.new('TX-' + seed, 'CLOUDS')
+    tx.noise_scale = scale_in * IN; tx.noise_depth = 2
+    d = o.modifiers.new('wrinkle', 'DISPLACE'); d.texture = tx; d.strength = amp_in * IN; d.mid_level = 0.5
+    for pg in o.data.polygons: pg.use_smooth = True
+    return o
+
+
+def soft_pillow(cx, cy, cd, w, h, t, tilt, mat, name='pillow', pinch=0.06, n=22):
+    """A puffed pillow in wall-local inches: centre (cx, cy, cd), w along the wall, h up its face, t thick; tilt in degrees
+    leans the top back toward the wall (0 stands upright, 90 lies flat). Edges pull in at mid-side the way a filled case
+    does; the rim is a seam, the faces bulge."""
+    th = math.radians(tilt); hu = (0.0, math.cos(th), -math.sin(th)); nv = (0.0, math.sin(th), math.cos(th))
+    verts, idx = [], {}
+    def vid(side, i, j):
+        rim = i in (0, n) or j in (0, n)
+        k = ('r', i, j) if rim else (side, i, j)
+        if k in idx: return idx[k]
+        u, v = -1 + 2 * i / n, -1 + 2 * j / n
+        a = u * w / 2 * (1 - pinch * (1 - v * v)); b = v * h / 2 * (1 - pinch * (1 - u * u))
+        c = 0.0 if rim else side * t / 2 * (max(0.0, 1 - u * u) ** 0.55) * (max(0.0, 1 - v * v) ** 0.55)
+        verts.append((cx + a, cy + b * hu[1] + c * nv[1], cd + b * hu[2] + c * nv[2])); idx[k] = len(verts) - 1
+        return idx[k]
+    faces = []
+    for i in range(n):
+        for j in range(n):
+            faces.append((vid(1, i, j), vid(1, i + 1, j), vid(1, i + 1, j + 1), vid(1, i, j + 1)))
+            faces.append((vid(-1, i, j + 1), vid(-1, i + 1, j + 1), vid(-1, i + 1, j), vid(-1, i, j)))
+    o = obj_from(verts, faces, mat, name, smooth=True)
+    s_ = o.modifiers.new('smooth', 'SUBSURF'); s_.levels = s_.render_levels = 1
+    return o
+
+
+def dress_bed(cx, top, d_head, d_foot, mw, lin):
+    """King bed dressing, owner 11.11.26 (blocky pillows and a slab duvet read as foam): three oat linen euro shams against
+    the headboard, two white king pillows leaning on them, a mocha lumbar, a duvet draped over the sides and foot with a
+    folded cuff, the sheet showing between the pillows and the cuff."""
+    MATS.setdefault('FAB-LINEN-OAT', {'hex': '#D9CDB8', 'rough': 0.9, 'kind': 'fabric', 'texture': 'rough_linen'})
+    oat = material('FAB-LINEN-OAT'); vel = material(R('upholstery', 'FAB-VELVET-MOCHA'))
+    hw = mw / 2 + 1.2                                                        # the duvet hangs 1.2 in. past the mattress
+    d0 = d_head + 37.0                                                       # where the duvet starts (cuff fold)
+    _cloth(box(cx - hw, cx + hw, 17.5, top + 1.3, d0, d_foot + 1.4, lin, 'duvet'), seed='duvet')
+    _cloth(box(cx - hw - 0.3, cx + hw + 0.3, top + 1.0, top + 2.6, d0 - 0.6, d0 + 12.0, lin, 'duvet_cuff'), amp_in=0.3,
+           bevel_in=0.75, sub=4, seed='cuff')
+    for k in (-1, 0, 1):                                                     # euro shams 26 x 26
+        th = 12.0
+        soft_pillow(cx + k * 25.0, top + 13 * math.cos(math.radians(th)) - 0.8,
+                    d_head + 4.0 + 13 * math.sin(math.radians(th)), 26.0, 26.0, 7.5, th, oat, 'euro_sham')
+    for k in (-1, 1):                                                        # king pillows 36 x 20
+        th = 28.0
+        soft_pillow(cx + k * 18.3, top + 10 * math.cos(math.radians(th)) - 1.2,
+                    d_head + 13.5 + 10 * math.sin(math.radians(th)), 35.5, 20.0, 6.5, th, lin, 'pillow')
+    th = 34.0                                                                # lumbar 14 x 30
+    soft_pillow(cx, top + 7 * math.cos(math.radians(th)) - 1.0, d_head + 22.5 + 7 * math.sin(math.radians(th)),
+                30.0, 14.0, 5.0, th, vel, 'lumbar')
+
+
+def b_ns_linen(a, ctx):
+    """Owner's reference (11.11.26): a linen-wrapped chest, rounded corners, light oak top and plinth, three drawers with
+    knurled brass bar pulls. Width from the drawing (18 in. between the bed and the corner)."""
+    MATS.setdefault('FAB-LINEN-NS', {'hex': '#D6C9B3', 'rough': 0.9, 'kind': 'fabric', 'texture': 'rough_linen'})
+    MATS.setdefault('OAK-LIGHT', {'hex': '#C8A77C', 'rough': 0.4, 'kind': 'wood', 'texture': 'oak_veneer_01', 'tint': [1.15, 1.2, 1.3]})
+    x, w, h = a['x'], a.get('w', 18), a.get('h', 26)
+    ln = material('FAB-LINEN-NS'); oak = material('OAK-LIGHT'); br = material(R('metal', 'METAL-BRASS'))
+    _soft(x + 0.5, x + w - 0.5, 0.0, 2.5, 1.0, 17.0, oak, 0.6, 'ns_plinth')
+    _soft(x + 0.25, x + w - 0.25, 2.5, h - 1.25, 1.0, 17.6, ln, 1.4, 'ns_body')
+    n = 3; fh = (h - 1.25 - 3.0) / n
+    for i in range(n):
+        y0 = 3.0 + i * fh; y1 = y0 + fh - 0.3
+        _soft(x + 0.6, x + w - 0.6, y0, y1, 17.4, 18.2, ln, 0.9, 'ns_front')
+        cy_ = (y0 + y1) / 2
+        cyl(x + w / 2, cy_, 19.2, 0.22, min(7.0, w - 6), 'x', br, 'pull')
+        for px in (x + w / 2 - min(7.0, w - 6) / 2 + 0.6, x + w / 2 + min(7.0, w - 6) / 2 - 0.6): cyl(px, cy_, 18.7, 0.18, 1.0, 'd', br, 'post')
+    _soft(x - 0.25, x + w + 0.25, h - 1.25, h, 0.6, 18.8, oak, 0.5, 'ns_top')
+
+
+def b_sconce_pleated(a, ctx):
+    """Owner's reference (11.11.26): a sculptural polished-brass stem rising in front of an organic round backplate into a
+    pleated, scalloped cream fabric shade. cy is the backplate centre (CL from the drawing); the shade sits above it."""
+    MATS.setdefault('METAL-BRASS-POL', {'hex': '#C9A866', 'rough': 0.14, 'kind': 'metal'})
+    m = material('METAL-BRASS-POL'); cx, cy = a['cx'], a['cy']; dS = 5.2
+    cyl(cx, cy, 0.35, 2.4, 0.7, 'd', m, 'plate'); cyl(cx, cy, 0.85, 1.9, 0.35, 'd', m, 'plate_dome')
+    cyl(cx, cy, (1.0 + dS) / 2, 0.32, dS - 1.0, 'd', m, 'arm')
+    cyl(cx, cy + 1.5, dS, 0.3, 9.0, 'y', m, 'stem'); cyl(cx, cy - 3.6, dS, 0.18, 1.2, 'y', m, 'stem_tip')
+    y0, y1, rb, rt, nf = cy + 6.0, cy + 15.0, 4.6, 3.1, 10
+    verts = []; K = 80
+    for (yy, rr) in ((y0, rb), (y1, rt)):
+        for k in range(K):
+            t = 2 * math.pi * k / K; rr_ = rr * (1.0 + 0.07 * math.cos(nf * t))
+            verts.append((cx + rr_ * math.cos(t), yy, dS + rr_ * math.sin(t)))
+    faces = [(k, (k + 1) % K, K + (k + 1) % K, K + k) for k in range(K)]
+    sh_ = obj_from(verts, faces, material('LAMP'), 'shade', smooth=True); sh_.visible_shadow = False; sh_.visible_diffuse = False
+    sol = sh_.modifiers.new('solid', 'SOLIDIFY'); sol.thickness = 0.06 * IN
+    lamp(cx, (y0 + y1) / 2 - 1.0, dS, watts=0.6)
+
+
+_b_bed_king0, _b_nightstand0 = b_bed_king, b_nightstand
+def b_bed_any(a, ctx):
+    return b_bed_curved(a, ctx) if R('bed_style', '') == 'curved_velvet' else _b_bed_king0(a, ctx)
+def b_ns_any(a, ctx):
+    return b_ns_linen(a, ctx) if R('ns_style', '') == 'linen_chest' else _b_nightstand0(a, ctx)
+
+
 def _soft(x0, x1, y0, y1, d0, d1, mat, rad, nm):
     o = box(x0, x1, y0, y1, d0, d1, mat, nm)
     if o is None: return
@@ -479,7 +611,7 @@ EXTRA_BUILDERS = {'arched_cased_opening': b_arched_cased_opening, 'undercounter_
                   'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
                   'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
                   'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,
-                  'bed_king': b_bed_king, 'nightstand': b_nightstand, 'panel_wall': b_panel_wall, 'panel_drawn': b_panel_drawn, 'cabinet_lower': b_cabinet_lower,
+                  'bed_king': b_bed_any, 'nightstand': b_ns_any, 'panel_wall': b_panel_wall, 'panel_drawn': b_panel_drawn, 'cabinet_lower': b_cabinet_lower,
                   'shelves': b_shelves, 'chair_rail': b_chair_rail,
                   # line-drawing only, or built whole elsewhere
                   'rev_cloud': None, 'hammered': None, 'glazing': None, 'miter_corner': None, 'sink_undermount_front': None,

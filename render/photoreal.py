@@ -466,27 +466,33 @@ def b_base(a, ctx):
 
 
 PANE = 1.75   # divided-lite pane scale, each way (owner 11.11.26); lite counts = round(drawn / PANE)
-COVE = {'P': 5.5, 'F': 5.0, 'LIP': 1.25, 'crown_drop': 3.75, 'crown_proj': 3.25, 'w_per_ft': 3.0}   # VERIFY with the owner / 4/ID-502
+COVE = {'P': 14.0, 'B': 0.625, 'SET': 3.0, 'crown_drop': 3.75, 'crown_proj': 3.25, 'w_per_ft': 3.0}   # FOR A-401 section 2
 
 
 def b_crown(a, ctx):
     drop = a.get('drop') or T['crown']; Hh = a['H']; tm = material(R('crown', R('trim', 'PT-01-SATIN')), '-trim')
     if R('cove', False) and Hh < H - 2.0:
-        # cove soffit (owner 11.11.26): a rectangular drywall ledge off the wall, its top Hh (9'-6") open to the ceiling above
-        # with the LC1 LED strip on it behind a 1-1/4 in. lip; the crown sits in the corner under the ledge and stops short of
-        # its edge. Profile q down from Hh (negative = up), d out from the wall.
-        P, F, LIP = COVE['P'], COVE['F'], COVE['LIP']
-        sweep([(a['x1'], Hh), (a['x0'], Hh)], [(0, 0), (0, P - 0.75), (-LIP, P - 0.75), (-LIP, P), (F, P), (F, 0)],
-              material(R('ceiling', 'PT-01')), 'cove_soffit')
-        sweep([(a['x1'], Hh - F - 0.02), (a['x0'], Hh - F - 0.02)], crown_profile(COVE['crown_drop'], COVE['crown_proj']), tm, 'crown')
+        # cove soffit per FOR's detail (A-401 section 2, owner 11.11.26 "look at FOR's cove soffit detail"): a 5/8 in. gypsum
+        # soffit hung 4 in. under the ceiling, about 14 in. off the wall, its room edge open: the 3-3/8 in. slot between the
+        # board and the ceiling is the cove, the LED on the hanger 3 in. back from the edge, throwing out across the ceiling.
+        # The ceiling runs on over the soffit. The crown sits in the corner under the soffit and stops short of its edge.
+        # Profile q down from Hh (Hh = the soffit's underside, 4 in. under the ceiling), d out from the wall.
+        P, B, S_ = COVE['P'], COVE['B'], COVE['SET']
+        clg = material(R('ceiling', 'PT-01'))
+        COVE['n'] = COVE.get('n', 0) + 1; dz = 0.03 * (COVE['n'] % 3)       # walls meeting at a corner overlap 14 x 14: no shared faces
+        box(a['x0'], a['x1'], Hh + dz, Hh + B + dz, 0.0, P, clg, 'cove_soffit')                        # closed board, capped ends
+        sweep([(a['x1'], Hh - 0.02), (a['x0'], Hh - 0.02)], crown_profile(COVE['crown_drop'], COVE['crown_proj']), tm, 'crown')
         L_ = a['x1'] - a['x0']
+        box(a['x0'], a['x1'], Hh + B + dz, H - 0.01, P - S_ - 1.5, P - S_, clg, 'cove_hanger')          # the slot's back
+        for xe in (a['x0'], a['x1'] - 0.75):                                                     # close the slot at the run's ends
+            box(xe, xe + 0.75, Hh + B + dz, H - 0.01, 0.0, P - 0.05, clg, 'cove_end')
         if L_ > 4:
-            box(a['x0'] + 1.0, a['x1'] - 1.0, Hh + 0.01, Hh + 0.4, 1.2, 2.4, material('LED-STRIP'), 'cove_led')
+            box(a['x0'] + 1.0, a['x1'] - 1.0, Hh + B + 1.0, Hh + B + 1.6, P - S_, P - S_ + 0.3, material('LED-STRIP'), 'cove_led')
             ld = bpy.data.lights.new('cove_led', 'AREA'); ld.shape = 'RECTANGLE'; ld.size = (L_ - 2.0) * IN; ld.size_y = 1.0 * IN
             ld.energy = COVE['w_per_ft'] * L_ / 12.0; ld.color = (1.0, 0.83, 0.62)          # 2700 K
             lo = bpy.data.objects.new('cove_led', ld); bpy.context.collection.objects.link(lo)
-            lo.location = ((a['x0'] + a['x1']) / 2 * IN, -1.8 * IN, (Hh + 0.6) * IN)
-            lo.rotation_euler = (math.radians(180 - 20), 0, 0)                                # up, leaning into the room
+            lo.location = ((a['x0'] + a['x1']) / 2 * IN, -(P - S_ + 0.6) * IN, (Hh + B + 1.3) * IN)
+            lo.rotation_euler = (math.radians(-115), 0, 0)                                    # out of the slot, up across the ceiling
             lo.visible_glossy = False
         return
     sweep([(a['x1'], Hh), (a['x0'], Hh)], crown_profile(drop, T['crown_proj']), tm, 'crown')
@@ -640,6 +646,7 @@ def b_mirror_panel(a, ctx):
 
 
 def b_sconce(a, ctx):
+    if a.get('style') == 'shade' and R('sconce_style', '') == 'pleated': return b_sconce_pleated(a, ctx)   # owner 11.11.26
     cx, cy = a['cx'], a['cy']
     m = material(R('metal', 'METAL-NICKEL'))
     if a.get('style', 'cylinder') == 'cylinder':
@@ -1272,9 +1279,43 @@ def pendant_generic(X, Y, d=18.0, h=10.0, drop=30.0, watts=45.0):
     ol = bpy.data.objects.new('pendant', ld); bpy.context.collection.objects.link(ol); ol.location = (X * IN, Y * IN, (zb + h / 2) * IN)
 
 
+def tronchi_flush(X, Y, dia=24.0, watts=60.0):
+    """Owner's reference (11.11.26, over the master bed): a semi-flush Murano-style 'tronchi' fixture: a brass canopy and two
+    tiers of textured clear glass prisms with a star section hung from it, warm lamps inside. 24 in. across, about 15 in. deep."""
+    gm = bpy.data.materials.get('GLASS-TRONCHI')
+    if gm is None:
+        gm = bpy.data.materials.new('GLASS-TRONCHI'); gm.use_nodes = True; N_ = gm.node_tree.nodes; L_ = gm.node_tree.links; b_ = N_['Principled BSDF']
+        b_.inputs['Base Color'].default_value = (0.97, 0.97, 0.95, 1); b_.inputs['Transmission Weight'].default_value = 1.0
+        b_.inputs['Roughness'].default_value = 0.05; b_.inputs['IOR'].default_value = 1.5
+        tc = N_.new('ShaderNodeTexCoord'); mp = N_.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1 / (0.3 * IN), 1 / (0.3 * IN), 1 / (2.5 * IN))
+        L_.new(tc.outputs['Object'], mp.inputs['Vector']); nz = N_.new('ShaderNodeTexNoise'); L_.new(mp.outputs['Vector'], nz.inputs['Vector'])
+        bp = N_.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.35; L_.new(nz.outputs['Fac'], bp.inputs['Height']); L_.new(bp.outputs['Normal'], b_.inputs['Normal'])
+    br = material('METAL-BRASS')
+    bm_ = bmesh.new()
+    def prism(cx, cy, z0, z1, ro=0.95, ri=0.62, k=6):
+        ring = [(cx + (ro if j % 2 == 0 else ri) * math.cos(math.pi * j / k), cy + (ro if j % 2 == 0 else ri) * math.sin(math.pi * j / k)) for j in range(2 * k)]
+        bot = [bm_.verts.new((x_ * IN, y_ * IN, z0 * IN)) for x_, y_ in ring]; top = [bm_.verts.new((x_ * IN, y_ * IN, z1 * IN)) for x_, y_ in ring]
+        n_ = len(ring); bm_.faces.new(bot[::-1]); bm_.faces.new(top)
+        for j in range(n_): bm_.faces.new((bot[j], bot[(j + 1) % n_], top[(j + 1) % n_], top[j]))
+    import random as _r; rr = _r.Random(4)
+    for (rad, n, z0, z1) in ((dia / 2 - 1.0, 30, H - 11.0, H - 1.2), (dia / 2 - 4.0, 22, H - 15.0, H - 5.5), (dia / 2 - 7.5, 14, H - 15.5, H - 6.0)):
+        for i in range(n):
+            a_ = 2 * math.pi * (i + 0.5 * (n % 2)) / n
+            dz = rr.uniform(-0.6, 0.6); prism(X + rad * math.cos(a_), Y + rad * math.sin(a_), z0 + dz, z1)
+    me = bpy.data.meshes.new('tronchi'); bm_.to_mesh(me); bm_.free()
+    o = bpy.data.objects.new('tronchi_glass', me); bpy.context.collection.objects.link(o); o.data.materials.append(gm)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=(dia / 2 + 0.5) * IN, depth=0.6 * IN, location=(X * IN, Y * IN, (H - 0.6) * IN))
+    c_ = bpy.context.active_object; c_.name = 'tronchi_canopy'; c_.data.materials.append(br)
+    for k in range(3):
+        ld = bpy.data.lights.new('tronchi', 'POINT'); ld.energy = watts / 3; ld.shadow_soft_size = 1.5 * IN; ld.color = (1.0, 0.82, 0.6)
+        ol = bpy.data.objects.new('tronchi_lamp', ld); bpy.context.collection.objects.link(ol)
+        ol.location = ((X + 4.0 * math.cos(2 * math.pi * k / 3)) * IN, (Y + 4.0 * math.sin(2 * math.pi * k / 3)) * IN, (H - 7.0) * IN)
+
+
 if floor_rect and LIGHTPLAN:
     for l_ in LIGHTPLAN:
         if l_['type'] == 'recess': downlight(l_['X'], l_['Y'], watts=4.0, cone=75)    # soft pools, nothing overpowering
+        elif l_['type'] == 'pendant' and l_.get('style') == 'tronchi': tronchi_flush(l_['X'], l_['Y'])
         elif l_['type'] == 'pendant' and STAGE != 'kitchen': pendant_generic(l_['X'], l_['Y'])
 elif floor_rect:
     n_ = max(1, int(round(WID / 48)))
@@ -1529,6 +1570,7 @@ except Exception: pass
 sc.cycles.use_denoising = True; sc.cycles.denoiser = 'OPENIMAGEDENOISE'
 sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'; sc.cycles.denoising_prefilter = 'ACCURATE'
 sc.cycles.max_bounces = 8; sc.cycles.diffuse_bounces = 4; sc.cycles.glossy_bounces = 4; sc.cycles.sample_clamp_indirect = 8.0
+sc.cycles.transparent_max_bounces = 64   # layered crystal and glass prisms (11.11.26)
 sc.cycles.caustics_reflective = False; sc.cycles.caustics_refractive = False; sc.cycles.blur_glossy = 1.0
 sc.view_settings.view_transform = 'Khronos PBR Neutral'; sc.view_settings.look = 'None'
 if PERSP:

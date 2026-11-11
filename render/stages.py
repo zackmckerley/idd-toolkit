@@ -411,6 +411,37 @@ def stage_kitchen():
             for o in set(bpy.data.objects) - before: o.matrix_world = M2 @ o.matrix_world
     import_model('ceramic_vase_01', 11.0, ISL_X + 30, yN - 18, 36.0, 10)
     import_model('wooden_bowl_01', 3.0, ISL_X + 32, yS + 26, 36.0, 0)
+    # the dining end (owner 11.11.26, his reference): a 94 x 40 soft-rectangle travertine top on a dark bronze tulip pedestal,
+    # six camel velvet chairs on bronze frames, an oval two-tier glass-rod chandelier in aged brass 33 in. over the top.
+    # Placed east of the island: 58 in. from the island top's seating edge to the table (stools and chairs back to back,
+    # VERIFY 60 in.), 37-3/8 in. from the table to the slider; on the island's centre line.
+    # slider 04 on the east wall (FOR A-201: 15'-9" four-panel slider, head 9'-9"): the view captured its glazing but the
+    # glazing builder is a no-op, so the wall rendered solid (found 11.11.26). Frames in FOR's dark bronze, clear glass, the
+    # deck and planting outside. View x maps to world Y = DEP - (x - 24) (the east view's --shift EAST=-24).
+    ev = next((v for v in ALL if v['view'].startswith('EAST ELEVATION - SLIDER')), None)
+    if ev:
+        fr_ = material('FRAME-BLK'); gl_ = material('GLASS-CLEAR'); E_ = WID
+        gz = sorted((c['args']['x0'], c['args']['x1']) for c in ev['calls'] if c['comp'] == 'glazing')
+        Yv = lambda x: DEP - (x - 24.0)
+        edges = [52.0] + [q for g in gz for q in g] + [241.0]
+        for k in range(0, len(edges), 2):                                   # jambs and mullions between the lites
+            a_, b_ = edges[k], edges[k + 1]
+            if b_ - a_ > 0.2: wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, 117.0, fr_, 'slider_stile')
+        for (a_, b_) in gz:
+            wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 0.0, 3.0, fr_, 'slider_sill'); wbox(E_ + 1.0, E_ + 4.5, Yv(b_), Yv(a_), 114.5, 117.0, fr_, 'slider_head')
+            wbox(E_ + 2.6, E_ + 2.85, Yv(b_), Yv(a_), 3.0, 114.5, gl_, 'slider_glass')
+            wcyl(E_ + 0.6, Yv(b_) + 2.5, 40.0, 0.35, 14.0, 'z', fr_, 'slider_pull')
+        dk = material('DECK-01') if 'DECK-01' in MATS else material('ST-01')
+        wbox(E_ + 6.0, E_ + 186.0, -60.0, DEP + 60.0, -6.0, -0.5, dk, 'kitchen_deck')
+        MATS.setdefault('HEDGE-K', {'hex': '#2F4A26', 'rough': 0.9, 'kind': 'paint'})
+        leafy([wbox(E_ + 150.0, E_ + 186.0, -60.0, DEP + 60.0, -0.5, 84.0, material('HEDGE-K'), 'kitchen_hedge', soft=6.0)])
+    MATS.setdefault('FAB-VELVET-CAMEL', {'hex': '#A07A52', 'rough': 0.74, 'kind': 'fabric', 'texture': 'acg/Fabric062'})
+    camel = material('FAB-VELVET-CAMEL')
+    DX_ = ISL_X - TOFF + TOPD + 58.0 + 20.0; DY_ = yN - ISL_L / 2
+    dining_table(DX_, DY_, 94.0, 40.0, 'y')
+    for dy in (-28.0, 0.0, 28.0):
+        dining_chair(DX_ - 27.6, DY_ + dy, '+x', camel, 'dchair_w'); dining_chair(DX_ + 27.6, DY_ + dy, '-x', camel, 'dchair_e')
+    oval_rod_chandelier(DX_, DY_, 63.0, H, 60.0, 30.0, 'y')
 
 
 def board_material(code='WD-01'):
@@ -453,7 +484,7 @@ def board_material(code='WD-01'):
     return m
 
 
-def board_floor(key, code='WD-01', top=0.0, thick=0.75):
+def board_floor(key, code='WD-01', top=0.0, thick=0.75, under=('floor', 'nook_floor')):
     """Build render/floors/<key>.json (floors_gen.py): one mesh of every board, top at `top`, its UVs along the board in
     inches; the room's own floor slabs drop 0.8 in. and turn dark, the underlay seen in the joints."""
     d = json.load(open(os.path.join(HERE, 'floors', key + '.json')))
@@ -479,7 +510,7 @@ def board_floor(key, code='WD-01', top=0.0, thick=0.75):
     o = bpy.data.objects.new('board_floor', me); bpy.context.collection.objects.link(o); o.data.materials.append(board_material(code))
     MATS.setdefault('FLOOR-UNDER', {'hex': '#17110C', 'rough': 0.9, 'kind': 'paint'})
     for ob in list(bpy.data.objects):
-        if ob.type == 'MESH' and ob.name.split('.')[0] in ('floor', 'nook_floor'):
+        if ob.type == 'MESH' and ob.name.split('.')[0] in under:
             ob.location[2] -= (thick + 0.05) * IN; ob.data.materials.clear(); ob.data.materials.append(material('FLOOR-UNDER'))
     return o
 
@@ -547,6 +578,62 @@ def slot_diffuser(x0, x1, y0, y1, z, slots=1, name='slot_diffuser'):
         for xx in (x0, x1 - fl): wbox_abs(xx, xx + fl, y0, y1, z - 0.3, z - 0.1, fw, name)
 
 
+def pillow(cx, cy, cz, facing, mat, w=19.0, h=19.0, t=6.0, tilt=14.0, spin=0.0, name='pillow'):
+    """A throw pillow leaning on a sofa back: a rounded, puffed cushion (subdivided bevelled box), its back against the back
+    cushion, tilted `tilt` degrees toward it. facing: the way the seat faces ('-x', '+x', '-y', '+y'). (A square box stood
+    upright read as a block, owner 11.11.26.)"""
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(cx * IN, cy * IN, cz * IN)); o = bpy.context.active_object; o.name = name
+    along_x = facing in ('-x', '+x'); sg = -1 if facing in ('-x', '-y') else 1
+    o.scale = ((t if along_x else w) * IN, (w if along_x else t) * IN, h * IN)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    bv = o.modifiers.new('bevel', 'BEVEL'); bv.width = 2.2 * IN; bv.segments = 3; bv.limit_method = 'NONE'
+    ss = o.modifiers.new('subsurf', 'SUBSURF'); ss.levels = 2; ss.render_levels = 2
+    # puff: the faces bulge (scale the middle out along the thickness)
+    for v in o.data.vertices:
+        u = v.co.y / (w * IN / 2) if along_x else v.co.x / (w * IN / 2); vv = v.co.z / (h * IN / 2)
+        k = max(0.0, 1 - u * u) * max(0.0, 1 - vv * vv)
+        if along_x: v.co.x *= (1 + 0.6 * k)
+        else: v.co.y *= (1 + 0.6 * k)
+    a_ = _m.radians(tilt) * (-sg)
+    o.rotation_euler = ((0, a_, _m.radians(spin)) if along_x else (-a_, 0, _m.radians(spin)))
+    for pg in o.data.polygons: pg.use_smooth = True
+    o.data.materials.append(mat); return o
+
+
+def lounge_chair(cx, cy, facing='-x', name='lounge'):
+    """Owner's reference (11.11.26, the reading nook): a low lounge chair, walnut frame with splayed legs and flat arms, a
+    cream boucle seat and a raked back cushion. (cx, cy) the seat centre; facing '-x' or '+x' or '-y' or '+y'."""
+    MATS.setdefault('WALNUT', {'hex': '#4A2F1E', 'rough': 0.45, 'kind': 'wood', 'texture': 'oak_veneer_01', 'tint': [0.42, 0.29, 0.21]})
+    wal = material('WALNUT'); bou = boucle_material('FAB-BOUCLE-CREAM', '#E2D9CA', '#EFE8DC')
+    sgn = {'-x': -1, '+x': 1, '-y': -1, '+y': 1}[facing]; along_x = facing in ('-x', '+x')
+    def P(u, v):          # chair local: u from the front edge toward the back, v across (left to right seen from the front)
+        return (cx - sgn * (u - 15.0), cy + sgn * v) if along_x else (cx + sgn * v, cy - sgn * (u - 15.0))
+    def B(u0, u1, v0, v1, z0, z1, mat, nm, soft=0.0):
+        (xa, ya), (xb, yb) = P(u0, v0), P(u1, v1)
+        return wbox(min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb), z0, z1, mat, nm, soft=soft)
+    for v in (-14.0, 12.75):                                               # side frames: front and back legs, flat arm
+        B(1.0, 3.0, v, v + 1.25, 0.0, 24.0, wal, nm=name + '_leg', soft=0.25)
+        B(26.0, 28.0, v, v + 1.25, 0.0, 22.0, wal, nm=name + '_leg', soft=0.25)
+        B(-0.5, 29.0, v - 0.25, v + 1.5, 23.0, 24.4, wal, nm=name + '_arm', soft=0.4)
+        B(2.0, 27.0, v, v + 1.25, 11.0, 13.0, wal, nm=name + '_rail', soft=0.2)
+    B(2.0, 27.5, -12.75, 12.75, 11.5, 13.0, wal, nm=name + '_deck')
+    B(2.5, 26.0, -12.6, 12.6, 13.0, 18.5, bou, nm=name + '_seat', soft=2.2)
+    pts = [(21.5, 17.0), (27.0, 17.0), (32.5, 36.0), (27.0, 37.5)]           # the raked back cushion, in (u, z)
+    if along_x: o_ = wprism_xz([(P(u, 0)[0], z) for u, z in pts], cy - 12.4, cy + 12.4, bou, name + '_back')
+    else: o_ = wprism_yz([(P(u, 0)[1], z) for u, z in pts], cx - 12.4, cx + 12.4, bou, name + '_back')
+    bv = o_.modifiers.new('bevel', 'BEVEL'); bv.width = 2.0 * IN; bv.segments = 4; bv.limit_method = 'NONE'
+    for pg in o_.data.polygons: pg.use_smooth = True
+    for v_ in (-11.5, 11.5): B(23.0, 31.5, v_ - 1.25, v_ + 1.25, 14.0, 34.0, wal, nm=name + '_back_post', soft=0.3) if False else None
+
+
+def drum_table(cx, cy, r=9.0, h=20.0):
+    """A cognac leather drum side table (owner's reference)."""
+    MATS.setdefault('LEATHER-COGNAC', {'hex': '#8A4E2A', 'rough': 0.45, 'kind': 'fabric', 'texture': 'acg/Leather026'})
+    lt = material('LEATHER-COGNAC'); o = wcyl(cx, cy, h / 2, r, h, 'z', lt, 'drum_table')
+    wcyl(cx, cy, h + 0.25, r - 0.6, 0.5, 'z', lt, 'drum_top')
+    import_model('wooden_bowl_01', 2.0, cx, cy, h + 0.5, 0)
+
+
 def stage_mbr():
     """Master bedroom (ID-310 to ID-313; shell from build_mbr_shell.py, room frame X east of the west wall face, Y north of the
     window wall face). The reading nook open to the room at its southeast: its four walls built from their own elevations at
@@ -572,8 +659,8 @@ def stage_mbr():
     # ceilings: the nook south of the window wall line at 9'-6"; the strip east of the bed wall at the room's 9'-10"
     # owner 11.11.26: the cove runs on round the nook: its field at the room's 9'-10" (FOR's 9'-6" there to confirm), the
     # cove ledge at 9'-6" on its walls
-    wbox_abs(NX0 - 0.02, NX1 + 8, NY0 - 8, 0.0, H, H + 4.0, clg, 'nook_ceiling')
-    wbox_abs(WID + 12, NX1 + 8, 0.0, NY1 + 8, H, H + 4.0, clg, 'nook_ceiling')
+    wbox_abs(NX0 - 0.02, NX1 + 8, NY0 - 8, -12.0, H, H + 4.0, clg, 'nook_ceiling')    # the room's ceiling reaches Y -12 and X 195.375:
+    wbox_abs(WID + 12, NX1 + 8, -12.0, NY1 + 8, H, H + 4.0, clg, 'nook_ceiling')     # no overlap (a shared face rendered a black bar)
     for X_ in (156.6, 208.0): ceiling_can(X_, -22.5, H, watts=14.0)                           # L1 x2 (RCP, 3/16" scale), now in the 9'-10" field
     # jib door 21 (32 in., head 8'-0"): a flush painted leaf; its 1/8 in. reveals cut the base, cap and panel moulding
     gap = material('GAP'); jx0, jx1 = NX0 + 59.75, NX0 + 91.75
@@ -598,8 +685,20 @@ def stage_mbr():
     planter(-6.0, 122.0, -55.0, -10.0)
     # HVAC (RCP-Lighting 261109 floor 2, FOR M-100/M-101 symbols): the supply slot near the TV wall and the one moved clear
     # of the headboard wall ("MOVE (FOR/MECH)"); sheet points converted at 1.125 pt/in. from the wall faces (VERIFY types)
-    slot_diffuser(12.6, 15.1, 50.6, 110.6, H, slots=1)
+    slot_diffuser(5.5, 8.0, 50.6, 110.6, H - 4.0, slots=1)    # in the underside of FOR's 14 in. cove soffit, not across its edge (COORD)
     slot_diffuser(145.0, 149.3, 50.7, 110.7, H, slots=2)
+    # the reading nook (owner's reference, 11.11.26): two boucle lounge chairs facing the bookcase across a small rug, a
+    # cognac drum table between them (staging; the furniture plan ID-152 to match)
+    # owner 11.11.26 (second pass): one sofa, its back against the nook's east wall, facing the bookcase: the reference's olive
+    # velvet, 6'-4" long, 3'-0" deep, 10" clear of the north wall (jib door 21's swing to VERIFY); the drum table in front
+    MATS.setdefault('FAB-RUG-NOOK', {'hex': '#B8AD9C', 'rough': 0.95, 'kind': 'fabric', 'texture': 'acg/Carpet016'})
+    MATS.setdefault('FAB-VELVET-OLIVE', {'hex': '#45432C', 'rough': 0.7, 'kind': 'fabric', 'texture': 'acg/Fabric062'})
+    wbox(146.0, 224.0, -44.0, 34.0, 0.0, 0.4, material('FAB-RUG-NOOK'), 'nook_rug', soft=0.2)
+    boucle_sofa(NX1, -42.0, 76.0, 36.0, '-x', modules=2, name='nook_sofa', fab=material('FAB-VELVET-OLIVE'))
+    painting('meadow', NX1, -4.0, 65.0, 60.0, 38.0, '-x', frame='walnut', light=False, name='art_nook')   # owner 11.11.26: wide, over the sofa
+    drum_table(176.0, -4.0, r=10.0, h=17.0)
+    MATS.setdefault('FAB-PILLOW-CREAM', {'hex': '#E8E0D2', 'rough': 0.95, 'kind': 'fabric', 'texture': 'rough_linen'})
+    # no throw pillows on the sofa (owner 11.11.26: remove them)
     # rug under the bed: the bed (ID-312) is centered on the bed wall, Y 102.8
     rug = material('FAB-RUG'); by = DEP - 58.625
     wbox(WID - 120.0, WID - 18.0, by - 54.0, by + 54.0, 0.0, 0.4, rug, 'rug', soft=0.15)
@@ -725,7 +824,7 @@ def SE_open_stair(wallm, trim, wd, ys, CH, UOP, UKW):
     XL0, XL1 = 169.4, 235.4                                   # the lower flight's bottom and top risers
     nlf = lambda X: RS + (X - XL0) * (LSE - RS) / (XL1 - XL0)
     MATS.setdefault('ALU-BLK', {'hex': '#141414', 'rough': 0.42, 'kind': 'paint'})   # powder-coated matte black aluminum
-    alu = material('ALU-BLK')
+    alu = bronze_mat(); oakr = rail_oak()   # dark bronze, white oak handrails (owner 11.11.26)
     # knee wall on the east flight's underside
     wprism_yz([(-UOP, 0.0), (-UOP, under(UOP)), (-UBOT, under(UBOT)), (-UBOT, LSE - ST), (-UKW, LSE - ST), (-UKW, 0.0)], 230.7, 236.7, wallm, 'knee_wall')
     # east flight: painted blocks (the cut stringer flush with the knee wall), oak treads returned past it; north of the opening
@@ -784,10 +883,10 @@ def SE_open_stair(wallm, trim, wd, ys, CH, UOP, UKW):
     uc_ = UBOT - (CH - 36.0 - LSE - RS) * TR / RS                # where the top rail meets the head: a channel takes the pickets from there
     wbox(GX - 0.75, GX + 0.75, -uc_, -(UOP), CH - 1.5, CH - 0.01, alu, 'guard_channel')
     # wall handrails, 1-1/2", 3'-0" over the nosings (FOR A-411), black to match
-    wprism_yz([(-UBOT, nose(UBOT) + 34.5), (-UTOP, nose(UTOP) + 34.5), (-UTOP, nose(UTOP) + 36.0), (-UBOT, nose(UBOT) + 36.0)], 277.0, 278.5, alu, 'handrail')
-    wbox(277.0, 278.5, ys + 2.0, -UBOT, LSE + 34.5, LSE + 36.0, alu, 'handrail', soft=0.5)
-    wbox(XL1, 277.0, ys + 2.0, ys + 3.5, LSE + 34.5, LSE + 36.0, alu, 'handrail', soft=0.5)
-    wprism_xz([(XL0, nlf(XL0) + 34.5), (XL1, nlf(XL1) + 34.5), (XL1, nlf(XL1) + 36.0), (XL0, nlf(XL0) + 36.0)], ys + 2.0, ys + 3.5, alu, 'handrail')
+    wprism_yz([(-UBOT, nose(UBOT) + 34.5), (-UTOP, nose(UTOP) + 34.5), (-UTOP, nose(UTOP) + 36.0), (-UBOT, nose(UBOT) + 36.0)], 277.0, 278.5, oakr, 'handrail')
+    wbox(277.0, 278.5, ys + 2.0, -UBOT, LSE + 34.5, LSE + 36.0, oakr, 'handrail', soft=0.5)
+    wbox(XL1, 277.0, ys + 2.0, ys + 3.5, LSE + 34.5, LSE + 36.0, oakr, 'handrail', soft=0.5)
+    wprism_xz([(XL0, nlf(XL0) + 34.5), (XL1, nlf(XL1) + 34.5), (XL1, nlf(XL1) + 36.0), (XL0, nlf(XL0) + 36.0)], ys + 2.0, ys + 3.5, oakr, 'handrail')
     # the stairwell: its east wall, the floor 2 wall over the opening's head, the cap at the floor 2 ceiling
     wbox(XE, XE + 6.0, ys - 6.0, -6.0, 0.0, 272.0, wallm, 'stairwell_e')
     wbox(230.7, 236.7, -158.0, -UTOP, CH + 24.0, 268.0, wallm, 'stairwell_w')
@@ -937,7 +1036,7 @@ def south_end(wallm, trim, pt1):
         for pg in o.data.polygons: pg.use_smooth = True
         if rod_top > zb + h: wbox(X_ - 0.25, X_ + 0.25, Y_ - 0.25, Y_ + 0.25, zb + h, rod_top, material('STEEL-SS'), 'pendant_rod')
         wpoint(X_, Y_, zb + h / 2, watts, radius=d / 3, color=(1.0, 0.86, 0.68))
-    drum(161.3, -74.8, CH - 7.0, 16.0, 6.0, 45.0, CH)                 # semi-flush: 10'-8" is too low to hang a drum
+    rod_flush(161.3, -74.8, CH)                                         # owner 11.11.26: glass-rod flush mount at the piano end, aged brass
     drum(109.7, -244.5, 92.0, 18.0, 12.0, 60.0, CH + 6.0)             # the foyer pendant, in its tray
     def sconce_y(X_, yf, side, z_=66.0, watts=12.0):   # on a wall whose face is Y = yf, the room on `side`
         y0_, y1_ = sorted((yf, yf + side * 1.0)); wbox(X_ - 2.5, X_ + 2.5, y0_, y1_, z_ - 6.0, z_ + 6.0, material('STEEL-SS'), 'sconce_plate', soft=0.3)
@@ -957,29 +1056,33 @@ def south_end(wallm, trim, pt1):
     sconce_x(280.0, -1, -95.0, 169.0, 70.0); sconce_y(257.7, ys, 1, LSE_ + 66.0, 20.0)   # the stairwell read black behind the pickets at 25 W (review 11.10.26)
     if os.environ.get('PR_PIANO'): grand_piano(218.0, -64.0)
 
-def cove_w(axis, c, a0, a1, side, top, P=5.5, F=5.0, crown=True, name='cove'):
-    """The rectangular LED cove soffit in world inches (owner 11.11.26, as stage_mbr's): a drywall ledge P deep and F high off a
-    face line c (X = c for axis 'y', Y = c for axis 'x'), the room on `side` (+1 toward +X or +Y); its top at `top` open to the
-    ceiling above with the LC1 strip on it behind a 1-1/4 in. lip, the crown in the corner under it (walls only)."""
+def cove_w(axis, c, a0, a1, side, top, P=14.0, F=None, crown=True, name='cove'):
+    """The LED cove soffit in world inches per FOR's detail (A-401 section 2, owner 11.11.26): a 5/8 in. gypsum soffit P deep
+    off a face line c (X = c for axis 'y', Y = c for axis 'x'), the room on `side` (+1 toward +X or +Y), its underside at `top`
+    = 4 in. under the ceiling, the room edge open: the slot between the board and the ceiling is the cove, the LED on the
+    hanger 3 in. back from the edge throwing out across the ceiling, which runs on over the soffit. Crown in the corner under
+    it (walls only). F is ignored (kept so old calls still run)."""
     MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 2.2})
     clg = material(R('ceiling', 'PT-01')); trm = material('PT-01-SATIN')
-    lo_, hi_ = min(a0, a1), max(a0, a1)
+    lo_, hi_ = min(a0, a1), max(a0, a1); B_, S_ = 0.625, 3.0; ceil_ = top + 4.0
     def bx(p0, p1, z0, z1, mat, nm):
         q0, q1 = sorted((c + side * p0, c + side * p1))
         return wbox(q0, q1, lo_, hi_, z0, z1, mat, nm) if axis == 'y' else wbox(lo_, hi_, q0, q1, z0, z1, mat, nm)
-    bx(0.0, P, top - F, top, clg, name + '_soffit')
-    bx(P - 0.75, P, top, top + 1.25, clg, name + '_lip')
-    bx(1.2, 2.4, top, top + 0.4, material('LED-STRIP'), name + '_led')
+    bx(0.0, P, top, top + B_, clg, name + '_soffit')
+    bx(P - S_ - 1.5, P - S_, top + B_, ceil_ - 0.02, clg, name + '_hanger')
+    bx(P - S_, P - S_ + 0.3, top + B_ + 1.0, top + B_ + 1.6, material('LED-STRIP'), name + '_led')
     Lr = hi_ - lo_
     if Lr > 4:
         ld = bpy.data.lights.new('cove_led', 'AREA'); ld.shape = 'RECTANGLE'; ld.size = (Lr - 2) * IN; ld.size_y = 1.0 * IN
         ld.energy = 3.0 * Lr / 12.0; ld.color = (1.0, 0.83, 0.62)
         o_ = bpy.data.objects.new('cove_led', ld); bpy.context.collection.objects.link(o_); o_.visible_glossy = False
-        mid = (lo_ + hi_) / 2; q = c + side * 1.8
-        o_.location = ((q, mid, top + 0.6) if axis == 'y' else (mid, q, top + 0.6)); o_.location = tuple(v * IN for v in o_.location)
-        o_.rotation_euler = (_m.pi, 0, _m.pi / 2 if axis == 'y' else 0)
+        mid = (lo_ + hi_) / 2; q = c + side * (P - S_ + 0.6)
+        o_.location = ((q, mid, top + B_ + 1.3) if axis == 'y' else (mid, q, top + B_ + 1.3)); o_.location = tuple(v * IN for v in o_.location)
+        # area lights shine down their -Z; tip it out of the slot toward the room (side) and 25 deg up
+        tilt = _m.radians(115)
+        o_.rotation_euler = ((0, -side * tilt, 0) if axis == 'y' else (side * tilt, 0, 0))
     if crown:
-        zc = top - F - 0.02; pr = [(0.0, zc), (0.0, zc - 3.75), (0.5, zc - 3.75), (0.6, zc - 3.25)]
+        zc = top - 0.02; pr = [(0.0, zc), (0.0, zc - 3.75), (0.5, zc - 3.75), (0.6, zc - 3.25)]
         for i in range(1, 13):
             t = i / 12.0; pr.append((0.6 + 2.65 * (0.5 - 0.5 * _m.cos(_m.pi * t)), zc - 3.25 + 2.75 * t))
         pr += [(3.25, zc - 0.5), (3.25, zc)]
@@ -996,24 +1099,25 @@ def band_panels(axis, c, a0, a1, side, z0, z1, mold=1.5, inset=3.0, target=40.0,
     n = max(1, int(round((Lr - 4) / (target + 4)))); pw = (Lr - 4 * (n + 1)) / n
     for k in range(n):
         p0 = lo_ + 4 + k * (pw + 4); p1 = p0 + pw
+        # rails full length, stiles between them: overlapping corner boxes shared faces and rendered black corners (owner 11.11.26)
         for (u0, u1, v0, v1) in ((p0, p1, z0 + inset, z0 + inset + mold), (p0, p1, z1 - inset - mold, z1 - inset),
-                                 (p0, p0 + mold, z0 + inset, z1 - inset), (p1 - mold, p1, z0 + inset, z1 - inset)):
+                                 (p0, p0 + mold, z0 + inset + mold, z1 - inset - mold), (p1 - mold, p1, z0 + inset + mold, z1 - inset - mold)):
             q0, q1 = sorted((c, c + side * 0.625))
             if axis == 'y': wbox(q0, q1, u0, u1, v0, v1, trm, name, soft=0.2)
             else: wbox(u0, u1, q0, q1, v0, v1, trm, name, soft=0.2)
 
 
-def boucle_material():
+def boucle_material(key='FAB-BOUCLE', c0='#4A3B2F', c1='#66523F'):
     """Boucle (Megan's reference sofa, 11.11.26): a warm taupe-brown loop yarn: base colour with a fine loop-scale tone
     variation, a strong small-scale bump from a Voronoi of 1/8 in. cells, full roughness and a soft sheen."""
-    m = bpy.data.materials.get('FAB-BOUCLE')
+    m = bpy.data.materials.get(key)
     if m: return m
-    m = bpy.data.materials.new('FAB-BOUCLE'); m.use_nodes = True; N_ = m.node_tree.nodes; L_ = m.node_tree.links; b = N_['Principled BSDF']
+    m = bpy.data.materials.new(key); m.use_nodes = True; N_ = m.node_tree.nodes; L_ = m.node_tree.links; b = N_['Principled BSDF']
     tc = N_.new('ShaderNodeTexCoord'); vo = N_.new('ShaderNodeTexVoronoi'); vo.feature = 'SMOOTH_F1'; vo.inputs['Scale'].default_value = 1.0 / (0.16 * IN)
     L_.new(tc.outputs['Object'], vo.inputs['Vector'])
     nz = N_.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.0 / (0.6 * IN); L_.new(tc.outputs['Object'], nz.inputs['Vector'])
     ramp = N_.new('ShaderNodeValToRGB'); L_.new(nz.outputs['Fac'], ramp.inputs['Fac'])
-    ramp.color_ramp.elements[0].color = (*hex_lin('#4A3B2F'), 1); ramp.color_ramp.elements[1].color = (*hex_lin('#66523F'), 1)
+    ramp.color_ramp.elements[0].color = (*hex_lin(c0), 1); ramp.color_ramp.elements[1].color = (*hex_lin(c1), 1)
     L_.new(ramp.outputs['Color'], b.inputs['Base Color'])
     b.inputs['Roughness'].default_value = 0.95
     try:   # a little warm sheen at grazing angles; a white sheen washed the brown out to grey (test 11.11.26)
@@ -1026,11 +1130,11 @@ def boucle_material():
     return m
 
 
-def boucle_sofa(ox, oy, length, depth, facing, modules=3, name='sofa'):
+def boucle_sofa(ox, oy, length, depth, facing, modules=3, name='sofa', fab=None):
     """A low modular boucle sofa like the owner's reference: rounded drum arms, block seat cushions with deep rounded edges,
     a continuous rounded back bolster, a recessed plinth. (ox, oy) is the back-left corner seen from the front; facing
     '+x' or '+y' (the direction the seat looks), length along the back, depth back to front. Inches, world."""
-    fab = boucle_material(); pl = material('SOFA-PLINTH')
+    fab = fab or boucle_material(); MATS.setdefault('SOFA-PLINTH', {'hex': '#2A231D', 'rough': 0.6, 'kind': 'paint'}); pl = material('SOFA-PLINTH')
     def W(u0, u1, v0, v1):        # local (u along the back from its left end, v from the back toward the front) to world
         if facing == '+x': return (ox + v0, ox + v1, oy - u1, oy - u0)
         if facing == '+y': return (ox + u0, ox + u1, oy + v0, oy + v1)
@@ -1088,6 +1192,9 @@ def bath_compartments():
         build_wall(at(nm), place(X, Y, rot), 60.0)
     V, roles = V0, R0
     clg = material(R('ceiling', 'PT-01')); wd = material(R('floor', 'WD-01'))
+    # the alcove's stone wraps its two jamb returns to the room face (a painted return read as a dark stripe, 11.11.26)
+    stn = material(R('tile', 'CAL-MONET-HONED'))
+    wbox_abs(48.625, 49.0, -6.15, -0.01, 0.0, H, stn, 'alcove_jamb_stone'); wbox_abs(113.0, 113.375, -6.15, -0.01, 0.0, H, stn, 'alcove_jamb_stone')
     wbox_abs(-6.0, 168.0, YB - 8, -12.0, H, H + 4.0, clg, 'comp_ceiling')
     wbox_abs(-6.0, 168.0, YB - 8, -12.0, -2.0, 0.0, wd, 'nook_floor')          # underlay, dropped and darkened by board_floor
     board_floor('bath', 'WD-01')
@@ -1123,6 +1230,94 @@ def bath_compartments():
     terrace(-96.0, -6.0, YB - 10.0, 79.0, -2.0)
 
 
+def wainscot_w(axis, c, a0, a1, side, top, cuts=(), rail=(41.0, 44.0), base=8.5, target=30.0, name='wains'):
+    """Floor 1 wainscot (owner 11.11.26: "are we doing wainscot in the 1st level too? ... the walls look bare"): the master
+    bedroom's language at floor 1's height: a 3 in. chair rail with its top at 1/3 of the 10'-8" ceiling (3'-8"), picture-frame
+    panels below and above it in matching bays, rails full length and stiles between them (no shared faces), all in the
+    tonal trim. `cuts` are door and opening extents (casing included); bays are laid out per solid segment."""
+    trm = material(R('trim', 'PT-01-SATIN')); lo_, hi_ = min(a0, a1), max(a0, a1)
+    segs = [(lo_, hi_)]
+    for c0, c1 in sorted(cuts):
+        nxt = []
+        for s0, s1 in segs:
+            if c1 <= s0 or c0 >= s1: nxt.append((s0, s1)); continue
+            if c0 > s0: nxt.append((s0, c0))
+            if c1 < s1: nxt.append((c1, s1))
+        segs = nxt
+    def B(u0, u1, z0, z1, d0, d1, nm, soft=0.2):
+        q0, q1 = sorted((c + side * d0, c + side * d1))
+        return wbox(q0, q1, u0, u1, z0, z1, trm, nm, soft=soft) if axis == 'y' else wbox(u0, u1, q0, q1, z0, z1, trm, nm, soft=soft)
+    for s0, s1 in segs:
+        L_ = s1 - s0
+        if L_ < 10: continue
+        B(s0, s1, rail[0], rail[1], 0.0, 0.7, name + '_rail', soft=0.3)                    # chair rail, less proud than the casing
+        n = max(1, int(round((L_ - 4) / (target + 4)))); pw = (L_ - 4 * (n + 1)) / n
+        if pw < 6: continue
+        for k in range(n):
+            p0 = s0 + 4 + k * (pw + 4); p1 = p0 + pw
+            for z0, z1 in ((base + 3.0, rail[0] - 3.0), (rail[1] + 4.0, top - 5.0)):
+                if z1 - z0 < 8: continue
+                m = 1.5
+                for (u0, u1, v0, v1) in ((p0, p1, z0, z0 + m), (p0, p1, z1 - m, z1), (p0, p0 + m, z0 + m, z1 - m), (p1 - m, p1, z0 + m, z1 - m)):
+                    B(u0, u1, v0, v1, 0.0, 0.625, name + '_mold')
+
+
+def crystal_chandelier(X, Y, zb, ceiling, name='chandelier'):
+    """Owner's reference (11.11.26, living room): a tiered crystal chandelier, champagne gold rings and five tiers of clear
+    crystal prisms, wide second tier tapering below, on a chain to a canopy. Bottom at zb (13'-0": just above the gallery
+    floor, so it hangs in the upper volume and sits at eye level from the gallery). About 34 in. across and 46 in. tall."""
+    MATS.setdefault('METAL-CHAMPAGNE', {'hex': '#C9B48A', 'rough': 0.25, 'kind': 'metal'})
+    gold = material('METAL-CHAMPAGNE')
+    cm = bpy.data.materials.get('CRYSTAL')
+    if cm is None:
+        # thin-glass crystal: transparent plus a Fresnel mirror reflection. Refractive glass through a dozen overlapping
+        # prisms ran out of bounces and read as a dark smoked cage (test 11.11.26)
+        cm = bpy.data.materials.new('CRYSTAL'); cm.use_nodes = True; N_ = cm.node_tree.nodes; L_ = cm.node_tree.links
+        out_ = N_['Material Output']; N_.remove(N_['Principled BSDF'])
+        tr = N_.new('ShaderNodeBsdfTransparent'); tr.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1)
+        gl = N_.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value = 0.0
+        fr = N_.new('ShaderNodeFresnel'); fr.inputs['IOR'].default_value = 1.9
+        mx = N_.new('ShaderNodeMixShader'); L_.new(fr.outputs['Fac'], mx.inputs['Fac']); L_.new(tr.outputs[0], mx.inputs[1]); L_.new(gl.outputs[0], mx.inputs[2])
+        em = N_.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (1.0, 0.94, 0.85, 1); em.inputs['Strength'].default_value = 0.05
+        ad = N_.new('ShaderNodeAddShader'); L_.new(mx.outputs[0], ad.inputs[0]); L_.new(em.outputs[0], ad.inputs[1])   # the lit glow inside cut crystal
+        L_.new(ad.outputs[0], out_.inputs['Surface'])
+    tiers = [(8.0, 7.0), (17.0, 11.0), (13.5, 11.0), (9.5, 10.0), (5.0, 8.0)]       # (radius, prism length), top to bottom
+    bm_ = bmesh.new(); z = zb + sum(h for _, h in tiers) * 0.72
+    zt = z
+    for i, (r, h) in enumerate(tiers):
+        n = max(10, int(2 * _m.pi * r / 1.4))
+        ztop = zt; zbot = ztop - h
+        for k in range(n):
+            a_ = 2 * _m.pi * (k + 0.5 * (i % 2)) / n; cx_, cy_ = X + r * _m.cos(a_), Y + r * _m.sin(a_)
+            w_, t_ = 0.55, 0.4; ca, sa = _m.cos(a_), _m.sin(a_)
+            pts = [(cx_ + ca * dx - sa * dy, cy_ + sa * dx + ca * dy) for dx, dy in ((-t_, -w_), (t_, -w_), (t_, w_), (-t_, w_))]
+            vb = [bm_.verts.new((x_ * IN, y_ * IN, zbot * IN)) for x_, y_ in pts]; vt = [bm_.verts.new((x_ * IN, y_ * IN, ztop * IN)) for x_, y_ in pts]
+            bm_.faces.new(vb[::-1]); bm_.faces.new(vt)
+            for j in range(4): bm_.faces.new((vb[j], vb[(j + 1) % 4], vt[(j + 1) % 4], vt[j]))
+        bpy.ops.mesh.primitive_torus_add(major_radius=(r + 0.4) * IN, minor_radius=0.45 * IN, major_segments=64, minor_segments=10,
+                                         location=(X * IN, Y * IN, (ztop + 0.4) * IN))
+        rg = bpy.context.active_object; rg.name = name + '_ring'; rg.data.materials.append(gold)   # a ring, not a disc (a solid disc read as a dark plate)
+        for pg in rg.data.polygons: pg.use_smooth = True
+        zt = ztop - h * 0.42                                                          # tiers overlap like the reference
+    me = bpy.data.meshes.new(name + '_crystal'); bm_.to_mesh(me); bm_.free()
+    o = bpy.data.objects.new(name + '_crystal', me); bpy.context.collection.objects.link(o); o.data.materials.append(cm)
+    o.visible_shadow = False
+    wcyl(X, Y, z + 1.5, 4.0, 2.0, 'z', gold, name + '_crown_plate')
+    for r, _ in tiers:                                                               # thin spokes from the crown to each ring
+        for k in range(4):
+            a_ = _m.pi / 4 + _m.pi * k / 2
+            wbox_abs(min(X, X + r * _m.cos(a_)) - 0.2, max(X, X + r * _m.cos(a_)) + 0.2, min(Y, Y + r * _m.sin(a_)) - 0.2, max(Y, Y + r * _m.sin(a_)) + 0.2, z + 0.2, z + 0.5, gold, name + '_spoke') if False else None
+    bpy.context.scene.cycles.transparent_max_bounces = 64; bpy.context.scene.cycles.glossy_bounces = max(bpy.context.scene.cycles.glossy_bounces, 6)   # layered crystal
+    k = 0; zc = z + 2.5
+    while zc < ceiling - 3.0:                                                         # chain links to the canopy
+        wbox_abs(X - 0.35, X + 0.35, Y - (0.15 if k % 2 else 0.5), Y + (0.15 if k % 2 else 0.5), zc, zc + 2.2, gold, name + '_chain'); zc += 2.0; k += 1
+    wcyl(X, Y, ceiling - 1.0, 3.5, 2.0, 'z', gold, name + '_canopy')
+    for k in range(6):                                                                # candle lamps inside the second tier
+        ld = bpy.data.lights.new('chandelier', 'POINT'); ld.energy = 22.0; ld.shadow_soft_size = 0.8 * IN; ld.color = (1.0, 0.82, 0.6)
+        ol = bpy.data.objects.new(name + '_lamp', ld); bpy.context.collection.objects.link(ol)
+        ol.location = ((X + 8.0 * _m.cos(_m.pi * k / 3)) * IN, (Y + 8.0 * _m.sin(_m.pi * k / 3)) * IN, (z - 8.0) * IN)
+
+
 def stage_living():
     """The living room from build_great_rev1b's numbers: the fireplace wall (ID-231 view 1: plaster breast, WS-01 surround, flush
     hearth, the art-mode TV in its niche, open bookcases each side with 30 in. base cabinets, belt course with the brass rail and
@@ -1137,7 +1332,7 @@ def stage_living():
              TOP_T=1.25, FB_W=42.0, FB_B=6.0, FB_T=36.0, LEG=9.0, SHELF_B=45.5, SHELF_T=48.0, TV_W=66.25, TV_H=37.75, TV_B=56.0)
     E = 280.0; RD = G['RD']; Hh = G['H']
     wallm = material(R('wall', 'PT-02')); trim = material(R('trim', 'PT-01-SATIN')); case_m = material('CAB-CREAM', '-trim')   # tonal trim; cases the kitchen's cabinet colour (owner 11.11.26)
-    ws = material('TRAV-01'); st1 = material('ST-01'); brass = material('METAL-BRASS'); steel = material('STEEL-PT')   # surround and mantel in the breast's travertine (11.11.26)
+    ws = material('TRAV-01'); st1 = material('ST-01'); brass = material('METAL-BRASS'); steel = bronze_mat()   # guard in dark bronze (owner 11.11.26: railing colour); surround and mantel in the breast's travertine (11.11.26)
     def Yw(x): return RD - x                                         # east wall view x (from the north wall) to world Y
     CX = RD / 2; B0 = (RD - G['BW']) / 2; B1 = B0 + G['BW']
     BF = E - G['BD']                                                 # breast face
@@ -1181,7 +1376,7 @@ def stage_living():
     # the set sits nearly flush: its face 1/2 in. behind the breast face, the niche's 2 in. margin dark round it
     wbox(BF + 1.6, BF + 4.0, yc - tw / 2 - 2, yc + tw / 2 + 2, tb - 2, tb + th + 2, wallm, 'niche_back')   # painted returns in shadow, not a void
     wbox(BF + 0.5, BF + 1.6, yc - tw / 2, yc + tw / 2, tb, tb + th, material('TV-BLACK'), 'tv')
-    wbox(BF + 0.3, BF + 0.45, yc - tw / 2 + 0.6, yc + tw / 2 - 0.6, tb + 0.6, tb + th - 0.6, material('PLATE-WHITE'), 'tv_mat')
+    # (owner 11.11.26: a painting over the TV, so the set is shown off, black glass, not in art mode)
     art_ = bpy.data.materials.new('ART-ABSTRACT'); art_.use_nodes = True; an = art_.node_tree.nodes; al = art_.node_tree.links
     # staging: an abstract landscape on the art-mode screen (soft ochre ground, sage band, pale sky), not a blank beige panel (R6)
     ab_ = an['Principled BSDF']; ab_.inputs['Roughness'].default_value = 0.7
@@ -1196,7 +1391,12 @@ def stage_living():
     for pos_, col_ in ((0.30, (0.55, 0.38, 0.20, 1)), (0.42, (0.36, 0.40, 0.30, 1)), (0.55, (0.52, 0.55, 0.48, 1)), (0.70, (0.74, 0.70, 0.62, 1))):
         e_ = el.new(pos_); e_.color = col_
     al.new(aad.outputs['Value'], arp.inputs['Fac']); al.new(arp.outputs['Color'], ab_.inputs['Base Color'])
-    wbox(BF + 0.25, BF + 0.35, yc - tw / 2 + 4.5, yc + tw / 2 - 4.5, tb + 4.5, tb + th - 4.5, art_, 'tv_art')
+    # paintings (owner 11.11.26): a tall narrow canvas on the breast over the TV, 36 x 96, its foot 16 in. over the set and its
+    # middle level with the band each side; the two drawn ART, N.I.C. places under the galleries (ID-231 view 2, ID-233
+    # view 4), hung above the wainscot rail with brass picture lights
+    painting('landscape', BF, yc, 158.0, 36.0, 96.0, '-x', frame='oak', light=False, name='art_breast')
+    painting('abstract', 0.0, 134.5, 78.0, 48.0, 48.0, '+x', frame=None, name='art_west')
+    painting('pinkfield', 46.0, 0.0, 76.0, 36.0, 48.0, '+y', frame='black', name='art_south')
     # ---- the built-ins each side: base cabinet, open cases, belt with the brass rail, the panel band, cap, upper cases, frieze
     rnd = _rnd.Random(23)
     books_m = [material(f'BOOK-{i}') for i in range(8)]
@@ -1236,7 +1436,7 @@ def stage_living():
         dw = (yb - ya - 3.0) / 2
         for j in range(2):
             a_ = ya + 1.5 + j * (dw) + (0.0625 if j else 0); b_ = a_ + dw - 0.125
-            wbox(IF - 0.02, IF + 0.75, a_, b_, 6.0, G['CAB_H'] - 1.5, case_m, 'cab_door', soft=0.1)
+            shaker_door_x(IF, a_, b_, 6.0, G['CAB_H'] - 1.5, case_m)      # the kitchen's slim shaker (owner 11.11.26)
             wbox(IF + 0.75, IF + 1.0, a_, b_, 6.0, G['CAB_H'] - 1.5, material('GAP'), 'door_reveal')
             px = b_ - 2.0 if j == 0 else a_ + 2.0
             wcyl(IF - 0.6, px, G['CAB_H'] - 7.0, 0.25, 6.0, 'z', brass, 'pull')
@@ -1278,12 +1478,18 @@ def stage_living():
     top = Hh - G['COVE']
     # owner 11.11.26: one rectangular LED cove all round the volume at 22'-4": the east wall (cases, breast and its sides), the
     # window wall (12 in. deep, the drapery pocket in it), and the two gallery edges (no crown there, no wall under them)
-    cove_w('y', IF, Yw(RD), Yw(B1), -1, top); cove_w('y', IF, Yw(B0), Yw(0.0), -1, top)
-    cove_w('y', BF, Yw(B1) - 5.5, Yw(B0) + 5.5, -1, top)
-    cove_w('x', Yw(B1), BF, IF, -1, top, name='cove_bs'); cove_w('x', Yw(B0), BF, IF, +1, top, name='cove_bn')
-    cove_w('x', RD, G['GFW'] - 5.5, IF, -1, top, P=12.0, name='cove_win')
-    cove_w('x', -5.5, G['GFW'] - 5.5, IF, +1, top, crown=False, name='cove_gs')
-    cove_w('y', G['GFW'] - 5.5, -5.5, RD, +1, top, crown=False, name='cove_gw')
+    # FOR's detail (A-401 sect. 2): 14 in. soffits, 19-1/2 in. on the window wall with the 5 in. drapery pocket in it. The pieces
+    # tile without overlapping (overlapping coplanar boards render black): the flanks run to the breast sides, the breast's
+    # 10 in. returns are shorter than the soffit so a short piece closes each corner, the window and gallery pieces stop at
+    # the flank and gallery soffits.
+    PS_ = 14.0; PW_ = 19.5; GE_ = G['GFW'] - 5.5
+    cove_w('y', IF, 0.0, Yw(B1), -1, top, P=PS_); cove_w('y', IF, Yw(B0), RD, -1, top, P=PS_)
+    cove_w('y', BF, Yw(B1), Yw(B0), -1, top, P=PS_)
+    cove_w('x', Yw(B1), BF - PS_, IF - PS_, -1, top, P=PS_, crown=False, name='cove_bs')
+    cove_w('x', Yw(B0), BF - PS_, IF - PS_, +1, top, P=PS_, crown=False, name='cove_bn')
+    cove_w('x', RD, GE_ + PS_, IF - PS_, -1, top, P=PW_, name='cove_win')
+    cove_w('x', 0.0, GE_ + PS_, IF - PS_, +1, top, P=PS_, crown=False, name='cove_gs')   # off the south header's face (Y 0)
+    cove_w('y', GE_, 0.0, RD, +1, top, P=PS_, crown=False, name='cove_gw')
     wbox(0.0, G['GFW'] - 5.5, -5.5, RD, top, Hh, material(R('ceiling', 'PT-01')), 'gallery_w_ceiling')   # floor 2 hall, 9'-6" (FOR)
     # ---- the window wall: FOR's 3-panel slider and 3-lite clerestory, divided lites, dark bronze frames, drywall returns
     fr = material('FRAME-BLK'); gl = material('GLASS-CLEAR')
@@ -1311,7 +1517,7 @@ def stage_living():
     PK0, PK1 = G['SL0'] - 15, G['SL1'] + 15
     # (the 22'-4" band is now the window wall's 12 in. cove soffit, cove_win above)
     MATS.setdefault('POCKET', {'hex': '#8A857E', 'rough': 0.8, 'kind': 'paint'})   # the slot's inside in shadow, not a black bar
-    wbox(PK0, PK1, RD - 7.0, RD - 2.0, top - 5.0 - 0.02, top - 0.5, material('POCKET'), 'drapery_pocket')
+    wbox(PK0, PK1, RD - 7.0, RD - 2.0, top - 0.02, top + 0.55, material('POCKET'), 'drapery_pocket')   # the pocket in FOR's soffit
     # the band on the window wall's solid ends, stopped at FOR's jambs (owner 11.11.26)
     band_panels('x', RD, G['GFW'], G['SL0'] - 1.0, -1, G['BELT0'], G['BELT1']); band_panels('x', RD, G['SL1'] + 1.0, IF, -1, G['BELT0'], G['BELT1'])
     # no crown on the window wall: the pocket runs 14 in. past each jamb, leaving 13 in. west and none east (R6: a corbel)
@@ -1340,6 +1546,7 @@ def stage_living():
     wbox(236.7, E, -202.7, -158.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_se')   # over the southeast landing, 6'-8" headroom (FOR); the stairwell open
     wbox_abs(0.0, G['GFW'] - 3, -3.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')   # world coordinates and on to the south corridor: one floor round the corner (a seam showed, 11.11.26)
     wbox_abs(0.0, 236.7, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')   # the stairwell east of 236.7
+    board_floor('hall', 'WD-01', top=G['FF2'] + 0.5, under=('floor2_w', 'floor2_s'))   # board by board with the 4-1/2 in. WD-02 border (ID-102)
     wbox(G['GFW'] - 0.6, G['GFW'], 0.0, RD, G['SOFFIT'], G['FF2'], wallm, 'fascia_w')
     wbox(G['GFW'], E, 0.0, 0.25, G['SOFFIT'], G['FF2'], wallm, 'fascia_s')   # proud of the wall below it: no shared face
     band_panels('y', G['GFW'], 0.0, RD, +1, G['SOFFIT'], G['FF2'] - 1.5)
@@ -1359,19 +1566,31 @@ def stage_living():
             if any(q - 0.75 < p < q + 2.0 for q in posts_): continue        # no picket inside a post
             if axis == 'y': wbox(c - 0.375, c + 0.375, p, p + 0.75, G['FF2'] + 2.0, G['GT'] - 1.5, steel, 'picket')
             else: wbox(p, p + 0.75, c - 0.375, c + 0.375, G['FF2'] + 2.0, G['GT'] - 1.5, steel, 'picket')
-        for z0, z1 in ((G['FF2'] + 2.0, G['FF2'] + 3.5), (G['GT'] - 2.5, G['GT'])):
+        for z0, z1 in ((G['FF2'] + 2.0, G['FF2'] + 3.5), (G['GT'] - 2.5, G['GT'] - 1.25)):
             if axis == 'y': wbox(c - 0.75, c + 0.75, a0, a1, z0, z1, steel, 'guard_rail')
             else: wbox(a0, a1, c - 0.75, c + 0.75, z0, z1, steel, 'guard_rail')
-        posts = [a0] + [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]
+        oak_ = rail_oak()                                                  # white oak cap, 2-3/4 x 1-1/2, eased (owner 11.11.26)
+        if axis == 'y': wbox(c - 1.375, c + 1.375, a0 - 1.0, a1 + 1.0, G['GT'] - 1.25, G['GT'] + 0.25, oak_, 'guard_cap', soft=0.4)
+        else: wbox(a0 - 1.0, a1 + 1.0, c - 1.375, c + 1.375, G['GT'] - 1.25, G['GT'] + 0.25, oak_, 'guard_cap', soft=0.4)
+        posts = [a0 + k * 72.0 for k in range(1, int((a1 - a0) / 72.0) + 1)] + [a1 - 2.0]   # the shared corner post stands at a0
         for p in posts:
-            if axis == 'y': wbox(c - 1.0, c + 1.0, p, p + 2.0, G['FF2'], G['GT'], steel, 'guard_post')
-            else: wbox(p, p + 2.0, c - 1.0, c + 1.0, G['FF2'], G['GT'], steel, 'guard_post')
+            if axis == 'y': wbox(c - 1.0, c + 1.0, p, p + 2.0, G['FF2'], G['GT'] - 1.25, steel, 'guard_post')
+            else: wbox(p, p + 2.0, c - 1.0, c + 1.0, G['FF2'], G['GT'] - 1.25, steel, 'guard_post')
     guard('y', -3.0, RD - 1.0, G['GFW'] - 2.0); guard('x', G['GFW'] - 1.0, IF, -2.0)   # the two runs share the corner post (a gap showed from the corridor, 11.11.26)
-    wbox(G['GFW'] - 3.0, G['GFW'] + 1.0, -3.0, -1.0, G['FF2'], G['GT'] + 0.25, steel, 'guard_corner_post')   # one 4 x 2 corner post, a hair over the rails
+    wbox(G['GFW'] - 3.0, G['GFW'] + 1.0, -3.0, -1.0, G['FF2'], G['GT'] - 1.25, steel, 'guard_corner_post')   # one 4 x 2 corner post, a hair over the rails
     wbox(0.0, 230.7, -60.0, -54.0, G['FF2'], Hh, wallm, 'hall_wall_s')
     wbox(0.0, IF, -60.0, -5.5, 268.0, 272.0, material(R('ceiling', 'PT-01')), 'hall_ceiling')   # floor 2 hall, 9'-6" (FOR), to the gallery cove
     wbox(0.0, 4.0, -60.0, RD, G['FF2'], Hh, wallm, 'hall_wall_w_face')
     wbox(E - 4.0, E, -60.0, 0.0, G['FF2'], Hh, wallm, 'hall_wall_e_face')   # the hall's east end (R6: it was open to the sky)
+    # ---- floor 1 wainscot (owner 11.11.26) on the lower story's solid walls: the west wall under the gallery, the window wall
+    # west of the slider's drapery stack, the south wall under the west gallery, the south end hall's west wall (door 12 cut)
+    wbox(0.0, 0.6, 0.6, RD - 0.6, 0.0, 8.5, trim, 'base_w', soft=0.15)            # the west wall had no base
+    wainscot_w('y', 0.0, 0.6, RD - 0.6, +1, G['SOFFIT'], name='wains_w')
+    wainscot_w('x', RD, 80.0, G['SL0'] - 6.0, -1, G['SOFFIT'], name='wains_n')
+    wainscot_w('x', 0.0, 4.0, 92.2, +1, G['SOFFIT'], name='wains_s')
+    wainscot_w('y', 92.2, -190.0, -6.0, +1, 128.0, cuts=((-126.0, -85.0),), name='wains_hall')
+    # the living room chandelier (owner 11.11.26): centred over the seating, its bottom at 13'-0"
+    crystal_chandelier(176.0, yc, 156.0, Hh)
     # ---- staging (captioned; furniture plan ID-60x to match, owner 11.11.26): Megan's boucle sofa (10 ft) with its back on the
     # west gallery line facing the fireplace, the smaller one (7 ft) perpendicular on the south side facing the windows, a
     # modern coffee table, all on one 12 x 14 ft rug
@@ -1382,11 +1601,10 @@ def stage_living():
     boucle_sofa(G['GFW'] + 4.0, cy + 60.0, 120.0, 42.0, '+x', modules=3, name='sofa')
     boucle_sofa(146.0, 18.0, 84.0, 40.0, '+y', modules=2, name='sofa2')
     # pillows and a throw (the reference's): dark, ochre, gold, a cream throw over the arm
-    for (y_, pm) in ((cy + 40.0, 'FAB-PILLOW-A'), (cy + 22.0, 'FAB-PILLOW-B'), (cy - 30.0, 'FAB-PILLOW-A')):
-        wbox(G['GFW'] + 15.0, G['GFW'] + 21.0, y_ - 9.0, y_ + 9.0, 22.0, 39.0, material(pm), 'pillow', soft=4.5)
+    # no throw pillows on the sofas (owner 11.11.26: remove them)
     MATS.setdefault('FAB-THROW', {'hex': '#E4DCCB', 'rough': 0.95, 'kind': 'fabric', 'texture': 'rough_linen'})
-    wbox(G['GFW'] + 14.0, G['GFW'] + 46.5, cy - 12.0, cy + 6.0, 22.4, 23.6, material('FAB-THROW'), 'throw', soft=0.5)
-    wbox(G['GFW'] + 45.4, G['GFW'] + 46.6, cy - 12.0, cy + 6.0, 6.0, 23.0, material('FAB-THROW'), 'throw_drop', soft=0.4)
+    # the throw over the south arm (a flat sheet across the seat read as a white board, 11.11.26)
+    # (no throw: a box can't drape, and it read as a white board on the arm, 11.11.26)
     # coffee table: a low rounded travertine slab on a recessed plinth, 54 x 30 x 14
     MATS.setdefault('TRAV-TABLE', {'hex': '#D8CDBB', 'rough': 0.45, 'kind': 'stone', 'texture': 'marble_01', 'tint': [0.95, 0.9, 0.82]})
     tx0, tx1 = 166.0, 196.0
@@ -1496,3 +1714,246 @@ def stage_living():
 
 
 STAGES['living'] = stage_living
+
+
+# ======================================================================================================================
+# Decor, owner 11.11.26: paintings with picture lights, the kitchen dining set and its oval glass-rod chandelier, the piano
+# end's glass-rod flush mount, the dark bronze metal family. Paintings are our own (render/art_gen.py), after the owner's
+# references for palette and mood.
+# ======================================================================================================================
+_FACE = {'-y': ((1, 0), (0, -1), 0.0), '+x': ((0, 1), (1, 0), 90.0), '+y': ((-1, 0), (0, 1), 180.0), '-x': ((0, -1), (-1, 0), -90.0)}
+
+
+def rail_oak():
+    MATS.setdefault('OAK-RAIL', {'hex': '#C2A47F', 'rough': 0.35, 'kind': 'wood', 'texture': 'oak_veneer_01', 'tint': [1.205, 1.30, 1.46]})
+    return material('OAK-RAIL')                                           # stained to the WD-01 floor
+
+
+def shaker_door_x(xf, y0, y1, z0, z1, mat, k=1.375, rec=0.25, name='cab_door'):
+    """A slim shaker door facing -X with its face at xf (the kitchen's: a 1-3/8 in. frame, the panel 1/4 in. back), built as
+    stiles full height and rails between them so no two pieces share a face."""
+    f0, f1 = xf - 0.02, xf + 0.75
+    wbox(f0, f1, y0, y0 + k, z0, z1, mat, name + '_stile', soft=0.05); wbox(f0, f1, y1 - k, y1, z0, z1, mat, name + '_stile', soft=0.05)
+    wbox(f0, f1, y0 + k, y1 - k, z0, z0 + k, mat, name + '_rail', soft=0.05); wbox(f0, f1, y0 + k, y1 - k, z1 - k, z1, mat, name + '_rail', soft=0.05)
+    wbox(f0 + rec, f1 - 0.01, y0 + k, y1 - k, z0 + k, z1 - k, mat, name + '_panel')
+
+
+def bronze_mat():
+    MATS.setdefault('METAL-BRONZE-DK', {'hex': '#3A3029', 'rough': 0.38, 'kind': 'metal'})   # warm dark bronze, satin
+    return material('METAL-BRONZE-DK')
+
+
+def _tn_box(cx, cy, facing, t0, t1, n0, n1, z0, z1, mat, nm, soft=0.0):
+    """A box in a wall's frame: t along the wall (to the viewer's right), n out from the face at (cx, cy)."""
+    (tx, ty), (nx, ny), _ = _FACE[facing]
+    xs = [cx + tx * t + nx * n for t in (t0, t1) for n in (n0, n1)]; ys = [cy + ty * t + ny * n for t in (t0, t1) for n in (n0, n1)]
+    return wbox(min(xs), max(xs), min(ys), max(ys), z0, z1, mat, nm, soft=soft)
+
+
+def art_material(key):
+    m = bpy.data.materials.get('ART-' + key)
+    if m: return m
+    m = bpy.data.materials.new('ART-' + key); m.use_nodes = True; N_ = m.node_tree.nodes; L_ = m.node_tree.links
+    bs = N_['Principled BSDF']; bs.inputs['Roughness'].default_value = 0.42
+    ic = N_.new('ShaderNodeTexImage'); ic.image = bpy.data.images.load(os.path.join(HERE, 'art', key + '_col.png'))
+    ih = N_.new('ShaderNodeTexImage'); ih.image = bpy.data.images.load(os.path.join(HERE, 'art', key + '_h.png')); ih.image.colorspace_settings.name = 'Non-Color'
+    bp = N_.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.55; bp.inputs['Distance'].default_value = 0.004
+    L_.new(ic.outputs['Color'], bs.inputs['Base Color']); L_.new(ih.outputs['Color'], bp.inputs['Height']); L_.new(bp.outputs['Normal'], bs.inputs['Normal'])
+    return m
+
+
+def painting(key, cx, cy, zc, w, h, facing, frame='oak', depth=1.5, light=True, light_w=None, name='art'):
+    """A stretched canvas `w` x `h` centred at (cx, cy) on a wall face, its centre at height zc, facing the room ('+x' etc.);
+    a floater frame (oak, walnut, black, brass or None) with a 3/8 in. shadow gap; a brass picture light over it."""
+    (tx, ty), (nx, ny), zr = _FACE[facing]
+    MATS.setdefault('OAK-FRAME', {'hex': '#B48A5A', 'rough': 0.45, 'kind': 'wood', 'texture': 'oak_veneer_01', 'tint': [1.1, 1.15, 1.25]})
+    MATS.setdefault('WALNUT-FRAME', {'hex': '#5A3A26', 'rough': 0.4, 'kind': 'wood', 'texture': 'oak_veneer_01', 'tint': [0.5, 0.36, 0.27]})
+    MATS.setdefault('FRAME-BLACK', {'hex': '#141414', 'rough': 0.45, 'kind': 'paint'})
+    fm = {'oak': 'OAK-FRAME', 'walnut': 'WALNUT-FRAME', 'black': 'FRAME-BLACK', 'brass': 'METAL-BRASS'}.get(frame)
+    _tn_box(cx, cy, facing, -w / 2, w / 2, 0.05, depth - 0.01, zc - h / 2, zc + h / 2, material('GAP'), name + '_stretcher')
+    bpy.ops.mesh.primitive_plane_add(size=1.0, location=((cx + nx * depth) * IN, (cy + ny * depth) * IN, zc * IN))
+    pl = bpy.context.active_object; pl.name = name + '_canvas'; pl.scale = (w * IN, h * IN, 1.0)
+    pl.rotation_euler = (_m.radians(90), 0.0, _m.radians(zr)); pl.data.materials.append(art_material(key))
+    zt = zc + h / 2
+    if fm:
+        g, fw = 0.375, (0.375 if frame == 'black' else 0.5); fmat = material(fm); D = depth + 0.25
+        _tn_box(cx, cy, facing, -w / 2 - g, w / 2 + g, 0.05, 0.45, zc - h / 2 - g, zc + h / 2 + g, material('GAP'), name + '_backer')
+        for s_ in (-1, 1):
+            _tn_box(cx, cy, facing, *sorted((s_ * (w / 2 + g), s_ * (w / 2 + g + fw))), 0.05, D, zc - h / 2 - g - fw, zc + h / 2 + g + fw, fmat, name + '_frame', soft=0.06)
+            _tn_box(cx, cy, facing, -w / 2 - g, w / 2 + g, 0.05, D, *sorted((zc + s_ * (h / 2 + g), zc + s_ * (h / 2 + g + fw))), fmat, name + '_frame', soft=0.06)
+        zt += g + fw
+    if light: picture_light(cx, cy, zt + 3.0, light_w or min(36.0, max(14.0, round(w * 0.55))), facing, name=name + '_light')
+
+
+def picture_light(cx, cy, z, L, facing, name='picture_light', watts=None):
+    """A slim brass picture light: round backplate on the wall at z, an arm reaching 7 in. out and down, a 1-3/4 in. tubular
+    hood L long with its lamp along the bottom aimed back at the canvas."""
+    (tx, ty), (nx, ny), zr = _FACE[facing]; br = material(R('metal', 'METAL-BRASS'))
+    _tn_box(cx, cy, facing, -1.6, 1.6, 0.0, 0.5, z - 1.6, z + 1.6, br, name + '_plate', soft=0.5)
+    for k in range(6):                                                    # the arm, out and up to the hood
+        t_ = k / 5; n_ = 0.5 + 6.3 * t_; z_ = z + 1.2 * _m.sin(_m.pi * t_ * 0.9)
+        _tn_box(cx, cy, facing, -0.3, 0.3, n_ - 0.7, n_ + 0.7, z_ - 0.3, z_ + 0.3, br, name + '_arm', soft=0.2)
+    hx, hy, hz = cx + nx * 7.3, cy + ny * 7.3, z + 1.6
+    wcyl(hx, hy, hz, 0.9, L, 'x' if tx else 'y', br, name + '_hood')
+    for s_ in (-1, 1): wcyl(hx + tx * s_ * L / 2, hy + ty * s_ * L / 2, hz, 0.95, 0.3, 'x' if tx else 'y', br, name + '_cap')
+    MATS.setdefault('LED-STRIP', {'kind': 'lamp', 'emit': 2.2})
+    _tn_box(hx, hy, facing, -L / 2 + 0.5, L / 2 - 0.5, -0.5, 0.2, hz - 0.95, hz - 0.85, material('LED-STRIP'), name + '_lens')
+    ld = bpy.data.lights.new(name, 'AREA'); ld.shape = 'RECTANGLE'; ld.size = (L - 1.0) * IN; ld.size_y = 0.6 * IN
+    ld.energy = watts if watts is not None else 0.32 * L; ld.color = (1.0, 0.84, 0.66)
+    o_ = bpy.data.objects.new(name, ld); bpy.context.collection.objects.link(o_); o_.visible_glossy = False
+    o_.location = (hx * IN, hy * IN, (hz - 1.0) * IN)
+    d_ = Vector((-nx * _m.sin(_m.radians(28)), -ny * _m.sin(_m.radians(28)), -_m.cos(_m.radians(28))))
+    o_.rotation_mode = 'QUATERNION'; o_.rotation_quaternion = d_.to_track_quat('-Z', 'Y')
+
+
+def _loft(rings, mat, name, cap_top=True, cap_bot=True, smooth=True):
+    """A closed surface through rings of world-inch points (each ring the same count), bottom to top."""
+    bm_ = bmesh.new(); vs = [[bm_.verts.new((x_ * IN, y_ * IN, z_ * IN)) for x_, y_, z_ in r] for r in rings]; n = len(rings[0])
+    for a_, b_ in zip(vs[:-1], vs[1:]):
+        for k in range(n): bm_.faces.new((a_[k], a_[(k + 1) % n], b_[(k + 1) % n], b_[k]))
+    if cap_bot: bm_.faces.new(vs[0][::-1])
+    if cap_top: bm_.faces.new(vs[-1])
+    me = bpy.data.meshes.new(name); bm_.to_mesh(me); bm_.free()
+    if smooth:
+        for p_ in me.polygons: p_.use_smooth = True
+    o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
+
+
+def _squircle(X, Y, a, b, z, n=4.5, k=96, along='y'):
+    pts = []
+    for i in range(k):
+        t = 2 * _m.pi * i / k; c_, s_ = _m.cos(t), _m.sin(t)
+        u = a * _m.copysign(abs(c_) ** (2 / n), c_); v = b * _m.copysign(abs(s_) ** (2 / n), s_)
+        pts.append((X + v, Y + u, z) if along == 'y' else (X + u, Y + v, z))
+    return pts
+
+
+def dining_table(X, Y, L=94.0, W=40.0, along='y', top_mat=None, name='dining'):
+    """Owner's reference (11.11.26): a soft-rectangle stone top on a single tulip pedestal. Top 1-1/2 in. with a chamfered
+    underside, 30 in. high; the pedestal an elongated tulip in dark bronze, its oval foot 46 x 24."""
+    tm = top_mat or material('TRAV-01'); bz = bronze_mat()
+    a, b = L / 2, W / 2
+    rings = [_squircle(X, Y, a - 1.2, b - 1.2, 28.6, along=along), _squircle(X, Y, a, b, 29.35, along=along), _squircle(X, Y, a, b, 30.0, along=along)]
+    _loft(rings, tm, name + '_top', smooth=False)
+    prof = [(0.0, 23.0, 12.0), (0.6, 23.0, 12.0), (1.2, 22.0, 11.2), (2.4, 17.0, 8.6), (4.5, 11.5, 6.4), (8.0, 7.4, 4.6), (13.0, 5.2, 3.7),
+            (18.0, 4.8, 3.5), (22.0, 6.4, 4.4), (25.5, 10.5, 6.2), (27.5, 16.0, 8.4), (28.6, 20.0, 9.6)]
+    _loft([_squircle(X, Y, ra, rb, z_, n=2.4, k=72, along=along) for z_, ra, rb in prof], bz, name + '_pedestal')
+
+
+def dining_chair(X, Y, facing, fab, name='dchair'):
+    """Owner's reference (11.11.26): an upholstered seat and a curved pad back on a slim dark bronze frame, the back legs
+    rising to carry the pad. (X, Y) the seat centre; facing the way the sitter faces ('+x', '-x', '+y', '-y')."""
+    bz = bronze_mat(); sg = {'+x': 1, '-x': -1, '+y': 1, '-y': -1}[facing]; ax = facing in ('+x', '-x')
+    def B(u0, u1, v0, v1, z0, z1, mat, nm, soft=0.0):        # u toward the table (front), v across
+        if ax: return wbox(min(X + sg * u0, X + sg * u1), max(X + sg * u0, X + sg * u1), Y + v0, Y + v1, z0, z1, mat, nm, soft=soft)
+        return wbox(X + v0, X + v1, min(Y + sg * u0, Y + sg * u1), max(Y + sg * u0, Y + sg * u1), z0, z1, mat, nm, soft=soft)
+    for v in (-9.0, 8.4):
+        B(7.6, 8.2, v, v + 0.6, 0.0, 15.2, bz, name + '_leg')                        # front legs
+        B(-9.4, -8.8, v, v + 0.6, 0.0, 35.0, bz, name + '_post')                     # back legs up to the pad
+        B(-9.0, 8.0, v, v + 0.6, 14.4, 15.2, bz, name + '_rail')
+    B(-8.8, 7.8, -8.4, 8.4, 14.6, 15.1, bz, name + '_pan')
+    B(-9.6, 9.6, -9.9, 9.9, 15.2, 19.2, fab, name + '_seat', soft=2.4)
+    # the back: a pad curved round the sitter (a 24 in. radius in plan), 10 in. high, 2-3/4 in. thick, soft all round
+    bm_ = bmesh.new(); n_ = 12; ring = []
+    for i in range(n_ + 1):
+        v = -10.4 + 20.8 * i / n_; du = v * v / 48.0
+        pts = []
+        for (u, z) in ((-9.0 + du, 26.0), (-11.75 + du, 26.0), (-11.75 + du, 36.2), (-9.0 + du, 36.2)):
+            if ax: pts.append(bm_.verts.new(((X + sg * u) * IN, (Y + v) * IN, z * IN)))
+            else: pts.append(bm_.verts.new(((X + v) * IN, (Y + sg * u) * IN, z * IN)))
+        ring.append(pts)
+    for r0, r1 in zip(ring[:-1], ring[1:]):
+        for k in range(4):
+            try: bm_.faces.new((r0[k], r0[(k + 1) % 4], r1[(k + 1) % 4], r1[k]))
+            except ValueError: pass
+    bm_.faces.new(ring[0][::-1]); bm_.faces.new(ring[-1])
+    bmesh.ops.recalc_face_normals(bm_, faces=bm_.faces)
+    me = bpy.data.meshes.new(name + '_back'); bm_.to_mesh(me); bm_.free()
+    o = bpy.data.objects.new(name + '_back', me); bpy.context.collection.objects.link(o); o.data.materials.append(fab)
+    bv = o.modifiers.new('round', 'BEVEL'); bv.width = 1.1 * IN; bv.segments = 4; bv.limit_method = 'ANGLE'
+    ss = o.modifiers.new('smooth', 'SUBSURF'); ss.levels = ss.render_levels = 1
+    for p_ in me.polygons: p_.use_smooth = True
+
+
+def rod_glass():
+    m = bpy.data.materials.get('GLASS-ROD')
+    if m: return m
+    m = bpy.data.materials.new('GLASS-ROD'); m.use_nodes = True; N_ = m.node_tree.nodes; L_ = m.node_tree.links
+    out_ = N_['Material Output']; N_.remove(N_['Principled BSDF'])
+    tr = N_.new('ShaderNodeBsdfTransparent'); tr.inputs['Color'].default_value = (0.97, 0.94, 0.88, 1)
+    gl = N_.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value = 0.02
+    fr = N_.new('ShaderNodeFresnel'); fr.inputs['IOR'].default_value = 1.7
+    mx = N_.new('ShaderNodeMixShader'); L_.new(fr.outputs['Fac'], mx.inputs['Fac']); L_.new(tr.outputs[0], mx.inputs[1]); L_.new(gl.outputs[0], mx.inputs[2])
+    em = N_.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (1.0, 0.92, 0.8, 1); em.inputs['Strength'].default_value = 0.06
+    ad = N_.new('ShaderNodeAddShader'); L_.new(mx.outputs[0], ad.inputs[0]); L_.new(em.outputs[0], ad.inputs[1]); L_.new(ad.outputs[0], out_.inputs['Surface'])
+    bpy.context.scene.cycles.transparent_max_bounces = 64
+    return m
+
+
+def _rods(path, z0, z1, r, bm_):
+    for (x_, y_) in path:
+        ring0 = [bm_.verts.new(((x_ + r * _m.cos(2 * _m.pi * k / 8)) * IN, (y_ + r * _m.sin(2 * _m.pi * k / 8)) * IN, z0 * IN)) for k in range(8)]
+        ring1 = [bm_.verts.new(((x_ + r * _m.cos(2 * _m.pi * k / 8)) * IN, (y_ + r * _m.sin(2 * _m.pi * k / 8)) * IN, z1 * IN)) for k in range(8)]
+        for k in range(8): bm_.faces.new((ring0[k], ring0[(k + 1) % 8], ring1[(k + 1) % 8], ring1[k]))
+        bm_.faces.new(ring0[::-1]); bm_.faces.new(ring1)
+
+
+def _track(X, Y, a, b, step, along='y', n=4.0):
+    """Points every `step` inches round a soft oval (squircle exponent n), semi-axes a (along) and b."""
+    dense = _squircle(X, Y, a, b, 0.0, n=n, k=720, along=along); out = [dense[0][:2]]; acc = 0.0
+    for p0, p1 in zip(dense, dense[1:] + dense[:1]):
+        acc += _m.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if acc >= step: out.append(p1[:2]); acc = 0.0
+    return out
+
+
+def _ring_tube(path, z, r, mat, name):
+    cu = bpy.data.curves.new(name, 'CURVE'); cu.dimensions = '3D'; cu.bevel_depth = r * IN; cu.bevel_resolution = 3
+    sp = cu.splines.new('POLY'); sp.points.add(len(path) - 1)
+    for i, (x_, y_) in enumerate(path): sp.points[i].co = (x_ * IN, y_ * IN, z * IN, 1)
+    sp.use_cyclic_u = True; o = bpy.data.objects.new(name, cu); bpy.context.collection.objects.link(o); o.data.materials.append(mat); return o
+
+
+def oval_rod_chandelier(X, Y, zb, ceiling, L=60.0, W=30.0, along='y', name='dining_chand'):
+    """Owner's reference (11.11.26): two staggered tiers of clear fluted glass rods round a soft oval brass frame, the lower
+    tier smaller; brass to the house's aged brass. 60 x 30 for a 94 in. table, bottom at zb on two rods to a canopy."""
+    br = material(R('metal', 'METAL-BRASS')); gm = rod_glass(); bm_ = bmesh.new()
+    tiers = [(L / 2, W / 2, zb + 9.0, 11.0), (L / 2 - 7.0, W / 2 - 5.0, zb, 11.0)]          # (a, b, bottom, rod length)
+    for (a, b, z0, h) in tiers:
+        _rods(_track(X, Y, a, b, 1.15, along), z0, z0 + h, 0.42, bm_)
+        for z_ in (z0 + h + 0.3, z0 - 0.2): _ring_tube(_track(X, Y, a, b, 2.0, along), z_, 0.35, br, name + '_ring')
+        for k, p in enumerate(_track(X, Y, a - 3.0, b - 3.0, 9.0, along)):
+            ld = bpy.data.lights.new(name, 'POINT'); ld.energy = 7.0; ld.shadow_soft_size = 0.7 * IN; ld.color = (1.0, 0.83, 0.62)
+            o_ = bpy.data.objects.new(name + '_lamp', ld); bpy.context.collection.objects.link(o_); o_.location = (p[0] * IN, p[1] * IN, (z0 + h / 2) * IN)
+    me = bpy.data.meshes.new(name + '_rods'); bm_.to_mesh(me); bm_.free()
+    o = bpy.data.objects.new(name + '_rods', me); bpy.context.collection.objects.link(o); o.data.materials.append(gm); o.visible_shadow = False
+    zt = tiers[0][2] + tiers[0][3] + 0.6
+    for s_ in (-1, 1):                                                           # spokes and the two drop rods
+        dx, dy = ((0, s_ * L / 4) if along == 'y' else (s_ * L / 4, 0))
+        wbox_abs(min(X, X + dx) - 0.3 if dx else X - 0.3, max(X, X + dx) + 0.3 if dx else X + 0.3,
+                 min(Y, Y + dy) - 0.3 if dy else Y - 0.3, max(Y, Y + dy) + 0.3 if dy else Y + 0.3, zt - 0.4, zt, br, name + '_spoke')
+        wcyl(X + dx, Y + dy, (zt + ceiling) / 2, 0.3, ceiling - zt, 'z', br, name + '_rod')
+    wbox_abs(X - (2.5 if along == 'y' else L / 4 + 2.5), X + (2.5 if along == 'y' else L / 4 + 2.5),
+             Y - (L / 4 + 2.5 if along == 'y' else 2.5), Y + (L / 4 + 2.5 if along == 'y' else 2.5), ceiling - 1.0, ceiling - 0.02, br, name + '_canopy')
+
+
+def rod_flush(X, Y, ceiling, D=22.0, H_=7.0, name='flush'):
+    """Owner's reference (11.11.26, the piano end): a flush drum of clear glass rods between scalloped brass bands, a frosted
+    glass diffuser below with a brass finial; in aged brass to match the house rather than the reference's nickel."""
+    br = material(R('metal', 'METAL-BRASS')); gm = rod_glass(); r = D / 2
+    MATS.setdefault('GLASS-FROST', {'hex': '#F2EFE8', 'rough': 0.6, 'kind': 'lamp', 'emit': 0.6})
+    bm_ = bmesh.new(); n = int(2 * _m.pi * r / 0.95)
+    _rods([(X + (r - 0.4) * _m.cos(2 * _m.pi * k / n), Y + (r - 0.4) * _m.sin(2 * _m.pi * k / n)) for k in range(n)], ceiling - H_ + 1.0, ceiling - 1.0, 0.42, bm_)
+    me = bpy.data.meshes.new(name + '_rods'); bm_.to_mesh(me); bm_.free()
+    o = bpy.data.objects.new(name + '_rods', me); bpy.context.collection.objects.link(o); o.data.materials.append(gm); o.visible_shadow = False
+    for z_ in (ceiling - H_ + 0.6, ceiling - 0.8):
+        _ring_tube([(X + (r - 0.2) * _m.cos(2 * _m.pi * k / 96) + 0.25 * _m.cos(2 * _m.pi * k / 96 * 1) * _m.cos(48 * 2 * _m.pi * k / 96),
+                     Y + (r - 0.2) * _m.sin(2 * _m.pi * k / 96) + 0.25 * _m.sin(2 * _m.pi * k / 96) * _m.cos(48 * 2 * _m.pi * k / 96)) for k in range(96)],
+                   z_, 0.55, br, name + '_band')
+    wcyl(X, Y, ceiling - H_ + 0.5, r - 0.6, 0.4, 'z', material('GLASS-FROST'), name + '_diffuser')
+    wcyl(X, Y, ceiling - 0.5, r - 0.5, 0.8, 'z', br, name + '_pan')
+    wcyl(X, Y, ceiling - H_ + 0.05, 0.9, 0.7, 'z', br, name + '_finial')
+    for k in range(4):
+        ld = bpy.data.lights.new(name, 'POINT'); ld.energy = 14.0; ld.shadow_soft_size = 1.0 * IN; ld.color = (1.0, 0.83, 0.62)
+        o_ = bpy.data.objects.new(name + '_lamp', ld); bpy.context.collection.objects.link(o_)
+        o_.location = ((X + 4.5 * _m.cos(_m.pi * k / 2)) * IN, (Y + 4.5 * _m.sin(_m.pi * k / 2)) * IN, (ceiling - H_ / 2) * IN)
