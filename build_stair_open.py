@@ -73,7 +73,7 @@ def stair_elev(v):
             if s: C._line(v, s[0], s[1], C.MED)
         C._line(v, (U_BOT, LSE + 36.0), (U_S, LSE + 36.0), C.MED)                # the handrail level round the landing
         C._line(v, (U_BOT, LSE), (U_S, LSE), C.MED)                              # the landing's edge behind the lower flight
-        G.tag(v, (U_LF + U_S) / 2 + 4, LSE + 30.0, 'WALL HANDRAIL BEYOND, 3\'-0"', 5.0, G.GREY, box=True)
+        C._line(v, (186.0, LSE + 36.0), (178.0, LSE + 31.5), C.FINE); G.tag(v, 175.5, LSE + 29.0, 'WALL HANDRAIL BEYOND, 3\'-0"', 5.0, G.GREY, box=True)
     # ---- the knee wall under the east flight (painted, closet 27 behind it), its top on the stair's underside
     kw = [(U_OPEN, 0), (U_OPEN, under(U_OPEN)), (U_BOT, under(U_BOT)), (U_BOT, LSE - 1.0), (U_LF, LSE - 1.0), (U_LF, 0)]   # it runs on to the lower flight
     C._poly(v, kw, C.OUTLINE, fill=G.WHITE)
@@ -141,19 +141,18 @@ def stair_elev(v):
     def lead(a, t, lines_, c=INK):
         C._line(v, a, (t[0], t[1] + 2.0), C.FINE, c); v.p.draw_circle(fitz.Point(v.X(a[0]), v.Y(a[1])), 0.9, color=c, fill=c, width=0)
         for j, s_ in enumerate(lines_): G.tag(v, t[0], t[1] - 6.0 * j, s_, 5.0, c, box=True)
-    lead((U_D0 + DOOR_W / 2, 60.0), (92.0, 64.0), ['DOOR 27, MOVED ABOUT %s NORTH,' % E.ftin(MOVED), 'AGAINST FOR\'S CONCRETE BEAM;', 'CLOSET 27 STAYS UNDER THE STAIR'])
+    lead((U_D0 + DOOR_W / 2, 52.0), (88.0, 56.0), ['DOOR 27, MOVED ABOUT %s NORTH,' % E.ftin(MOVED), 'AGAINST FOR\'S CONCRETE BEAM;', 'CLOSET 27 STAYS UNDER THE STAIR'])
     lead(((BEAM[0] + BEAM[1]) / 2, under(U_TOP)), (26.0, HEAD - 7.0), ['CONC. BEAM BEYOND (FOR), STAYS'], MID)
-    lead((112.0, HEAD - 0.75), (176.0, 106.0), ['OPEN TO THE STAIR, HEAD 10\'-8",', 'PICKETS INTO A CHANNEL AT THE HEAD'])
-    lead((U_BOT - 12.0, nose(U_BOT - 12.0) + GTOP + 1.0), (176.0, 93.0), ['ALUMINUM PICKET GUARD, MATTE', 'BLACK, 3\'-0" OVER THE NOSINGS'])
+    lead((112.0, HEAD - 0.75), (170.0, 118.0), ['OPEN TO THE STAIR,', 'HEAD 10\'-8", PICKETS', 'INTO A HEAD CHANNEL'])
+    lead((U_BOT - 12.0, nose(U_BOT - 12.0) + GTOP + 1.0), (174.0, 99.0), ['ALUMINUM PICKET GUARD,', 'BLACK, 3\'-0" OVER NOSINGS'])
     lead((126.0, nose(126.0) - 4.0), (122.0, 36.0), ['PAINTED CUT STRINGER,', 'OAK TREADS'], MID)
     G.tag(v, (U_OPEN + U_BOT) / 2, 16, 'KNEE WALL, PT-02, ON THE STAIR\'S UNDERSIDE', 5.0, MID, box=True)
     G.tag(v, (U_LF + U_S) / 2, LSE + 8, 'LOWER FLIGHT, 7 RISERS', 5.0, MID, box=True)
     G.tag(v, (U_LF + U_S) / 2, LSE + 15, 'SE LANDING +4\'-3-3/16"', 5.0, MID, box=True)
-    G.tag(v, U_S - 22.0, 117.0, 'TRAY (FOR), AT THE CUT', 4.5, G.GREY, box=True)
     y1 = v.Y(0) + 16; y2 = y1 + 27
-    v.dim_h(0, L, y1, E.snap_points([0, U_D0, U_D1, U_OPEN, U_KW, U_LF, U_S]))
+    v.dim_h(0, L, y1, E.snap_points([0, U_D0, U_D1, U_OPEN, U_LF, U_S]))
     v.dim_h(0, L, y2, E.snap_points([0, BEAM[1], U_TOP, U_BOT, U_S]))
-    v.dim_v(0, HEAD, v.X(L) + 30, E.snap_points([0, DOOR_H, under(U_OPEN), HEAD]))
+    v.dim_v(0, HEAD, v.X(L) + 30, E.snap_points([0, DOOR_H, HEAD]))
     return ('CLOSET 27\'S WEST WALL CUT DOWN TO A KNEE WALL ON THE EAST FLIGHT\'S UNDERSIDE, OPEN ABOVE IT TO THE 10\'-8" HEAD: THE FLIGHT\'S PAINTED '
             'CUT STRINGER AND OAK TREADS SHOW, THE GUARD RUNS UP IT. CLOSET 27 STAYS UNDER THE STAIR; DOOR 27 MOVED ABOUT %s NORTH (CENTERLINE) TO THE FULL-HEIGHT WALL '
             'UNDER THE NORTHEAST LANDING, ITS NORTH JAMB AGAINST FOR\'S CONCRETE BEAM, WHICH STAYS (6\'-8" DOOR). STAIR PER FOR A-411: 21 RISERS AT 7-5/16", 11" TREADS. '
@@ -187,7 +186,9 @@ def stair_plan(sh, cell, k):
     rect(155.3, -U_S - 6.0, XE, -U_S, C.HEAVY, INK, G.POCHE)
     rect(XCW0, -U_N, XE, 0.0, C.HEAVY, INK, G.POCHE)
     rect(XCW0, -U_D0, XCW1, -U_N, C.HEAVY, INK, G.POCHE); rect(XCW0, -U_OPEN, XCW1, -U_D1, C.HEAVY, INK, G.POCHE)
-    rect(XCW0, -U_LF, XCW1, -U_OPEN, C.OUTLINE, INK, G.SEC)           # the knee wall, run on to the lower flight; below the cut at its south end
+    U_CUT = U_BOT - (48.0 + ST - LSE - RS) * TREAD / RS                 # where the knee wall's top drops under the 4'-0" cut
+    rect(XCW0, -U_CUT, XCW1, -U_OPEN, C.HEAVY, INK, G.POCHE)          # the knee wall, cut
+    rect(XCW0, -U_LF, XCW1, -U_CUT, C.OUTLINE, INK, G.SEC)            # its south end and the landing's side, below the cut
     rect(XCW1, -BEAM[0], XE, -BEAM[1], C.HEAVY, INK, (0.55, 0.55, 0.55))   # FOR's concrete block beam and its drywall, stays
     line(150.0, 0.0, XCW0, 0.0, C.FINE, MID, '[4 2] 0'); line(150.0, -U_N, XCW0, -U_N, C.FINE, MID, '[4 2] 0')   # the gallery beam over the opening
     tag(190.0, 4.0, 'LIVING ROOM', 6.0, INK, False)
@@ -198,7 +199,7 @@ def stair_plan(sh, cell, k):
     C._arc(v, *P(hx, hy), DOOR_W, 180, 270, C.FINE)
     for yy in (-U_D0, -U_D1): line(XCW0 - 0.75, yy, XCW0, yy, C.FINE)
     # FOR's door 27 and 5" wall, removed (dashed)
-    rect(XCW0, -U_OLD[1], XCW1, -U_OLD[0], C.FINE, MID, None, '[2 1.5] 0')
+    rect(XCW0 - 3.0, -U_OLD[1], XCW0 - 0.5, -U_OLD[0], C.MED, INK, G.WHITE, '[3 2] 0')    # FOR's door 27 opening, outlined beside the wall
     rect(W_(G.R1_KW[0]), -U_LF, W_(G.R1_KW[1]), -U_KW, C.FINE, MID, None, '[2 1.5] 0')
     # the lower flight (below the cut), the southeast landing, the east flight to the cut, then dashed above it
     rect(X_LF0, -U_S, X_LF1, -U_LF, C.MED)
@@ -216,7 +217,7 @@ def stair_plan(sh, cell, k):
     a = [(X_LF0 + 4.0, -174.5), (257.0, -174.5), (257.0, -U_BOT + 4.0)]
     C._poly(v, [P(*p) for p in a], C.MED, INK, close=False)
     tx, ty = P(257.0, -U_BOT + 4.0); C._poly(v, [(tx - 2.0, ty - 5.0), (tx, ty), (tx + 2.0, ty - 5.0)], C.MED, INK, fill=INK)
-    tag(X_LF0 + 14.0, -180.0, 'UP 21R', 5.0, INK, False)
+    tag(246.0, -166.0, 'UP 21R', 5.0, INK, True)
     # the guard: along the lower flight's open side, round the landing's edge, up the east flight on the knee wall
     gy, gx = -(U_LF - 1.0), XCW1 - 1.0
     gl = [(X_LF0 + 1.0, gy), (gx, gy), (gx, -(U_OPEN + 1.0))]
@@ -237,7 +238,7 @@ def stair_plan(sh, cell, k):
     leader(200.0, -U_KW - 2.5, 186.0, -143.0, ['FOR\'S 5" WALL, REMOVED'], MID)
     leader(XCW0 - 0.5, -(U_OLD[0] + U_OLD[1]) / 2, 204.0, -72.0, ['FOR\'S DOOR 27, MOVED'], MID)
     leader(XCW0 - 14.0, -U_D0 - 0.9, 178.0, -48.0, ['DOOR 27, 2\'-4" x 6\'-8",', 'MOVED ABOUT %s NORTH,' % E.ftin(MOVED), 'AGAINST THE CONC. BEAM'])
-    tag(186.0, -74.0, 'SOUTH END', 7.0, INK, True)
+    tag(172.0, -24.0, 'SOUTH END', 7.0, INK, True)
     # dimensions along the west face of the knee wall
     xp = v.X(P(158.0, 0)[0])
     v.dim_v(0, PH, xp, E.snap_points([P(0, -U_S)[1], P(0, -U_LF)[1], P(0, -U_OPEN)[1], P(0, -U_D1)[1], P(0, -U_D0)[1], P(0, 0)[1]]), side='l')
@@ -246,7 +247,7 @@ def stair_plan(sh, cell, k):
     # the elevation marker for view 8, looking east at the knee wall
     cx, cy = v.X(P(212.0, -112.0)[0]), v.Y(P(212.0, -112.0)[1])
     sh.p.draw_circle(fitz.Point(cx, cy), 26.0, color=None, fill=G.WHITE, width=0); G.marker(sh, cx, cy, 8, 'ID-756', 'E', r=20.0)
-    v.text(v.X(P(150.0, 0)[0]), v.Y(P(0, -U_S - 6.0)[1]) + 46, 'FLOOR 1, CUT AT 4\'-0". DASHED: ABOVE THE CUT, OR REMOVED. GREY: THE KNEE WALL, BELOW THE CUT.', 6.0, MID, align='l')
+    v.text(v.X(P(150.0, 0)[0]), v.Y(P(0, -U_S - 6.0)[1]) + 46, 'FLOOR 1, CUT AT 4\'-0". DASHED: ABOVE THE CUT, OR REMOVED. GREY: BELOW THE CUT.', 6.0, MID, align='l')
     # north arrow, top right
     C._poly(v, [P(266.0, 2.0), P(270.0, 2.0), P(268.0, 8.0)], C.FINE, INK, fill=INK); G.tag(v, *P(268.0, 9.5), 'N', 6.0, INK)
     return v
