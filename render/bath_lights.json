@@ -1,0 +1,5 @@
+[
+{"type": "pendant", "X": 81.2, "Y": 28.8, "tag": "CH1", "note": "RCP-Lighting 261109 floor 2 (3/16 in. scale): sheet 235.4, 916.75; room X = (x - 144.0)/1.125 from the west wall face, Y = (949.2 - y)/1.125 from the alcove line"},
+{"type": "recess", "X": 28.8, "Y": 28.8, "tag": "L2"},
+{"type": "recess", "X": 133.7, "Y": 28.8, "tag": "L2"}
+]

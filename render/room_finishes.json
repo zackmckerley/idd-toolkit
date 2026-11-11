@@ -3,8 +3,8 @@
  "MASTER BATH": {
   "roles": {
    "wall": "PT-02",
-   "trim": "PT-01-SATIN",
-   "door": "PT-01-SATIN",
+   "trim": "PT-02-SATIN",
+   "door": "PT-02-SATIN",
    "crown": "PT-02",
    "panel": "WP-02",
    "vanity": "VAN-01",
@@ -44,21 +44,21 @@
  "LIVING ROOM": {
   "roles": {
    "wall": "PT-02",
-   "trim": "PT-01-SATIN",
-   "door": "PT-01-SATIN",
+   "trim": "PT-02-SATIN",
+   "door": "PT-02-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "WD-01",
    "ceiling": "PT-CEIL",
-   "cabinet": "PT-01-SATIN",
+   "cabinet": "CAB-CREAM",
    "counter": "ST-01"
   }
  },
  "ENTRY": {
   "roles": {
    "wall": "PT-02",
-   "trim": "PT-01-SATIN",
-   "door": "PT-01-SATIN",
+   "trim": "PT-02-SATIN",
+   "door": "PT-02-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "ST-02",
@@ -84,12 +84,15 @@
  "MASTER BEDROOM": {
   "roles": {
    "wall": "PT-02",
-   "trim": "PT-01-SATIN",
-   "door": "PT-01-SATIN",
+   "trim": "PT-02-SATIN",
+   "door": "PT-02-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
-   "floor": "WD-HB",
-   "ceiling": "PT-CEIL"
+   "floor": "WD-01",
+   "ceiling": "PT-CEIL",
+   "upholstery": "FAB-BED-UPH",
+   "cove": true,
+   "cabinet": "CAB-CREAM"
   }
  },
  "MASTER CLOSET": {
@@ -108,8 +111,8 @@
  "POOL HOUSE OFFICE": {
   "roles": {
    "wall": "PT-02",
-   "trim": "PT-01-SATIN",
-   "door": "PT-01-SATIN",
+   "trim": "PT-02-SATIN",
+   "door": "PT-02-SATIN",
    "crown": "PT-01-SATIN",
    "metal": "METAL-BRASS",
    "floor": "ST-05",

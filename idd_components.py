@@ -144,7 +144,7 @@ def rev_cloud(v, x0, y0, x1, y1, tag='1', pad=3.0, tag_at='tr'):
 
 def window(v, x, w, sill, head, lites=2, cs=None, trim=True, glass='clear'):
     cs = TRIM['casing'] if cs is None else cs
-    if trim: casing(v, x, w, head, cs, sill); _rect(v, x - cs, sill - 1.5, x + w + cs + 1, sill, OUTLINE); _rect(v, x - cs + 0.5, sill - 1.5 - TRIM['cap'], x + w + cs - 0.5, sill - 1.5, OUTLINE)   # stool and apron
+    if trim: casing(v, x, w, head, cs, sill); _rect(v, x - cs - 1, sill - 1.5, x + w + cs + 1, sill, OUTLINE); _rect(v, x - cs + 0.5, sill - 1.5 - TRIM['cap'], x + w + cs - 0.5, sill - 1.5, OUTLINE)   # stool with equal 1 in. ears past the casing, and apron (it ran 0 in. one side, 1 in. the other: owner 11.11.26)
     else: _rect(v, x - 1, sill - 1, x + w + 1, head + 1, OUTLINE)   # tile return into the jamb, no casing
     _rect(v, x, sill, x + w, head, OUTLINE); lw = w / lites
     for i in range(lites):

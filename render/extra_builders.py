@@ -277,24 +277,29 @@ def b_bed_king(a, ctx):
     up = material(R('upholstery', 'FAB-HEADBOARD')); lin = material(R('bedding', 'FAB-BEDDING'))
     soft_wall = lambda x0, x1, y0, y1, d0, d1, mat, rad, nm: _soft(x0, x1, y0, y1, d0, d1, mat, rad, nm)
     soft_wall(cx - hb_w / 2, cx + hb_w / 2, 0.0, hb_h, 0.0, 4.0, up, 1.2, 'headboard')
-    box(cx - w / 2 - 1, cx + w / 2 + 1, 3.0, 13.0, 4.0, 85.0, up, 'bed_base')                       # upholstered platform
-    soft_wall(cx - w / 2, cx + w / 2, 13.0, top - 0.5, 4.5, 84.0, lin, 1.2, 'mattress')
-    soft_wall(cx - w / 2 - 3.5, cx + w / 2 + 3.5, top - 0.5, top + 0.8, 30.0, 86.5, lin, 0.6, 'duvet')          # duvet over the lower two-thirds
-    soft_wall(cx - w / 2 - 3.5, cx + w / 2 + 3.5, 11.0, top + 0.8, 85.2, 86.5, lin, 0.6, 'duvet_drop')
-    for sx in (-1, 1): soft_wall(cx + sx * (w / 2 + 2.2) - 0.65, cx + sx * (w / 2 + 2.2) + 0.65, 11.0, top + 0.8, 30.0, 86.5, lin, 0.6, 'duvet_side')
+    box(cx - w / 2 - 1, cx + w / 2 + 1, 3.0, 13.0, 4.0, 84.0, up, 'bed_base')                       # upholstered platform, 78 x 80
+    for lx_ in (cx - w / 2 + 1, cx + w / 2 - 3):
+        for ld_ in (6.0, 80.0): box(lx_, lx_ + 2.0, 0.0, 3.0, ld_, ld_ + 2.0, material('WOOD-FURN'), 'bed_leg')
+    soft_wall(cx - w / 2, cx + w / 2, 13.0, top - 0.5, 4.0, 84.0, lin, 1.2, 'mattress')                         # king, 76 x 80 (owner 11.11.26: the bed read long)
+    soft_wall(cx - w / 2 - 3.5, cx + w / 2 + 3.5, top - 0.5, top + 0.8, 30.0, 85.5, lin, 0.6, 'duvet')          # duvet over the lower two-thirds
+    # the drop and the sides sit just inside the top's faces: equal faces z-fought (joints audit, 11.11.26)
+    soft_wall(cx - w / 2 - 3.4, cx + w / 2 + 3.4, 15.0, top + 0.7, 84.2, 85.4, lin, 0.6, 'duvet_drop')        # a 10 in. drop: the base shows
+    for sx in (-1, 1): soft_wall(cx + sx * (w / 2 + 2.2) - 0.65, cx + sx * (w / 2 + 2.2) + 0.65, 15.0, top + 0.7, 30.2, 85.2, lin, 0.6, 'duvet_side')
     for px in (cx - w / 4, cx + w / 4):
         soft_wall(px - 13, px + 13, top, top + 25.0, 4.5, 10.5, up, 3.5, 'euro_sham')                          # upright against the headboard
         soft_wall(px - 14, px + 14, top, top + 6.5, 11.0, 30.0, lin, 3.0, 'pillow')
-    soft_wall(cx - w / 2 - 3.6, cx + w / 2 + 3.6, top + 0.3, top + 1.6, 64.0, 80.0, material('GARM-6'), 0.5, 'throw')
+    soft_wall(cx - w / 2 - 3.6, cx + w / 2 + 3.6, top + 0.3, top + 1.6, 64.0, 79.0, material('GARM-6'), 0.5, 'throw')
 
 
 def b_nightstand(a, ctx):
     x, w, h, n = a['x'], a.get('w', 22), a.get('h', 28), a.get('drawers', 2)
     m = material(R('nightstand', 'WOOD-FURN'))
     box(x, x + w, 0.0, h, 1.0, 19.0, m, 'nightstand')
-    for i in range(n):
-        y0 = 6 + i * (h - 8) / n; box(x + 1, x + w - 1, y0 + 0.4, y0 + (h - 8) / n - 0.4, 19.0, 19.05, material('GAP'), 'ns_gap')
-        _bar_pull(x + w / 2, y0 + (h - 8) / n / 2, 5.0, False, 19.0, material('METAL-BRASS'))
+    for i in range(n):   # drawer fronts 5/8 in. proud with 1/8 in. reveals (a full-face black 'gap' read as black drawers, 11.11.26)
+        y0 = 6 + i * (h - 8) / n; y1 = y0 + (h - 8) / n
+        box(x + 1, x + w - 1, y0 + 0.0625, y1 - 0.0625, 19.0, 19.625, m, 'ns_front')
+        _bar_pull(x + w / 2, (y0 + y1) / 2, 5.0, False, 19.625, material('METAL-BRASS'))
+    if not a.get('lamp', True): return   # owner 11.11.26: no lamp where a sconce is drawn beside the bed
     # a lamp
     cyl(x + w / 2, h + 7, 10.0, 2.2, 14.0, 'y', material('CERAMIC-LAMP') if 'CERAMIC-LAMP' in MATS else material('PLATE-WHITE'), 'lamp_base')
     cyl(x + w / 2, h + 19, 10.0, 6.0, 9.0, 'y', material('LAMP'), 'lamp_shade', cap=True)
@@ -327,16 +332,28 @@ def b_panel_wall(a, ctx):
                 sweep([(px0, py0), (px1, py0), (px1, py1), (px0, py1)], [(q, d) for q, d in sticking_profile(0.75, 0.6)], tm, 'panel_mold', closed=True)
 
 
+def b_panel_drawn(a, ctx):
+    """Wall panels exactly as the elevation draws them (owner 11.11.26: the wainscot must match the drawings): each panel's
+    applied moulding from its outer rectangle inward by the drawn moulding width, and the chair rails as drawn."""
+    tm = trim_mat()
+    for x0, y0, x1, y1, mw in a.get('panels', []):
+        prof = [(0, 0), (0, 0.25), (mw * 0.22, 0.55), (mw * 0.55, 0.62), (mw * 0.85, 0.35), (mw, 0.15), (mw, 0)]
+        sweep([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], prof, tm, 'panel_mold', closed=True)
+    for x0, x1, y0, y1 in a.get('rails', []):
+        h_ = y1 - y0
+        sweep([(x1, y1), (x0, y1)], [(0, 0), (0, 0.55), (h_ * 0.15, 0.95), (h_ * 0.85, 0.95), (h_, 0.55), (h_, 0)], tm, 'chair_rail')
+
+
 def b_cabinet_lower(a, ctx):
-    x, w, h = a['x'], a['w'], a.get('h', 30)
-    _doors(x, w, a.get('toe', 3), h, a.get('doors', 2), False, a.get('pulls', True))
-    box(x - 0.5, x + w + 0.5, h, h + 1.25, 0.0, 14.5, trim_mat(), 'cab_top')
+    x, w, h, D = a['x'], a['w'], a.get('h', 30), a.get('depth')   # depth: a shallow built-in (the nook bookcase, 12 in.)
+    _doors(x, w, a.get('toe', 3), h, a.get('doors', 2), False, a.get('pulls', True), depth=D)
+    box(x - 0.5, x + w + 0.5, h, h + 1.25, 0.0, (D + 0.5) if D else 14.5, cab_mat(), 'cab_top')   # cabinetry colour (owner 11.11.26)
 
 
 def b_shelves(a, ctx):
     x, w, y0, y1, n = a['x'], a['w'], a['y0'], a['y1'], a.get('n', 3)
     for i in range(1, n + 1):
-        y = y0 + (y1 - y0) * i / (n + 1); box(x, x + w, y, y + a.get('thick', 1.0), 0.0, 12.0, trim_mat(), 'shelf')
+        y = y0 + (y1 - y0) * i / (n + 1); box(x, x + w, y, y + a.get('thick', 1.0), 0.0, 12.0, cab_mat(), 'shelf')
 
 
 COL_N = [0]
@@ -462,7 +479,7 @@ EXTRA_BUILDERS = {'arched_cased_opening': b_arched_cased_opening, 'undercounter_
                   'single_door_cab': b_single_door_cab, 'sink_cab': b_sink_cab, 'counter': b_counter, 'splash_slab': b_splash_slab,
                   'floating_shelf': b_floating_shelf, 'light_rail': b_light_rail, 'pot_filler': b_pot_filler, 'outlet_splash': b_outlet_splash,
                   'pro_range': b_pro_range, 'hood_breast': b_hood_breast, 'waterfall': b_waterfall, 'arched_door_pair': b_arched_door_pair,
-                  'bed_king': b_bed_king, 'nightstand': b_nightstand, 'panel_wall': b_panel_wall, 'cabinet_lower': b_cabinet_lower,
+                  'bed_king': b_bed_king, 'nightstand': b_nightstand, 'panel_wall': b_panel_wall, 'panel_drawn': b_panel_drawn, 'cabinet_lower': b_cabinet_lower,
                   'shelves': b_shelves, 'chair_rail': b_chair_rail,
                   # line-drawing only, or built whole elsewhere
                   'rev_cloud': None, 'hammered': None, 'glazing': None, 'miter_corner': None, 'sink_undermount_front': None,

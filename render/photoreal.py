@@ -465,9 +465,31 @@ def b_base(a, ctx):
     sweep([(a['x0'], 0.0), (a['x1'], 0.0)], base_profile(h), trim_mat(), 'base')
 
 
+PANE = 1.75   # divided-lite pane scale, each way (owner 11.11.26); lite counts = round(drawn / PANE)
+COVE = {'P': 5.5, 'F': 5.0, 'LIP': 1.25, 'crown_drop': 3.75, 'crown_proj': 3.25, 'w_per_ft': 3.0}   # VERIFY with the owner / 4/ID-502
+
+
 def b_crown(a, ctx):
-    drop = a.get('drop') or T['crown']; Hh = a['H']
-    sweep([(a['x1'], Hh), (a['x0'], Hh)], crown_profile(drop, T['crown_proj']), material(R('crown', R('trim', 'PT-01-SATIN')), '-trim'), 'crown')
+    drop = a.get('drop') or T['crown']; Hh = a['H']; tm = material(R('crown', R('trim', 'PT-01-SATIN')), '-trim')
+    if R('cove', False) and Hh < H - 2.0:
+        # cove soffit (owner 11.11.26): a rectangular drywall ledge off the wall, its top Hh (9'-6") open to the ceiling above
+        # with the LC1 LED strip on it behind a 1-1/4 in. lip; the crown sits in the corner under the ledge and stops short of
+        # its edge. Profile q down from Hh (negative = up), d out from the wall.
+        P, F, LIP = COVE['P'], COVE['F'], COVE['LIP']
+        sweep([(a['x1'], Hh), (a['x0'], Hh)], [(0, 0), (0, P - 0.75), (-LIP, P - 0.75), (-LIP, P), (F, P), (F, 0)],
+              material(R('ceiling', 'PT-01')), 'cove_soffit')
+        sweep([(a['x1'], Hh - F - 0.02), (a['x0'], Hh - F - 0.02)], crown_profile(COVE['crown_drop'], COVE['crown_proj']), tm, 'crown')
+        L_ = a['x1'] - a['x0']
+        if L_ > 4:
+            box(a['x0'] + 1.0, a['x1'] - 1.0, Hh + 0.01, Hh + 0.4, 1.2, 2.4, material('LED-STRIP'), 'cove_led')
+            ld = bpy.data.lights.new('cove_led', 'AREA'); ld.shape = 'RECTANGLE'; ld.size = (L_ - 2.0) * IN; ld.size_y = 1.0 * IN
+            ld.energy = COVE['w_per_ft'] * L_ / 12.0; ld.color = (1.0, 0.83, 0.62)          # 2700 K
+            lo = bpy.data.objects.new('cove_led', ld); bpy.context.collection.objects.link(lo)
+            lo.location = ((a['x0'] + a['x1']) / 2 * IN, -1.8 * IN, (Hh + 0.6) * IN)
+            lo.rotation_euler = (math.radians(180 - 20), 0, 0)                                # up, leaning into the room
+            lo.visible_glossy = False
+        return
+    sweep([(a['x1'], Hh), (a['x0'], Hh)], crown_profile(drop, T['crown_proj']), tm, 'crown')
 
 
 def b_casing(a, ctx):
@@ -503,12 +525,31 @@ def b_door_leaf(a, ctx, face_d=-0.25):
         px = x + w - 3.5 if a.get('pull', 'R') == 'R' else x + 2.3
         box(px, px + 1.2, 36, 40, face_d - 0.2, face_d + 0.01, material('GAP'), 'flushpull'); return
     hinge_left = a.get('swing', 'L') == 'L'
-    lx = x + w - 3 if hinge_left else x + 3
-    metal = material(R('metal', 'METAL-NICKEL'))
-    cyl(lx, 38, face_d + 0.2, 1.1, 0.4, 'd', metal, 'rose')
-    cyl(lx, 38, face_d + 1.2, 0.3, 1.8, 'd', metal, 'neck')
-    dirn = -1 if hinge_left else 1
-    cyl(lx + dirn * 2.0, 38, face_d + 2.1, 0.32, 4.2, 'x', metal, 'lever')
+    lx = x + w - 2.375 if hinge_left else x + 2.375                    # 2-3/8 in. backset
+    door_lever(lx, 38.0, face_d, -1 if hinge_left else 1)
+    hx = x + 0.4 if hinge_left else x + w - 0.4                        # butt hinges, knuckles at the hinge edge (3, 4-1/2 in.)
+    for hz in (11.0, (head + 11.0 - 7.0) / 2, head - 7.0):
+        cyl(hx, hz, face_d - 0.9, 0.24, 4.5, 'y', material(R('door_hw', 'METAL-ABRASS')), 'hinge_knuckle')
+
+
+def door_lever(lx, z, face_d, dirn):
+    """Interior lever set (owner 11.11.26 reference): a rectangular rose 2-1/4 x 4-1/4 in. with a bevelled edge, a collar and a
+    ring at the rose, a round bar lever 4-3/8 in. long with a domed end cap; satin aged brass. dirn: the side the lever points."""
+    MATS.setdefault('METAL-ABRASS', {'hex': '#A2834F', 'rough': 0.34, 'kind': 'metal'})
+    m = material(R('door_hw', 'METAL-ABRASS'))
+    rw, rh, t, bv = 2.25, 4.25, 0.32, 0.28
+    v = [(lx - rw / 2, z - rh / 2, face_d), (lx + rw / 2, z - rh / 2, face_d), (lx + rw / 2, z + rh / 2, face_d), (lx - rw / 2, z + rh / 2, face_d),
+         (lx - rw / 2 + bv, z - rh / 2 + bv, face_d + t), (lx + rw / 2 - bv, z - rh / 2 + bv, face_d + t),
+         (lx + rw / 2 - bv, z + rh / 2 - bv, face_d + t), (lx - rw / 2 + bv, z + rh / 2 - bv, face_d + t)]
+    obj_from(v, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)], m, 'lever_rose')
+    d0 = face_d + t
+    cyl(lx, z, d0 + 0.18, 0.46, 0.36, 'd', m, 'lever_collar')
+    cyl(lx, z, d0 + 0.42, 0.5, 0.12, 'd', m, 'lever_ring')
+    cyl(lx, z, d0 + 0.85, 0.36, 0.8, 'd', m, 'lever_neck')
+    dl = d0 + 1.05; Lb = 4.375
+    cyl(lx + dirn * Lb / 2, z, dl, 0.29, Lb, 'x', m, 'lever_bar')
+    cyl(lx + dirn * (Lb + 0.12), z, dl, 0.4, 0.26, 'x', m, 'lever_cap')
+    cyl(lx + dirn * (Lb + 0.33), z, dl, 0.28, 0.16, 'x', m, 'lever_dome')
 
 
 def b_door_pair(a, ctx):
@@ -516,7 +557,7 @@ def b_door_pair(a, ctx):
     # jamb lining in the wall thickness, the leaves set in the jamb
     jm = material(R('door', 'PT-01-SATIN'), '-trim')
     box(x - 0.01, x + 0.75, 0, head, -5.5, 0.0, jm, 'jamb'); box(x + w - 0.75, x + w + 0.01, 0, head, -5.5, 0.0, jm, 'jamb')
-    box(x, x + w, head - 0.01, head + 0.75, -5.5, 0.0, jm, 'jamb')
+    box(x, x + w, head - 0.01, head + 0.75, -5.5, -0.02, jm, 'jamb')   # the head runs up into the wall: its face 0.02 in. behind the wall's
 
 
 def b_vanity_furniture(a, ctx):
@@ -731,18 +772,23 @@ def b_tub_filler_wall(a, ctx):
 def b_window(a, ctx):
     """Window in the wall: jamb return (cased, or tiled when trim=False), a painted frame and muntins, real glass."""
     x, w, sill, head, lites = a['x'], a['w'], a['sill'], a['head'], a.get('lites', 2)
+    lites = max(1, int(round(lites / PANE)))   # owner 11.11.26: panes 75% larger each way across the property (FOR to revise)
     jm = material(R('trim', 'PT-01-SATIN'), '-trim') if a.get('trim', True) else wall_mat()
     box(x - 0.01, x + 0.01, sill, head, -5.5, 0.0, jm, 'jamb'); box(x + w - 0.01, x + w + 0.01, sill, head, -5.5, 0.0, jm, 'jamb')
     box(x, x + w, head - 0.01, head + 0.01, -5.5, 0.0, jm, 'head'); box(x, x + w, sill - 0.01, sill + 0.01, -5.5, 0.0, jm, 'sill')
     fr = material('PT-01-SATIN', '-trim'); gl = material('GLASS-CLEAR')
     box(x, x + 1.75, sill, head, -4.5, -2.5, fr, 'frame'); box(x + w - 1.75, x + w, sill, head, -4.5, -2.5, fr, 'frame')
-    box(x, x + w, sill, sill + 2.25, -4.5, -2.5, fr, 'frame'); box(x, x + w, head - 1.75, head, -4.5, -2.5, fr, 'frame')
+    box(x + 1.75, x + w - 1.75, sill, sill + 2.25, -4.45, -2.55, fr, 'frame'); box(x + 1.75, x + w - 1.75, head - 1.75, head, -4.45, -2.55, fr, 'frame')
     for i in range(1, lites):
-        mx = x + w * i / lites; box(mx - 1.0, mx + 1.0, sill, head, -4.5, -2.5, fr, 'mullion')
+        mx = x + w * i / lites; box(mx - 1.0, mx + 1.0, sill + 2.25, head - 1.75, -4.4, -2.6, fr, 'mullion')   # between the rails, 0.1 in. shy of their faces
     box(x + 1.0, x + w - 1.0, sill + 1.0, head - 1.0, -3.6, -3.4, gl, 'glass')
     if a.get('trim', True):
-        b_casing({'x': x, 'w': w, 'head': head, 'sill': sill}, ctx)
-        box(x - 5.5, x + w + 6.5, sill - 1.5, sill, -0.01, 1.5, jm, 'stool')
+        cs_ = a.get('cs') or T['casing']
+        b_casing({'x': x, 'w': w, 'head': head, 'sill': sill, 'cs': cs_}, ctx)
+        # stool with equal 1 in. ears past the casing, 1-3/4 in. proud, an apron under it inset 1/2 in. (owner 11.11.26: the
+        # window trim looked wrong; the stool ran 5-1/2 in. one side and 6-1/2 the other and the casing was built twice)
+        box(x - cs_ - 1.0, x + w + cs_ + 1.0, sill - 1.25, sill, -0.01, 1.75, jm, 'stool')
+        box(x - cs_ + 0.5, x + w + cs_ - 0.5, sill - 4.25, sill - 1.25, -0.01, 0.75, jm, 'apron')
     PORTALS.append((x + 1, x + w - 1, sill + 1, head - 1, -5.0))
 
 
@@ -1083,7 +1129,7 @@ def build_wall(vi, M, front_room_depth):
         hs += [(c['args']['x'], c['args']['x'] + c['args']['w'], 0.0, c['args']['spring'] + c['args']['w'] / 2)
                for c in V.get('calls', []) if c['comp'] == 'arched_door_pair' and c['depth'] == 0]
     for i, r in enumerate(subtract((-6.0, Lw + 6.0, 0.0, H), hs)):
-        box(r[0], r[1], r[2], r[3], -6.0, 0.0, wall_mat(), 'wall')
+        box(r[0], r[1], r[2], r[3], -float(V.get('thick', 6.0)), 0.0, wall_mat(), 'wall')
     PORTALS.clear()
     glass_doors = [c['args'] for c in V.get('calls', []) if c['comp'] == 'door_leaf' and c.get('args', {}).get('panels') == 'glass']
     for o in V['openings']:
@@ -1094,9 +1140,12 @@ def build_wall(vi, M, front_room_depth):
                 continue
             box(o['x0'] - 24, o['x1'] + 24, 0, H, -60, -59, wall_mat(), 'beyond')
             box(o['x0'] - 24, o['x1'] + 24, -2, 0, -60, (-12 if ROOM_MODE else -6), material(R('floor', 'WD-01')), 'beyond_floor')   # meets the room floor's edge (-12 in a room, -6 for one wall), no shared top
+    win_trim = [c['args'] for c in V.get('calls', []) if c['comp'] == 'window' and c['args'].get('trim', True)]
     for c in V.get('calls', []):
         fn = BUILDERS.get(c['comp'], 'missing')
         if c['comp'] in SKIP: continue
+        if c['comp'] == 'casing' and any(abs(c['args']['x'] - wa['x']) < 0.5 and abs(c['args']['w'] - wa['w']) < 0.5 for wa in win_trim):
+            continue   # the window builder cases itself: a second casing stood beside the first (11.11.26)
         if c.get('parent') in OWNS_CHILDREN: continue   # that parent's builder builds its own children: building them again stacked a second
                                                          # toe under every filler (black slots, 11.09.26), a second sink door pair, outlet, casing
         if fn == 'missing':
@@ -1209,9 +1258,24 @@ def downlight(X, Y, watts=1.5, cone=70):
         world_box(X - 1.6, X + 1.6, Y - 1.6, Y + 1.6, H - 0.08, H - 0.04, material('LENS'), 'downlight_lens')
 MATS.setdefault('TRIM-RING', {'hex': '#F4F3EF', 'rough': 0.3, 'kind': 'plastic'})
 MATS.setdefault('LENS', {'kind': 'lamp', 'emit': 6.0})
+def pendant_generic(X, Y, d=18.0, h=10.0, drop=30.0, watts=45.0):
+    """A plan pendant in a room whose stage does not draw its own (the kitchen's island globes do): an opal drum on a brass rod,
+    its bottom `drop` below the ceiling, lit. The fixture type is the lighting schedule's (VERIFY); the position is the plan's."""
+    MATS.setdefault('SHADE', {'kind': 'lamp', 'emit': 3.0})
+    zb = H - drop
+    bpy.ops.mesh.primitive_cylinder_add(vertices=40, radius=d / 2 * IN, depth=h * IN, location=(X * IN, Y * IN, (zb + h / 2) * IN))
+    o = bpy.context.active_object; o.name = 'pendant_drum'; o.data.materials.append(material('SHADE'))
+    for pg in o.data.polygons: pg.use_smooth = True
+    world_box(X - 0.25, X + 0.25, Y - 0.25, Y + 0.25, zb + h, H, material('METAL-BRASS'), 'pendant_rod')
+    world_box(X - 2.5, X + 2.5, Y - 2.5, Y + 2.5, H - 0.75, H, material('METAL-BRASS'), 'pendant_canopy')
+    ld = bpy.data.lights.new('pendant', 'POINT'); ld.energy = watts; ld.shadow_soft_size = d / 3 * IN; ld.color = (1.0, 0.86, 0.68)
+    ol = bpy.data.objects.new('pendant', ld); bpy.context.collection.objects.link(ol); ol.location = (X * IN, Y * IN, (zb + h / 2) * IN)
+
+
 if floor_rect and LIGHTPLAN:
     for l_ in LIGHTPLAN:
         if l_['type'] == 'recess': downlight(l_['X'], l_['Y'], watts=4.0, cone=75)    # soft pools, nothing overpowering
+        elif l_['type'] == 'pendant' and STAGE != 'kitchen': pendant_generic(l_['X'], l_['Y'])
 elif floor_rect:
     n_ = max(1, int(round(WID / 48)))
     rows_ = (DEP - 20, 20) if DEP >= 60 else (DEP / 2,)
@@ -1295,6 +1359,7 @@ def stage_bath():
         soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb - 0.45, y_ - 15, y_ + 0.6, tw, 0.2, 'hand_towel_front')
         soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb + 0.45, Yb + 1.0, y_ - 9, y_ + 0.6, tw, 0.2, 'hand_towel_back')
         soft_box(cx_ - hw / 2, cx_ + hw / 2, Yb - 1.0, Yb + 1.0, y_ + 0.2, y_ + 1.1, tw, 0.45, 'hand_towel_fold')
+    if any(v_['view'] == 'SHOWER - NORTH WALL' for v_ in ALL): bath_compartments()   # the alcove line's compartments (11.11.26)
 
 
 def load_context(keys):
