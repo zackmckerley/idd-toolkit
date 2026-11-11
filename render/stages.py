@@ -557,6 +557,9 @@ def south_end(wallm, trim, pt1):
         for z0_, z1_ in ((10.0, 38.0), (44.0, DH - 6.0)):
             wbox(a_ + 5.0, b_ - 5.0, FS - 1.0, FS - 0.8, z0_, z1_, oak, 'entry_panel', soft=0.12)
         wbox(b_ - 3.0 if a_ < 109.5 else a_ + 1.0, b_ - 2.0 if a_ < 109.5 else a_ + 2.0, FS - 0.8, FS + 0.6, 34.0, 46.0, material('STEEL-SS'), 'entry_pull', soft=0.3)
+    wbox(109.25, 109.75, FS - 0.9, FS - 0.6, 0.0, DH, material('STEEL-SS'), 'entry_astragal')   # the meeting stile's astragal: no daylight seam
+    wbox(DX0, DX1, FS - 6.0, FS + 0.5, -2.0, 0.375, material('ST-01'), 'entry_threshold')        # marble saddle across the jamb depth
+    wbox(DX0 - 0.5, DX1 + 0.5, FS - 6.6, FS - 6.0, -2.0, DH + 0.5, oak, 'entry_outer')            # the pair's exterior face closes the hole
     wbox(DX0 - 4.5, DX0, FS, FS + 0.75, 0.0, DH + 4.5, trim, 'entry_casing', soft=0.1); wbox(DX1, DX1 + 4.5, FS, FS + 0.75, 0.0, DH + 4.5, trim, 'entry_casing', soft=0.1)
     wbox(DX0, DX1, FS, FS + 0.75, DH, DH + 4.5, trim, 'entry_casing', soft=0.1)
     # the tray (plan RCP: 180 x 81 in. at X 145.5, Y -244.5), 6 in. up, the flat ceiling round it
