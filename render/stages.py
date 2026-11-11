@@ -964,7 +964,7 @@ def stage_living():
     wbox(0.0, G['GFW'] - 0.6, 0.0, RD, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_w')   # stops at the fascia and the cap: no shared faces
     wbox(0.0, 236.7, -148.0, -6.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s')   # its underside is the south end's 10'-8" ceiling
     wbox(0.0, 213.0, -202.7, -148.0, G['SOFFIT'], G['FF2'] - 1.5, pt1, 'gallery_slab_s2')
-    wbox(213.0, 236.7, -202.7, -148.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_lf')   # 11'-0" over the lower flight's top: 6'-8" headroom (FOR)
+    wprism_xz([(213.0, G['SOFFIT']), (224.4, 132.0), (236.7, 132.0), (236.7, G['FF2'] - 1.5), (213.0, G['FF2'] - 1.5)], -202.7, -148.0, pt1, 'gallery_slab_lf')   # 11'-0" over the lower flight's top (6'-8" headroom, FOR), eased up from 10'-8": a step read as a dark slot
     wbox(236.7, E, -202.7, -158.0, 132.0, G['FF2'] - 1.5, pt1, 'gallery_slab_se')   # over the southeast landing, 6'-8" headroom (FOR); the stairwell open
     wbox(0.0, G['GFW'] - 3, 0.0, RD, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_w')
     wbox(0.0, 236.7, -60.0, -3.0, G['FF2'], G['FF2'] + 0.5, material(R('floor', 'WD-01')), 'floor2_s')   # the stairwell east of 236.7
