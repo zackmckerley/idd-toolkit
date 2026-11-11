@@ -613,7 +613,15 @@ def south_end(wallm, trim, pt1):
         y0_, y1_ = sorted((yf + side * 1.0, yf + side * 5.5)); wbox(X_ - 2.25, X_ + 2.25, y0_, y1_, z_ - 3.0, z_ + 7.0, material('SHADE'), 'sconce_shade', soft=1.0)
         wpoint(X_, yf + side * 3.5, z_ + 2.0, watts, radius=1.5, color=(1.0, 0.86, 0.68))
     sconce_y(64.5, FS, 1); sconce_y(154.5, FS, 1)
-    xf_ = 230.7; wbox(xf_ - 1.0, xf_, -122.0, -117.0, 60.0, 72.0, material('STEEL-SS'), 'sconce_plate', soft=0.3)
+    # the closet-wall sconce: round backplate and a 5 in. opal cylinder, lit (a small white box read as an intercom, review 11.10.26)
+    xf_ = 230.7
+    bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=2.75 * IN, depth=0.75 * IN, location=((xf_ - 0.375) * IN, -119.5 * IN, 66.0 * IN), rotation=(0, _m.pi / 2, 0))
+    o_ = bpy.context.active_object; o_.name = 'sconce_plate'; o_.data.materials.append(material('STEEL-SS'))
+    wbox(xf_ - 3.0, xf_ - 0.75, -119.9, -119.1, 65.6, 66.4, material('STEEL-SS'), 'sconce_arm')
+    bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=2.5 * IN, depth=10.0 * IN, location=((xf_ - 5.25) * IN, -119.5 * IN, 67.0 * IN))
+    o_ = bpy.context.active_object; o_.name = 'sconce_shade'; o_.data.materials.append(material('SHADE'))
+    for pg in o_.data.polygons: pg.use_smooth = True
+    wpoint(xf_ - 5.25, -119.5, 67.0, 25.0, radius=1.5)
     wbox(xf_ - 5.5, xf_ - 1.0, -121.75, -117.25, 63.0, 73.0, material('SHADE'), 'sconce_shade', soft=1.0); wpoint(xf_ - 3.5, -119.5, 68.0, 12.0, radius=1.5)
 
 def stage_living():
