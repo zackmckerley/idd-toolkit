@@ -500,6 +500,14 @@ def ground_final():
     p.line([(68.5, 67.10), (70.7, 67.10)], 2, BLACK, dash=DASH)
     p.rect(62.3, 47.6, 70.76, 49.6, 2, M, fill=WHITE); p.label(66.5, 48.6, 'BAR', px=18)
     p.line([(68.45, 55.6), (70.76, 55.6)], 2, M, dash=DASH)
+    # ==== owner 11.25.26: art wall recesses (buffet, coats) out; the court's south wall drops to the court door line, one straight wall
+    p.white(36.84, 44.9, 45.34, 49.66); p.white(45.3, 45.08, 46.05, 47.7); p.white(62.26, 44.9, 70.78, 49.66); p.white(61.55, 45.08, 62.3, 47.7)
+    p.white(46.0, 47.42, 61.6, 47.75)
+    p.wall(36.13, 44.37, 46.02, 45.07); p.wall(36.13, 44.37, 36.83, 47.62)
+    p.wall(61.58, 44.37, 71.49, 45.07); p.wall(70.79, 44.37, 71.49, 47.62)
+    p.rect(36.86, 45.07, 45.3, 47.07, 2, M, fill=WHITE); p.label(41.1, 46.07, 'GRILL', px=18)
+    p.rect(62.3, 45.07, 70.76, 47.07, 2, M, fill=WHITE); p.label(66.5, 46.07, 'BAR', px=18)
+    p.line([(36.86, 47.1), (36.86, 55.6)], 2, M, dash=DASH); p.line([(70.76, 47.1), (70.76, 55.6)], 2, M, dash=DASH)
     return p
 
 
