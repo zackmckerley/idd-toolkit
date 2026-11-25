@@ -99,7 +99,7 @@ def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
         put(p, snk, 29.1, 28.0, flip='h')
         p.rect(29.05, 25.9, 31.15, 27.9, 1, THIN, dash=(8, 5)); p.label(30.1, 26.9, 'DW', px=15)
         p.rect(29.05, 30.55, 31.15, 32.05, 1, THIN, dash=(8, 5)); p.label(30.1, 31.3, 'TRASH', px=12)
-        p.label(31.0, 33.1, 'PREP', px=14); p.label(32.1, 29.2, 'ISLAND', px=14, rotate=90)
+        p.label(31.0, 33.1, 'PREP', px=14); p.label(31.0, 25.0, 'ISLAND', px=14)
         for cy in (25.7, 28.0, 30.3, 32.6): stool(p, 33.75, cy)
         p.white(26.5, 19.2, 36.5, 20.1); p.label(31.5, 19.63, 'BREAKFAST COUNTER + MICROWAVE DRAWER', px=14)
     if scullery == 'K3':
@@ -114,7 +114,7 @@ def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
         p.label(38.9, 31.85, 'WINE', px=13, rotate=90); p.label(38.9, 34.33, 'BAR', px=13, rotate=90)
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
     put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
-    if mud == 'M5':
+    if mud in ('M5', 'M6'):
         # ---- owner direction 11.25.26: garage opens into the hall recess, mudroom off it through a cased opening,
         #      the stair drawn in full (from FOR's second floor plan), the air handler in its own small closet
         global _S2
@@ -124,7 +124,10 @@ def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
         p.wall(67.17, 35.0, 67.84, KN)                                                  # wall solid up to the foyer wall line
         p.rect(67.9, KN, 70.9, 38.5, 2, THIN); p.door((67.9, KN + 0.05), 2.6, 'N', 'E')   # house door swings out onto a landing
         p.partition(62.3, KN - 0.3, 67.2, KN)
-        p.white(63.4, KN - 0.36, 66.9, KN + 0.06); p.line([(63.4, KN - 0.15), (66.9, KN - 0.15)], 1, FURN, dash=(8, 6))
+        if mud == 'M6':                                                               # sliding (pocket) door to the mudroom
+            p.white(64.8, KN - 0.36, 67.1, KN + 0.06); p.pocket((64.8, KN - 0.15), (67.1, KN - 0.15))
+        else:
+            p.white(63.4, KN - 0.36, 66.9, KN + 0.06); p.line([(63.4, KN - 0.15), (66.9, KN - 0.15)], 1, FURN, dash=(8, 6))
         p.partition(62.3, 25.0, 67.2, 25.3)
         p.rect(62.36, 25.3, 67.15, 27.3, 2, BLACK)
         for lx in (63.56, 64.76, 65.96): p.line([(lx, 25.3), (lx, 27.3)], 1, THIN)
@@ -140,7 +143,11 @@ def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
         p.white(69.3, 43.9, 70.5, 45.7); p.line([(71.45, 45.4), (70.75, 44.9), (71.45, 44.4)], 4, BLACK)
         # mechanical closet 4'-6" x 3'-6": air handler with its 30 in. service space, wall-hung water heater, doors to the garage
         p.white(82.36, 39.25, 87.58, 46.92); p.wall(86.82, 38.5, 87.54, 43.4); p.wall(82.33, 42.7, 87.54, 43.4)
-        p.door((82.95, 39.2), 1.3, 'E', 'S'); p.door((85.6, 39.2), 1.3, 'W', 'S')
+        if mud == 'M6':                                                               # one 2'-8" door, hinged on the garage face
+            p.wall(82.33, 38.5, 83.2, 39.2); p.wall(85.87, 38.5, 86.9, 39.2); p.white(83.2, 38.46, 85.87, 39.24)
+            p.door((83.2, 38.53), 2.67, 'E', 'S')
+        else:
+            p.door((82.95, 39.2), 1.3, 'E', 'S'); p.door((85.6, 39.2), 1.3, 'W', 'S')
         p.rect(82.6, 40.5, 84.8, 42.6, 3, BLACK); p.line([(82.6, 40.5), (84.8, 42.6)], 1, THIN); p.line([(82.6, 42.6), (84.8, 40.5)], 1, THIN)
         p.label(83.7, 41.55, 'AHU', px=14, bg=True)
         p.rect(82.6, 39.3, 84.8, 40.5, 1, FURN, dash=(6, 5))
@@ -292,6 +299,93 @@ def master_new(p):
     return p
 
 
+def put_dark(p, img, x, y):
+    """Paste keeping whatever is already drawn underneath (darker of the two), so white paper in the piece erases nothing."""
+    from PIL import ImageChops
+    box = (p.X(x), p.Y(y) - img.height, p.X(x) + img.width, p.Y(y))
+    p.im.paste(ImageChops.darker(p.im.crop(box).convert('RGB'), img.convert('RGB')), box[:2]); p._redraw()
+
+
+def sink_sym(p, x0, y0, x1, y1, faucet='E'):
+    """A plain sink: bowl outline, inner bowl, faucet dot on the given side."""
+    p.rect(x0, y0, x1, y1, 2, BLACK, fill=WHITE); p.rrect(x0 + 0.18, y0 + 0.18, x1 - 0.18, y1 - 0.18, r=0.15, w=1, color=THIN)
+    fx, fy = {'E': (x1 + 0.22, (y0 + y1) / 2), 'W': (x0 - 0.22, (y0 + y1) / 2), 'N': ((x0 + x1) / 2, y1 + 0.22), 'S': ((x0 + x1) / 2, y0 - 0.22)}[faucet]
+    p.ellipse(fx - 0.12, fy - 0.12, fx + 0.12, fy + 0.12, 2, BLACK)
+
+
+def ground_final():
+    """The owner's ground floor, 11.25.26: KP-3 kitchen; court door wall 1'-2" north; living room back to FOR's width with its
+    east wall 3'-0" further west; guest wing and stair 3'-0" further east (court 6'-0" wider, plan symmetrical about the
+    court); mechanical and electrical room in the garage bay; the room north of the garage removed."""
+    p = ground_new(RP.ground(), 'FOR', 'K3', 'M6')
+    FOR = Image.open('/home/claude/deck/img_p3_11.png').convert('RGB')
+    DASH = (22, 12)
+    # ---- repairs before anything moves
+    p.wall(81.63, 43.5, 82.33, 46.2)                                           # the earlier stair window comes out
+    p.line([(70.0, 46.75), (75.0, 46.75)], 3, BLACK); p.line([(70.0, 46.9), (75.0, 46.9)], 2, BLACK)   # wall where the closet met it
+    # ---- court door wall 1'-2" north
+    D = 1.17
+    plant = grab(p, 46.3, 23.4, 49.75, 26.15)
+    frame = grab(p, 46.03, 43.27, 61.57, 43.95); leaves = grab(p, 50.2, 43.95, 56.9, 45.98)
+    p.white(45.1, 42.9, 62.5, 43.22)
+    p.white(46.03, 43.1, 61.57, 46.86)
+    for x0, x1 in ((45.3, 46.06), (61.54, 62.31)): p.white(x0, 43.1, x1, 44.34)
+    p.wall(45.33, 43.16 + D, 46.02, 46.02); p.wall(61.58, 43.16 + D, 62.28, 46.02)
+    put_dark(p, frame, 46.03, 43.27 + D); put_dark(p, leaves, 50.2, 43.95 + D)
+    p.line([(45.19, 44.24), (62.42, 44.24)], 1, THIN, dash=DASH)
+    for vx in (45.19, 62.42): p.line([(vx, 42.9), (vx, 44.24)], 1, THIN, dash=DASH)
+    sm = plant.resize((int(plant.width * 0.5), int(plant.height * 0.5)))
+    for x in (47.3, 58.5): put_dark(p, sm, x, 45.25)
+    # ---- living room: FOR's own room, 3'-0" further west than he drew it (east wall 3'-0" west of where it was)
+    blk = FOR.crop(p.box(25.0, 47.02, 42.6, 67.8))
+    p.white(21.95, 47.02, 42.62, 67.8); p.im.paste(blk, (p.X(22.0), p.Y(67.8))); p._redraw()
+    p.white(23.2, 47.0, 25.7, 49.2)                                            # FOR's fridge, which stood at this pier
+    p.wall(38.7, 46.9, 45.4, 47.55)
+    p.line([(39.5, 67.06), (42.7, 67.06)], 1, THIN, dash=DASH)
+    # ---- guest wing and stair 3'-0" east; the room north of the garage goes
+    Rw = grab(p, 65.5, 47.02, 66.35, 67.8); R = grab(p, 66.35, 39.25, 82.45, 67.8)
+    p.white(65.5, 47.02, 82.47, 67.8); p.white(66.35, 39.25, 82.47, 47.02); p.white(82.34, 39.22, 87.62, 46.96)
+    put(p, Rw, 68.5, 47.02); put(p, R, 69.35, 39.25)
+    p.wall(62.28, 46.9, 69.3, 47.55)
+    p.wall(82.3, 38.5, 87.54, 39.2)
+    p.line([(65.5, 67.06), (68.6, 67.06)], 1, THIN, dash=DASH)
+    p.window(84.63, 41.2, 85.33, 45.2)                                         # stair landing window, east wall
+    # ---- mechanical and electrical room in the garage bay
+    p.white(62.4, 18.62, 67.12, 24.98); p.wall(67.17, 19.4, 67.84, 24.6)
+    p.white(67.13, 20.3, 67.88, 23.1); p.door((67.2, 23.1), 2.8, 'S', 'W')
+    p.white(62.42, 22.6, 67.14, 24.93)
+    p.rect(62.45, 22.9, 64.25, 24.9, 3, BLACK); p.line([(62.45, 22.9), (64.25, 24.9)], 1, THIN); p.line([(62.45, 24.9), (64.25, 22.9)], 1, THIN)
+    p.label(63.35, 23.9, 'AHU', px=14, bg=True)
+    p.rect(62.42, 18.7, 63.05, 20.3, 2, BLACK); p.label(63.55, 19.5, 'WH', px=13)
+    p.rect(64.6, 18.64, 67.0, 19.0, 2, BLACK); p.label(65.8, 19.45, 'PANEL', px=13)
+    p.label(65.75, 21.6, 'MECH. +\nELEC.', px=15)
+    # ---- the room north of the garage is gone: its door and the wall end go with it
+    p.white(82.9, 35.5, 86.2, 38.47); p.white(85.36, 39.22, 87.62, 46.96)
+    p.wall(67.17, 38.5, 70.0, 39.2)
+    # ---- windows touched by the changes
+    p.wall(22.28, 33.0, 22.98, KN); p.line([(22.28, KN + 0.03), (22.98, KN + 0.03)], 3, BLACK)      # west window stops at the fridge with a jamb
+    p.white(25.3, 18.57, 37.74, 18.72)
+    p.window(27.15, 17.83, 37.74, 18.5); p.line([(32.45, 17.83), (32.45, 18.5)], 2, BLACK)         # street window: one centre mullion, both jambs
+    p.rect(25.2, 18.56, 37.78, 20.7, 2, BLACK)
+    # ---- sinks redrawn clean
+    p.white(29.04, 27.92, 31.4, 30.52); sink_sym(p, 29.35, 28.15, 30.95, 30.3, 'E'); p.label(31.75, 29.2, 'SINK', px=12, rotate=90)
+    p.white(43.25, 20.18, 45.23, 27.05); p.rect(43.22, 20.15, 45.26, 27.08, 2, BLACK)
+    sink_sym(p, 43.5, 21.0, 44.75, 23.4, 'E'); p.rect(43.25, 24.3, 45.23, 26.3, 1, THIN, dash=(8, 5)); p.label(44.24, 25.3, 'DW', px=15)
+    p.rect(37.8, 30.32, 39.98, 33.1, 2, BLACK, fill=WHITE); p.label(38.9, 31.75, 'WINE', px=13, rotate=90)
+    # ---- court walls drawn once, clean, with both art walls against them
+    p.wall(38.32, 46.88, 46.02, 47.58); p.wall(61.58, 46.88, 69.36, 47.58)
+    p.white(69.38, 45.0, 69.58, 46.68)
+    for a, b in ((41.17, 45.2), (62.43, 66.46)):
+        p.white(a - 0.08, 44.98, b + 0.08, 46.87); p.rect(a, 45.05, b, 46.88, 2, THIN); p.label((a + b) / 2, 45.95, 'ART WALL', px=15)
+    p.white(48.1, 46.7, 48.95, 47.3); p.white(59.65, 46.7, 60.5, 47.3)                        # ticks left over the plants
+    # ---- guest wing north-east window: the survey tick copied with the wing comes out
+    p.white(82.15, 67.04, 83.27, 68.8); p.white(82.45, 65.5, 83.0, 66.28)
+    p.window(79.82, 66.3, 83.27, 67.02)
+    p.line([(82.2, 67.10), (83.2, 67.10)], 2, BLACK, dash=DASH)
+    p.door((67.2, 23.1), 2.8, 'S', 'W')
+    return p
+
+
 G_OLD = dict(routes=[(GUEST, [(53.7, 13.5), (53.7, 41.3), (38.5, 41.3), (38.5, 50.5), (34, 53)]),
                      (GUEST, [(38.5, 41.3), (39.7, 30.6), (41.0, 30.6)]),
                      (SERV, [(67.5, 36.9), (65.2, 37.2), (64.6, 42.6), (40, 43.4), (27.5, 46.8)]),
@@ -358,4 +452,6 @@ if __name__ == '__main__':
     m3 = ground_new(RP.ground(), 'FOR', 'K3', 'M3'); m3.save(os.path.join(OUT, 'g_M3.png')); m3.routes(**GM3).save(os.path.join(OUT, 'gm3_r.png'))
     m4 = ground_new(RP.ground(), 'FOR', 'K3', 'M4'); m4.save(os.path.join(OUT, 'g_M4.png')); m4.routes(**GM4).save(os.path.join(OUT, 'gm4_r.png'))
     m5 = ground_new(RP.ground(), 'FOR', 'K3', 'M5'); m5.save(os.path.join(OUT, 'g_M5.png')); m5.routes(**GM5).save(os.path.join(OUT, 'gm5_r.png'))
+    ground_new(RP.ground(), 'FOR', 'K3', 'M6').save(os.path.join(OUT, 'g_M6.png'))
+    ground_final().save(os.path.join(OUT, 'g_FINAL.png'))
     print('layouts done')
