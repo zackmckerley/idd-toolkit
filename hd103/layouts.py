@@ -484,6 +484,22 @@ def ground_final():
         for f_ in (0.25, 0.5, 0.75): p.line([(a_ + (b_ - a_) * f_, 45.05), (a_ + (b_ - a_) * f_, 45.3)], 2, M)
         p.label((a_ + b_) / 2, 46.05, t_, px=15)
     p.rect(88.6, 42.0, 93.8, 58.0, 2, M, dash=DASH); p.label(91.2, 50.0, 'SERVICE\nYARD', px=18)
+    # ==== area cut, option A (owner, 11.25.26): both court walls 2'-2" out, wings back to 16'-9", outer walls stay
+    lv = grab(p, 23.25, 47.62, 39.1, 67.3)
+    p.white(21.06, 47.62, 39.12, 67.3); put(p, lv, 23.25 - W, 47.62)
+    p.wall(36.13, 46.88, 38.4, 47.58)
+    p.line([(36.95, 67.10), (39.1, 67.10)], 2, BLACK, dash=DASH)
+    p.rect(36.86, 47.6, 45.3, 49.6, 2, M, fill=WHITE); p.label(41.1, 48.6, 'GRILL', px=18)
+    p.line([(36.86, 55.6), (39.15, 55.6)], 2, M, dash=DASH)
+    # guest wing: court wall, door and closet 2'-2" east (the closet gives its extra width back); bed moves with them; stair too
+    shw = grab(p, 63.2, 62.6, 68.5, 65.4)
+    g1 = grab(p, 68.5, 46.68, 78.7, 56.62); g2 = grab(p, 68.5, 56.62, 84.4, 67.3); stq = grab(p, 71.4, 39.25, 84.4, 46.68)
+    p.white(63.2, 62.6, 68.5, 65.4); p.white(68.5, 46.68, 70.7, 67.3); p.white(71.4, 39.25, 73.6, 46.68)
+    put(p, g1, 68.5 + W, 46.68); put(p, g2, 68.5 + W, 56.62); put(p, stq, 71.4 + W, 39.25); put(p, shw, 63.2 + W, 62.6)
+    p.wall(68.4, 46.88, 70.75, 47.58)
+    p.line([(68.5, 67.10), (70.7, 67.10)], 2, BLACK, dash=DASH)
+    p.rect(62.3, 47.6, 70.76, 49.6, 2, M, fill=WHITE); p.label(66.5, 48.6, 'BAR', px=18)
+    p.line([(68.45, 55.6), (70.76, 55.6)], 2, M, dash=DASH)
     return p
 
 
@@ -556,6 +572,14 @@ def second_final(follow):
     p.white(84.55, 39.03, 85.45, 39.33); p.white(85.4, 67.06, 86.2, 68.6)
     # ---- terrace and north planter end at the living room's east wall, 3'-0" further west
     tb = grab(p, 41.3, 47.62, 42.3, 67.7); p.white(38.25, 47.62, 42.35, 67.7); put(p, tb, 41.3 - S, 47.62)
+    # ---- area cut, option A: the wing's court wall 2'-2" east (closet gives the width back), stair with it; terrace 2'-2" narrower
+    j1 = grab(p, 68.5, 46.87, 78.4, 56.62); j2 = grab(p, 68.5, 56.62, 84.2, 67.3); js = grab(p, 72.6, 39.3, 84.2, 46.87)
+    p.white(68.5, 46.87, 70.7, 67.3); p.white(72.6, 39.3, 74.8, 46.87)
+    put(p, j1, 68.5 + W, 46.87); put(p, j2, 68.5 + W, 56.62); put(p, js, 72.6 + W, 39.3)
+    p.wall(68.5, 46.87, 70.82, 47.57)
+    fx = grab(p, 27.6, 48.6, 38.22, 62.8)
+    tb2 = grab(p, 38.25, 47.62, 39.35, 67.7); p.white(36.0, 47.62, 39.4, 67.7); put(p, tb2, 38.25 - W, 47.62)
+    p.white(27.6, 48.6, 36.0, 62.8); put_dark(p, fx, 27.6 - 2.25, 48.6)          # terrace furniture back onto the narrower terrace
     # ---- west side
     if follow:
         p.slide(21.9, 21.6, 31.6, 47.62, dx=-W, fill='smear'); p.slide(21.9, 47.62, 26.0, 63.55, dx=-W, fill='smear')

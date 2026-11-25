@@ -61,7 +61,7 @@ doc = fitz.open(); X = FR.x0 + 20; TOP = FR.y0 + 44; RIGHT = TB_X - 20
 
 sh = S(doc); sh.frame2(['SECOND FLOOR', 'TWO WAYS'], 'SF-1', 'NOT TO SCALE')
 sh.text(X, TOP, 'SECOND FLOOR AFTER THE FIRST FLOOR MOVES: WEST WALL HELD, OR FOLLOWING THE FLOOR BELOW', 15, INK, serif=True, raw=True)
-y = sh.para(X, TOP + 18, 'Both plans: stair and junior master wing 3\'-0" east with the floor below, one straight east wall on the 7\'-6" setback line, terrace trimmed to the living room below. Drawn on FOR Architecture\'s plan for FOR to redraw; sizes and areas are scaled from the presentation plan (estimates).', 1300, 9.6)
+y = sh.para(X, TOP + 18, 'Both plans: stair and junior master wing 3\'-0" east with the floor below, one straight east wall on the 7\'-6" setback line, terrace trimmed to the living room below; both court walls 2\'-2" out with the first floor (area cut, option A). Drawn on FOR Architecture\'s plan for FOR to redraw; sizes and areas are scaled from the presentation plan (estimates).', 1300, 9.6)
 R = (18.6, 15.6, 89.3, 68.9); GAP = 30
 K = (RIGHT - X - GAP) / 2 / (R[2] - R[0]); ph = (R[3] - R[1]) * K
 py = y + 26; assert py + ph + 150 < FR.y1, (py, ph)
@@ -72,12 +72,12 @@ for px in (X + pw - 26, X + 2 * pw + GAP - 26):
     sh.p.draw_polyline([fitz.Point(px - 5, py + 24), fitz.Point(px, py + 12), fitz.Point(px + 5, py + 24)], color=INK, fill=INK, width=0.8, closePath=True)
     sh.text(px, py + 56, 'N', 9, INK, bold=True, align='c', raw=True)
 ya = sh.items(X, py + ph + 22, [
-    '#A. About 1,975 SF under air. House about 3,975 SF.',
+    '#A. About 1,930 SF under air. House about 3,845 SF.',
     'Master suite as it was. The planter ledge on the west grows from 3\'-0" to 5\'-2" over the wider first floor.',
-    'Junior master: closet 2\'-2" wider, bath moves to the east wall. The W.I.C. by the stair goes; bedroom 3 keeps its reach-in closet. Landing at the top of the stair 3\'-0" wider.',
+    'Junior master wing 16\'-9" outside, as FOR drew it, with bath 2 at the east wall and the closet at its original width. The W.I.C. by the stair goes; bedroom 3 keeps its reach-in closet. Landing at the top of the stair 3\'-0" wider.',
 ], pw, 9.6)
 yb = sh.items(X + pw + GAP, py + ph + 22, [
-    '#B. About 2,030 SF under air. House about 4,030 SF.',
+    '#B. About 1,990 SF under air. House about 3,905 SF.',
     'Master bedroom, bath and terrace 2\'-2" wider (bedroom about 24\'-4" wide). Planter ledge stays 3\'-0". About 56 SF more than A, all in the master suite.',
     'East side as A.',
 ], pw, 9.6)
