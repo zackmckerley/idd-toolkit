@@ -71,15 +71,16 @@ ya = sh.items(X, yy, [
     (1, GUEST, 'Front door. The island and the cooktop are the first thing on your left.'),
     (2, GUEST, 'To reach the living room a guest walks past the island stools and the cook.'),
     (3, GUEST, 'The powder room door opens off the dining room, next to the scullery opening.'),
-    (4, SERV, 'Groceries: garage, across the foyer, to the fridge at the far end of the kitchen. About 44\'. The mudroom is an open alcove on the foyer, and the garage door opens beside it, not into it.'),
-    (5, SERVE, 'The scullery is around a corner behind the dining table, about 12\' from the island. It works as a pantry, not as a second kitchen.')], pw)
+    (4, SERV, 'Groceries: garage, across the foyer, to the fridge at the far end of the kitchen. About 45\'. The mudroom is an open alcove on the foyer, and the garage door opens beside it, not into it.'),
+    (5, SERVE, 'The scullery is around a corner behind the dining table, about 23\' from the kitchen sink. It works as a pantry, not as a second kitchen.')], pw)
 yb = sh.items(x2, yy, [
-    (1, GUEST, 'Front door. The court and pool are ahead, the dining table and the long west window are to the left. The scullery block hides the kitchen from the door.'),
-    (2, GUEST, 'Foyer to living room: a clear walk past the end of the table, 3\'-4" at its tightest.'),
+    (1, GUEST, 'Front door. The court and pool are ahead, the dining table and the long west window are to the left. The scullery block screens the range and the working side of the island; from the middle of the foyer you see the island\'s north end.'),
+    (2, GUEST, 'Foyer to living room: an open walk past the end of the table, 4\'-7" at its tightest.'),
     (3, GUEST, 'Powder room off a small vestibule by the stair, out of sight of the kitchen, dining and living rooms.'),
     (4, SERV, 'The garage opens into a closed mudroom. Its door faces down the south wall of the foyer.'),
-    (5, SERV, 'Groceries enter the scullery by its own door, about 33\' from the garage door. Cold goods go on through to the kitchen fridge, about 17\' more, north of the island and clear of the cook.'),
-    (6, SERVE, 'Island to table is 4\'-2". Table to the court doors is about 15\'.')], pw)
+    (5, SERV, 'Dry goods go straight into the scullery by its own door, about 28\' from the garage door.'),
+    (6, SERV, 'Cold goods go to the kitchen fridge along the south edge of the dining area, about 41\' from the garage door. Today it is about 45\'.'),
+    (7, SERVE, 'Scullery to kitchen through the south aisle, 13\'. Island to the dining chairs, 4\'-4". Table to the court doors, about 14\'.')], pw)
 y3 = max(ya, yb) + 12; cw = (RIGHT - X - 60) / 3
 sh.items(X, y3, ['#What the routes showed',
     'The kitchen sat on the path between the front door and the living room.',
@@ -88,68 +89,70 @@ sh.items(X, y3, ['#What the routes showed',
 sh.items(X + cw + 30, y3, ['#What it costs',
     'The service route passes the front door inside the foyer. FOR\'s plan has the garage east and the kitchen west of the entry, so any layout does this.',
     'The island is about 28\' from the court doors. Today it is about 20\'.',
-    'The guest closet drops from 9\'-0" to 3\'-8" deep.'], cw)
+    'FOR\'s dry bar leaves the west wall. The bar moves to the street counter.',
+    'The guest closet drops from 9\'-0" to 3\'-7" deep, and the powder room shares a 3\' x 3\' vestibule with the guest bedroom door.'], cw)
 sh.items(X + 2 * (cw + 30), y3, ['#Not changed',
     'Exterior walls, windows, stair, pool court, living room, garage, second floor stack.'], cw)
 
 # ---------------------------------------------------------------- LA-2 enlarged ground plans
 sh = S(doc); sh.frame2(['LAYOUT BY ROUTE', 'KITCHEN AND SCULLERY'], 'LA-2', 'AS NOTED')
 sh.text(X, TOP, 'KITCHEN, SCULLERY, DINING, POWDER ROOM AND MUDROOM', 15, INK, serif=True, raw=True)
-y = sh.para(X, TOP + 18, 'The proposed ground floor, enlarged. Dimensions are scaled from FOR\'s presentation plan and are good to about 2".', 1250, 9.6) + 10
+y = sh.para(X, TOP + 18, 'The proposed ground floor, enlarged: the kitchen plan is at 3/8 inch to the foot and the powder room plan at 1/4 inch. Dimensions are scaled from FOR\'s presentation plan and are good to about 2".', 1250, 9.6) + 10
 py = y + 16
 pw, ph = sh.panel('g_new.png', 1115, (21.5, 17.0, 47.0, 48.5), 27.0, X, py, 'KITCHEN, SCULLERY AND DINING, 3/8" TO 1\'-0"', 'PROPOSED')
 x2 = X + pw + 30
-pw2, ph2 = sh.panel('g_new.png', 1115, (60.0, 33.5, 84.0, 58.0), 18.0, x2, py, 'POWDER ROOM, GUEST DOOR, MUDROOM, 1/4" TO 1\'-0"', 'PROPOSED')
+pw2, ph2 = sh.panel('g_new.png', 1115, (60.0, 33.5, 82.0, 58.0), 18.0, x2, py, 'POWDER ROOM, GUEST DOOR, MUDROOM, 1/4" TO 1\'-0"', 'PROPOSED')
 lx = x2 + pw2 + 26; lw = RIGHT - lx
 sh.items(lx, py + 4, ['#Powder room and guest suite',
-    'Powder room 5\'-1" x 4\'-11" in the south end of the guest closet, with a 2\'-6" pocket door. You see the vanity from the door, not the toilet. It backs onto the guest bath, so the plumbing is next door.',
-    'The guest bedroom door moves 3\'-0" north. The guest closet becomes 5\'-1" x 3\'-8".',
+    'Powder room 5\'-4" x 5\'-1" in the south end of the guest closet, with a 2\'-4" pocket door. The vanity is beside the door and the toilet is in the far corner, facing away from the hall. It backs onto the guest bath, so the plumbing is next door.',
+    'The guest bedroom door moves 2\'-8" north. The guest closet becomes a 5\'-4" x 3\'-7" reach-in, and its door needs to become a pair or a slider.',
     '#Mudroom',
-    'Two new partitions close it. The garage door now opens into the mudroom, and the bench and lockers are no longer on view from the foyer.',
+    'Two new partitions close it. The garage door now opens into the mudroom, and the bench and lockers are no longer on view from the foyer. Its door swings out and parks on the foyer\'s south wall, 3\'-5" clear of the front door.',
     '#For FOR to confirm',
-    'Hood duct through the west pier. Plumbing for the relocated powder room. Island sink waste and vent in the slab. The paneled wall and its concealed door. Guest closet size.'], lw)
+    'Sill heights at the street window and the short west window, where counters run in front of glass. If the street sill is under 36", that run becomes a window seat.',
+    'Hood duct through the west pier. Island sink waste and vent in the slab. Plumbing for the relocated powder room. The paneled wall and its concealed door. Guest closet door.'], lw)
 ny = py + ph2 + 26; cw = (RIGHT - x2 - 30) / 2
 sh.items(x2, ny, ['#Kitchen, 14\'-8" x 15\'-5"',
-    'Range and fridge stand on the only solid stretch of the west wall, so the hood ducts straight out and no window is lost.',
-    'The main sink and dishwasher are in the island, facing the range. Sink, range and fridge are within 7\' of each other, and nobody walks through that triangle.',
-    'Island 3\'-6" x 8\'-0" with three stools. Aisles: 3\'-7" at the range, 3\'-7" at the street counter, 5\'-6" behind the stools.',
-    'The fridge is at the dining end of the run, so a guest can reach it without entering the work zone.',
-    'The street window gets a 12\'-7" coffee and breakfast counter.',
+    'Range and fridge stand on the only solid stretch of the west wall, with 15" of counter between them. The hood ducts straight out and no window is covered by a tall unit.',
+    'The main sink and dishwasher are in the island, facing the range. Sink, range and fridge are within 6\' of each other, and nobody walks through that triangle.',
+    'Island 4\'-0" x 8\'-0" with three stools and 20" of knee space. Aisles: 3\'-9" at the range, 3\'-7" at the fridge, 3\'-7" at the street counter, 3\'-4" behind the stools.',
+    'The fridge is at the dining end of the run, the first thing you reach from the table.',
+    'The street window gets a 12\'-7" bar and breakfast counter.',
     '#Dining',
-    'FOR\'s table for ten turns to run east and west beside the long west window, with his bar on that wall. The table sits 4\'-2" north of the island.'], cw)
+    'FOR\'s table for ten turns to run east and west. Clear space: 4\'-4" to the island, 3\'-4" to the west window, 8\'-0" to the foyer. The long west window is left free.'], cw)
 sh.items(x2 + cw + 30, ny, ['#Scullery, 7\'-1" x 15\'-2"',
-    'It takes the old powder room and becomes a through room: a 3\'-6" opening to the kitchen and a 2\'-10" pocket door to the foyer. Aisle 3\'-4".',
-    'FOR\'s sink and dishwasher stay where they are. Added: second ovens and coffee, a freezer, and 11\'-8" of tall pantry.',
-    'The wall facing the dining room is 7\'-6" wide with the scullery door in it. Finish it as one paneled wall with a concealed door. The art wall there goes away; the two beside the court doors stay.'], cw)
+    'It takes the old powder room and becomes a through room. A 3\'-4" opening meets the kitchen\'s south aisle, clear of the stools. A 2\'-6" concealed door opens to the foyer and swings in.',
+    'Aisle 4\'-0". FOR\'s sink and dishwasher stay where they are. Added: ovens, a freezer and tall pantry on the south wall (5\'-0"), and 8\'-9" of 12" pantry shelves.',
+    'The wall facing the dining room is 7\'-6" wide. Finish it as one paneled wall with the door flush in it. The art wall there goes away; the two beside the court doors stay.'], cw)
 
 # ---------------------------------------------------------------- LA-3 master suite
 sh = S(doc); sh.frame2(['LAYOUT BY ROUTE', 'MASTER SUITE'], 'LA-3', '3/8" TO 1\'-0"')
 sh.text(X, TOP, 'MASTER SUITE: BEDROOM, BATH AND DRESSING ROOM AS A LOOP', 15, INK, serif=True, raw=True)
-y = sh.para(X, TOP + 18, 'Second floor, FOR\'s plan as revised 11.24.26, north up. No exterior wall or window changes. The bedroom is untouched.', 1250, 9.6) + 10
-py = y + 16; R = (24.0, 21.0, 50.0, 48.0)
+y = sh.para(X, TOP + 18, 'Second floor, FOR\'s plan as revised 11.24.26, north up. No exterior wall or window changes. The bedroom keeps its size and furniture; its south wall gets two doors in place of one opening.', 1250, 9.6) + 10
+py = y + 16; R = (24.9, 21.0, 50.0, 48.0)
 pw, ph = sh.panel('m_old_r.png', 1126, R, 27.0, X, py, 'AS REVISED 11.24.26', 'CURRENTLY DRAWN')
 x2 = X + pw + 30
 sh.panel('m_new_r.png', 1126, R, 27.0, x2, py, 'PROPOSED: LOOP SUITE', 'PROPOSED')
 yy = py + ph + 20
 ya = sh.items(X, yy, [
     (1, SERV, 'One way in and out: a 3\'-9" passage between the two closets.'),
-    (2, SERV, 'The bath is a 6\'-2" deep strip. The water closet is at the far end, about 21\' from the bed.'),
+    (2, SERV, 'The bath is a 6\'-2" deep strip. The water closet is at the far end, about 22\' from the bed.'),
     (3, GUEST, 'Both closets open off the passage, so anyone dressing stands in the only route to the bath. Each closet is 8\'-9" x 5\'-7".')], pw)
 yb = sh.items(x2, yy, [
-    (1, SERV, 'A pocket door on FOR\'s axis leads from the bedroom to the bath. Bed to water closet is about 15\'.'),
-    (2, SERV, 'Bath 12\'-6" x 12\'-1". Freestanding tub at the west window. Vanity 7\'-7" with the south window between the two mirrors, and a linen tower. Shower 5\'-5" x 4\'-0". Water closet 3\'-5" x 4\'-11" with its own door.'),
-    (3, SERV, 'A second pocket door leads from the bath straight to the dressing room. Shower, dress and leave without crossing the bedroom.'),
-    (4, SERV, 'Dressing room 9\'-2" x 12\'-1" with its own opening to the bedroom. 17\'-7" of wall for double hanging (about 35\' of rod), a dresser under the window, and shoes.')], pw)
+    (1, SERV, 'A door at the foot of the bed leads to the bath. Bed to water closet is about 16\'. The water closet is in the far corner, 9\' from the pillows.'),
+    (2, SERV, 'Bath 12\'-4" x 12\'-1". Freestanding tub at the west window, 12" off the wall. Vanity 7\'-5" with the south window between the two mirrors. Shower 5\'-2" x 3\'-7". Water closet 3\'-5" x 4\'-11" with its own door.'),
+    (3, SERV, 'A pocket door leads from the bath straight to the dressing room. Shower and dress without walking back past the bed.'),
+    (4, SERV, 'Dressing room 9\'-2" x 12\'-1" with its own pocket door to the bedroom, on the side nearest the suite door. About 16\' of wall for double hanging, a dresser under the window, and linen.')], pw)
 y3 = max(ya, yb) + 10; cw = (RIGHT - X - 90) / 4
 sh.items(X, y3, ['#Why a loop',
     'Two people can use the suite at once. One sleeps while the other goes bath, dressing room, out.',
-    'Every room has two ways out, so nobody stands in the only route.'], cw)
+    'Bath and dressing room each have two ways out, so nobody stands in the only route.'], cw)
 sh.items(X + cw + 30, y3, ['#What I removed',
     'The passage between the closets, and the split into his and her closets. One room works harder than two 5\'-7" rooms with a door each.'], cw)
 sh.items(X + 2 * (cw + 30), y3, ['#What it costs',
-    'The water closet and the shower back onto the bedroom wall. That wall needs sound insulation.',
-    'Three door openings in place of one.'], cw)
+    'The shower and the water closet back onto the bedroom wall. Build it as a double wall with insulation, and keep the shower valve on the east partition.',
+    'Three doors in place of one opening.'], cw)
 sh.items(X + 3 * (cw + 30), y3, ['#For FOR to confirm',
-    'Tub and shower drains over the dining room and kitchen below. Pocket door framing in the bedroom wall.'], cw)
+    'Toilet, tub and shower wastes over the dining room and kitchen ceiling below. Pocket door framing. Tub filler location.'], cw)
 
 fix_soft_hyphen(doc); doc.save(OUTPDF, garbage=3, deflate=True); print('saved', OUTPDF, os.path.getsize(OUTPDF))
