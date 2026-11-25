@@ -71,7 +71,7 @@ def ground_new(p, guest='R4', scullery='THRU'):
         put(p, ptoilet, 38.25, 32.85, rotate=90); p.rect(41.4, 31.62, 44.4, 33.2, 2, BLACK); put(p, psink, 42.15, 31.68)
         p.label(40.6, 34.6, 'POWDER', px=14)
         p.rect(23.14, 33.3, 25.2, KN, 2, BLACK)                                    # west run carried north to the kitchen line
-    if scullery == 'K':
+    if scullery in ('K', 'K3'):
         # ---- kitchen planned to the NKBA guidelines (11.25.26): tall freezer and wine columns recessed into the powder block,
         #      a through aisle behind the stools, sink / range / fridge triangle on the west side, U-shaped scullery
         p.white(38.16, 18.58, 45.27, KN + 0.08); p.white(37.74, 18.58, 38.21, KN + 0.08)
@@ -102,6 +102,16 @@ def ground_new(p, guest='R4', scullery='THRU'):
         p.label(31.0, 33.1, 'PREP', px=14); p.label(32.1, 29.2, 'ISLAND', px=14, rotate=90)
         for cy in (25.7, 28.0, 30.3, 32.6): stool(p, 33.75, cy)
         p.white(26.5, 19.2, 36.5, 20.1); p.label(31.5, 19.63, 'BREAKFAST COUNTER + MICROWAVE DRAWER', px=14)
+    if scullery == 'K3':
+        # ---- fridge and freezer together at the dining end of the range wall; the long west window starts 2'-7" further north
+        p.white(23.2, 29.1, 25.5, KN + 0.05)
+        p.wall(22.28, 33.4, 22.98, KN + 0.02)
+        p.rect(23.14, 29.05, 25.2, 30.38, 2, BLACK)
+        p.rect(23.14, 30.38, 25.43, 32.88, 2, BLACK, fill=WHITE); p.label(24.28, 31.63, 'FREEZER', px=13, rotate=90)
+        p.rect(23.14, 32.88, 25.43, KN, 2, BLACK, fill=WHITE); p.label(24.28, 34.38, 'FRIDGE', px=14, rotate=90)
+        p.white(37.85, 30.65, 39.95, 35.5)
+        p.rect(37.8, 30.6, 39.98, 33.1, 2, BLACK, fill=WHITE); p.rect(37.8, 33.1, 39.98, 35.56, 2, BLACK, fill=WHITE)
+        p.label(38.9, 31.85, 'WINE', px=13, rotate=90); p.label(38.9, 34.33, 'BAR', px=13, rotate=90)
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
     put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
     # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
@@ -216,6 +226,7 @@ G_U = dict(routes=[(GUEST, [(53.7, 13.5), (53.7, 41.3), (53.7, 45.6)]),
                    (SERV, [(37.0, 36.9), (34.6, 35.2), (27.2, 35.2), (26.4, 33.0)]),
                    (SERVE, [(31.0, 34.3), (31.0, 37.8)]), (SERVE, [(38.6, 41.1), (48, 43.6), (51.2, 46.2)])],
            stops=[(1, 55.6, 39.4, GUEST), (2, 45.3, 44.1, GUEST), (3, 46.6, 35.0, GUEST), (4, 57.6, 39.2, SERV), (5, 36.9, 28.0, SERV), (6, 29.0, 36.2, SERV), (7, 46.3, 42.2, SERVE)])
+G_K3 = dict(routes=[r if i != 4 else (SERV, [(37.0, 36.9), (30.0, 36.6), (27.2, 35.6), (26.3, 34.4)]) for i, r in enumerate(G_U['routes'])], stops=G_U['stops'])
 M_OLD = dict(routes=[(SERV, [(33.5, 36.4), (37.1, 36.2), (37.1, 27.4), (44.6, 27.4), (46.2, 26.2)]),
                      (SERV, [(37.1, 27.4), (33.5, 26.6), (30.5, 26.0)]), (GUEST, [(37.1, 32.2), (35.2, 32.2), (33, 32.2)]), (GUEST, [(37.1, 32.2), (40.5, 32.2)])],
              stops=[(1, 37.1, 34.0, SERV), (2, 41, 27.4, SERV), (3, 38.6, 31.0, GUEST)])
@@ -236,4 +247,5 @@ if __name__ == '__main__':
     u = ground_new(RP.ground(), 'FOR', 'U'); u.save(os.path.join(OUT, 'g_U.png')); u.routes(**G_U).save(os.path.join(OUT, 'g_U_r.png'))
     print('G_U', [round(length(pts), 1) for _, pts in G_U['routes']])
     k = ground_new(RP.ground(), 'FOR', 'K'); k.save(os.path.join(OUT, 'g_K.png')); k.routes(**G_U).save(os.path.join(OUT, 'g_K_r.png'))
+    k = ground_new(RP.ground(), 'FOR', 'K3'); k.save(os.path.join(OUT, 'g_K3.png')); k.routes(**G_K3).save(os.path.join(OUT, 'g_K3_r.png'))
     print('layouts done')
