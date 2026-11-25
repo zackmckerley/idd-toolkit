@@ -71,6 +71,37 @@ def ground_new(p, guest='R4', scullery='THRU'):
         put(p, ptoilet, 38.25, 32.85, rotate=90); p.rect(41.4, 31.62, 44.4, 33.2, 2, BLACK); put(p, psink, 42.15, 31.68)
         p.label(40.6, 34.6, 'POWDER', px=14)
         p.rect(23.14, 33.3, 25.2, KN, 2, BLACK)                                    # west run carried north to the kitchen line
+    if scullery == 'K':
+        # ---- kitchen planned to the NKBA guidelines (11.25.26): tall freezer and wine columns recessed into the powder block,
+        #      a through aisle behind the stools, sink / range / fridge triangle on the west side, U-shaped scullery
+        p.white(38.16, 18.58, 45.27, KN + 0.08); p.white(37.74, 18.58, 38.21, KN + 0.08)
+        p.white(28.9, 24.2, 34.6, 34.1); p.white(23.2, 33.32, 25.5, KN + 0.05)
+        p.partition(37.8, 18.56, 38.15, 30.3); p.partition(37.8, 30.0, 45.28, 30.3)            # scullery west and north walls
+        p.partition(40.0, 30.3, 40.3, KN); p.partition(37.8, KN - 0.3, 45.3, KN)               # back of the tall units, block north wall
+        p.white(37.74, 21.0, 38.21, 25.0); p.line([(37.97, 21.0), (37.97, 25.0)], 1, FURN, dash=(8, 6))
+        # scullery
+        put(p, sce, 43.22, 20.15); p.rect(43.22, 18.6, 45.26, 20.15, 2, BLACK); p.rect(43.22, 27.08, 45.26, 29.98, 2, BLACK)
+        p.rect(38.17, 18.6, 43.22, 20.65, 2, BLACK); p.label(40.7, 19.62, 'TALL PANTRY', px=14)
+        p.rect(38.17, 27.95, 43.22, 29.98, 2, BLACK); p.label(40.7, 28.97, 'OVENS + COFFEE', px=14)
+        p.rect(38.17, 25.3, 39.67, 27.95, 2, BLACK); p.label(38.92, 26.6, 'PANTRY', px=12, rotate=90)
+        p.label(41.45, 24.0, 'SCULLERY', px=17, rotate=90)
+        # tall columns facing the kitchen, flush with the scullery wall
+        p.rect(37.8, 30.6, 39.98, 33.1, 2, BLACK, fill=WHITE); p.rect(37.8, 33.1, 39.98, 35.56, 2, BLACK, fill=WHITE)
+        p.label(38.9, 31.85, 'FREEZER', px=13, rotate=90); p.label(38.9, 34.33, 'WINE', px=13, rotate=90)
+        # powder room, 5'-0" x 5'-3"
+        p.white(42.5, KN - 0.36, 45.0, KN + 0.06); p.door((45.0, KN - 0.15), 2.5, 'W', 'S')
+        put(p, ptoilet, 40.85, 30.35, flip='v'); p.rect(43.0, 30.32, 45.24, 31.9, 2, BLACK); put(p, psink, 43.37, 30.38)
+        p.label(41.9, 34.3, 'POWDER', px=13)
+        # west run to the kitchen line, serving counter north of the fridge
+        p.rect(23.14, 33.3, 25.2, KN, 2, BLACK); p.label(24.17, 34.6, 'SERVE', px=12, rotate=90)
+        # island: trash, sink, dishwasher in work order from the fridge; prep top; four stools on the walk-past side
+        p.rect(29.0, 24.3, 33.0, 34.0, 2, BLACK)
+        put(p, snk, 29.1, 28.0, flip='h')
+        p.rect(29.05, 25.9, 31.15, 27.9, 1, THIN, dash=(8, 5)); p.label(30.1, 26.9, 'DW', px=15)
+        p.rect(29.05, 30.55, 31.15, 32.05, 1, THIN, dash=(8, 5)); p.label(30.1, 31.3, 'TRASH', px=12)
+        p.label(31.0, 33.1, 'PREP', px=14); p.label(32.1, 29.2, 'ISLAND', px=14, rotate=90)
+        for cy in (25.7, 28.0, 30.3, 32.6): stool(p, 33.75, cy)
+        p.white(26.5, 19.2, 36.5, 20.1); p.label(31.5, 19.63, 'BREAKFAST COUNTER + MICROWAVE DRAWER', px=14)
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
     put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
     # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
@@ -204,4 +235,5 @@ if __name__ == '__main__':
     for v in 'AB': ground_new(RP.ground(), v).save(os.path.join(OUT, 'g_%s.png' % v))
     u = ground_new(RP.ground(), 'FOR', 'U'); u.save(os.path.join(OUT, 'g_U.png')); u.routes(**G_U).save(os.path.join(OUT, 'g_U_r.png'))
     print('G_U', [round(length(pts), 1) for _, pts in G_U['routes']])
+    k = ground_new(RP.ground(), 'FOR', 'K'); k.save(os.path.join(OUT, 'g_K.png')); k.routes(**G_U).save(os.path.join(OUT, 'g_K_r.png'))
     print('layouts done')
