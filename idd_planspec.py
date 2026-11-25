@@ -57,6 +57,7 @@ def build(spec):
     doc = fitz.open(); models = []
     oc = {n: doc.add_ocg(n, on=True) for n in ('a-bro hatch', 'A-WALL', 'A-DOOR', 'A-WALL-HEAD', 'A-WINDOW', 'A-FLOR-IDEN', 'P-FIXT')}
     for fl in spec['floors']:
+        _resolve_pos(fl)
         rooms = fl['rooms']; ceil = fl.get('ceiling', 120)
         polys = {r['name']: Polygon(r['poly']) for r in rooms}
         inside = unary_union(list(polys.values()))
@@ -66,7 +67,7 @@ def build(spec):
         cuts = []; heads = []; windows = []; doors = []
         for o in fl.get('openings', []):
             r = next(x for x in rooms if x['name'] == o['room'])
-            e = next(x for x in room_edges(r['poly']) if x['side'] == o['side'] and _on_edge(x, o))
+            e = _edge_for(r['poly'], o)
             (ax, ay), (bx, by) = e['a'], e['b']; ux, uy = (bx - ax) / e['len'], (by - ay) / e['len']
             nx, ny = SIDES[o['side']]
             p0 = (ax + ux * o['at'], ay + uy * o['at']); p1 = (ax + ux * (o['at'] + o['w']), ay + uy * (o['at'] + o['w']))
@@ -133,7 +134,7 @@ def build(spec):
             for e in room_edges(r['poly']):
                 cnt[e['side']] = cnt.get(e['side'], 0) + 1
                 ops = [{'x': o['at'], 'w': o['w'], 'type': {'pair': 'door', 'pocket': 'slider'}.get(o['type'], o['type'])}
-                       for o in fl.get('openings', []) if o['room'] == r['name'] and o['side'] == e['side'] and _on_edge(e, o)]
+                       for o in fl.get('openings', []) if o['room'] == r['name'] and o['side'] == e['side'] and _edge_for(r['poly'], o) == e]
                 ws.append({'id': e['side'] + (str(cnt[e['side']]) if sum(1 for x in room_edges(r['poly']) if x['side'] == e['side']) > 1 else ''),
                            'side': e['side'], 'a': [round(P(*e['a']).x, 2), round(P(*e['a']).y, 2)], 'b': [round(P(*e['b']).x, 2), round(P(*e['b']).y, 2)],
                            'length_in': round(e['len'], 2), 'openings': ops})
@@ -145,6 +146,31 @@ def build(spec):
                            'labels': r['name'].split()})
         models.append({'floor': fl['n'], 'source': 'planspec', 'page': len(doc) - 1, 'offset': [0, 0], 'pt_per_ft': ppf, 'rooms': mrooms})
     return doc, models
+
+
+def _resolve_pos(fl):
+    """An opening may give `pos` (its start point in plan inches, the end nearer the wall's left as seen from inside) instead of
+    `at`: on an L-shaped room or a wall that jogs, the side has several edges, and `pos` picks the one the opening is on.
+    Resolved once into `at` and `_edge` (the edge's index among the room's edges)."""
+    for o in fl.get('openings', []):
+        if 'pos' not in o or '_edge' in o: continue
+        r = next(x for x in fl['rooms'] if x['name'] == o['room'])
+        px, py = o['pos']
+        for i, e in enumerate(room_edges(r['poly'])):
+            if e['side'] != o['side']: continue
+            (ax, ay), (bx, by) = e['a'], e['b']
+            if not (min(ax, bx) - 0.5 <= px <= max(ax, bx) + 0.5 and min(ay, by) - 0.5 <= py <= max(ay, by) + 0.5): continue
+            at = math.hypot(px - ax, py - ay)
+            if at + o['w'] <= e['len'] + 0.5:
+                o['at'] = round(at, 3); o['_edge'] = i; break
+        else:
+            raise ValueError('opening %s %s at %s is on no edge of the room' % (o['room'], o['side'], o['pos']))
+
+
+def _edge_for(poly, o):
+    es = room_edges(poly)
+    if '_edge' in o: return es[o['_edge']]
+    return next(x for x in es if x['side'] == o['side'] and _on_edge(x, o))
 
 
 def _on_edge(e, o):

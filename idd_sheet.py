@@ -42,7 +42,7 @@ SHEET_MAP = {'771': '210', '772': '211', '773': '212',                          
              '738C': '351', '739A': '352'}                                               # bedroom 3 and bath 3 (key plan ID-350)
 PLAN_MAP = {'201': '111', '202': '112'}                                                   # wall finish plans join the plans in the 100s
 import re as _re
-_RX_ID = _re.compile(r'(?<![0-9A-Z\'.-])(7[3-7]\d[A-C]?)(?![0-9A-Z"\'])')
+_RX_ID = _re.compile(r'(?<![0-9A-Z\'.,-])(7[3-7]\d[A-C]?)(?![0-9A-Z"\',])')          # not inside a number: 1,735 SF printed as 1,311 SF (11.24.26)
 def remap(s):
     """Every reference to an elevation sheet, written ID-7xx or bare in a marker, follows the new numbering."""
     if s in SHEET_MAP: return SHEET_MAP[s]
