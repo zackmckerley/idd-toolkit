@@ -176,5 +176,24 @@ class Plan:
 
     def save_marked(self, path, **k): self.marked(**k).save(path)
 
+    def routes(self, routes, stops=(), width=10, alpha=205):
+        """The plan with movement routes drawn on it (a copy; the plan itself is not changed). Use it to test and to show a
+        layout: every journey a person makes is drawn door to door through real openings, and a route that will not draw
+        (through a wall, across a table, through another room's work zone) is a layout defect, not a drawing problem.
+        routes: [(rgb, [(x, y), ...])] in feet, arrowhead at the end. stops: [(text, x, y, rgb)] numbered discs."""
+        im = self.im.convert('RGBA'); ov = Image.new('RGBA', im.size, (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
+        for color, pts in routes:
+            px = [(self.X(x), self.Y(y)) for x, y in pts]; c = tuple(color) + (alpha,)
+            d.line(px, fill=c, width=width, joint='curve')
+            (ax, ay), (bx, by) = px[-2], px[-1]; L = math.hypot(bx - ax, by - ay) or 1; ux, uy = (bx - ax) / L, (by - ay) / L
+            h = width * 2.6; tip = (bx + ux * h * 0.6, by + uy * h * 0.6)
+            d.polygon([tip, (bx - ux * h * 0.5 - uy * h * 0.7, by - uy * h * 0.5 + ux * h * 0.7),
+                       (bx - ux * h * 0.5 + uy * h * 0.7, by - uy * h * 0.5 - ux * h * 0.7)], fill=tuple(color) + (255,))
+            r = width * 0.9; d.ellipse((px[0][0] - r, px[0][1] - r, px[0][0] + r, px[0][1] + r), fill=tuple(color) + (255,))
+        out = Image.alpha_composite(im, ov).convert('RGB'); d = ImageDraw.Draw(out); f = ImageFont.truetype(SANS_B, 26)
+        for text, x, y, color in stops:
+            X, Y = self.X(x), self.Y(y); r = 21
+            d.ellipse((X - r, Y - r, X + r, Y + r), fill=WHITE, outline=tuple(color), width=4); d.text((X, Y), str(text), font=f, fill=tuple(color), anchor='mm')
+        return out
     def crop_ft(self, x0, y0, x1, y1, marked=False):
         return (self.marked() if marked else self.im).crop(self.box(x0, y0, x1, y1))
