@@ -14,7 +14,7 @@ idd_sheet.PRINT_DATE = DATE; idd_sheet.REVS = [('0', DATE, 'OWNER SCHEMATIC (VOI
 idd_sheet.remap = lambda s: s
 INK = (0, 0, 0); P = 37.40; Y0 = 3020
 C1 = json.load(open(os.path.join(REV, 'f1_changes.json'))); C2 = json.load(open(os.path.join(REV, 'f2_changes.json')))
-CROP = (-5.0, -6.0, 96.5, 79.0)            # ft: the lot with its streets
+CROP = (-5.0, -5.0, 96.5, 80.0)            # ft: the lot with its streets
 
 def crop(path, x0px, scale=0.62, q=88):
     im = Image.open(path).convert('RGB')

@@ -66,7 +66,7 @@ def ground():
     p.line([(85.6, 17.8), (85.6, DRIVE_END)], 2, THIN)              # driveway edge for the 16' door
     p.wall(67.16, 18.5, 67.83, 35.5); p.wall(67.16, 38.5, 67.83, 39.22)     # garage west wall, 3'-0" door ahead of the cars
     p.wall(67.16, 38.53, 68.45, 39.22)
-    p.door((67.5, 38.5), 3.0, 'S', 'W')
+    p.door((67.5, 35.5), 3.0, 'N', 'W')
     p.wall(82.3, 38.53, 83.3, 39.22); p.wall(85.97, 38.53, EW, 39.22)       # storage door in the garage north wall
     p.door((83.3, 39.15), 2.67, 'E', 'N')
     p.rect(67.83, 35.5, 69.33, 38.5, 1, THIN)                   # step, as FOR drew it
@@ -78,7 +78,7 @@ def ground():
     p.label(63.02, 25.1, 'BENCH + LOCKERS', px=17, rotate=90)
     p.label(65.5, 28.0, 'MUD\nROOM')
     p.line([(62.27, 38.9), (67.16, 38.9)], 1, FURN, dash=(8, 6))
-    p.change(3, (62.25, 18.5, 67.16, 38.9), "Mudroom (4'-11\" x 20'-4\") where the laundry was, open to the stair hall, with a bench and lockers. The garage door opens into it ahead of the cars.", at=(65.6, 20.2))
+    p.change(3, (62.25, 18.5, 67.16, 38.9), "Mudroom (4'-11\" x 20'-4\") where the laundry was, open to the stair hall, with a bench and lockers. The door from the garage opens into it ahead of the cars.", at=(65.6, 20.2))
     p.change(4, [(67.83, 18.5, EW, 38.53), (81.8, 0.2, 85.6, 17.8)], "Two-car garage, 19'-0\" x 20'-0\" clear, 16'-0\" door, driveway widened to match. The east wall moves 5'-2\" to FOR's 7'-6\" setback line.", at=(77.3, 23.0))
     p.change(5, (82.3, 39.22, EW, 46.23), "Storage beside the stair, reached from the garage.", at=(84.5, 41.0))
     return p
@@ -107,8 +107,8 @@ def second(g):
     p.rect(31.25, 25.18, 32.1, 26.03, 1, THIN, dash=(8, 5))
     p.copy(30.5, 22.56, 31.2, 23.2, 31.4, 22.56)                # FOR's shower valve, back on the south wall
     p.label(31.7, 27.9, 'WET ROOM', px=17, bg=True)
-    p.change(8, (25.96, 22.5, 34.32, 28.7), "Wet room, 8'-1\" x 6'-2\": freestanding tub under the window and a 4'-9\" open shower (was a 3'-6\" shower, no tub). FOR's glass wall moves 1'-6\" east; the double vanity is 9'-10\" (was 11'-2\").", at=(33.0, 23.6))
-    p.line([(41.6, 28.98), (44.4, 28.98)], 3, BLACK); p.line([(41.6, 28.72), (44.25, 28.72)], 3, BLACK)   # bath north wall made whole where the closet moved
+    p.change(8, (25.96, 22.5, 34.32, 28.7), "Wet room, about 8'-1\" x 6'-1\": freestanding tub under the window and a 4'-9\" open shower (was a 3'-6\" shower, no tub). FOR's glass wall moves 1'-7\" east; the double vanity is 9'-10\" (was 11'-2\").", at=(33.0, 23.6))
+    p.line([(41.6, 28.98), (44.4, 28.98)], 2, BLACK); p.line([(41.6, 28.72), (44.25, 28.72)], 2, BLACK)   # bath north wall made whole where the closet moved
     p.change(9, [(25.96, 28.95, 34.95, 34.65), (39.3, 28.95, 48.1, 34.65)], "His and her closets each 1'-6\" wider: about 8'-9\" x 5'-7\" (were 7'-4\").", at=(27.2, 33.6))
     # ------------------------------------------------ 10, 11. laundry between the baths; bath 3 and bedroom 3 move 5'-2" east
     p.slide(65.1, 17.3, 82.6, 21.75, dx=DE, fill='white')       # planter, then its gap filled from the moved piece
@@ -125,7 +125,7 @@ def second(g):
     p.door((67.2, 32.1), 2.67, 'E', 'S')
     p.window(66.2, 21.82, 68.9, 22.51)
     p.copy_from(g, 65.87, 27.6, 68.24, 29.91, 65.13, 22.58); p.copy_from(g, 65.87, 25.27, 68.24, 27.58, 67.47, 22.58)   # FOR's washer and dryer
-    p.rect(65.1, 26.6, 66.6, 29.4, 2, BLACK); p.rrect(65.3, 27.3, 66.4, 28.7, r=0.2, w=2, color=BLACK)   # sink counter on the west wall, 1'-8" clear of the machines
+    p.rect(65.1, 27.5, 66.6, 29.4, 2, BLACK); p.rrect(65.3, 27.75, 66.4, 29.15, r=0.2, w=2, color=BLACK)   # sink counter on the west wall, 1'-8" clear of the machines
     p.label(68.25, 26.0, 'LAUNDRY', px=19)
     p.change(10, (65.1, 22.5, 69.85, 32.1), "Laundry room upstairs, 4'-9\" x 9'-7\", between Bath 4 and Bath 3: washer and dryer side by side, sink counter, window.", at=(68.6, 30.6))
     # corridor to bedroom 3
