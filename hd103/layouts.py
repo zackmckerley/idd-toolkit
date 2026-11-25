@@ -28,7 +28,7 @@ def put(p, img, x, y, rotate=0, flip=None):
 def stool(p, cx, cy, r=0.68): p.ellipse(cx - r, cy - r, cx + r, cy + r, 2, FURN)
 
 
-def ground_new(p):
+def ground_new(p, guest='R4'):
     tbl = grab(p, 28.3, 19.2, 34.6, 30.4); snk = grab(p, 23.2, 38.42, 25.3, 40.85)
     sce = grab(p, 43.22, 20.15, 45.26, 27.08)                                    # FOR's scullery sink and dishwasher run
     ptoilet = grab(p, 42.6, 31.05, 44.1, 33.62); psink = grab(p, 42.62, 27.42, 44.12, 28.92)
@@ -59,31 +59,64 @@ def ground_new(p):
     p.label(31.2, 22.5, 'KITCHEN')
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
     put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
-    # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
-    p.white(70.56, 47.18, 75.8, 52.5); p.partition(70.5, 52.2, 75.86, 52.5)
-    p.white(70.03, 47.2, 70.56, 49.5); p.pocket((70.33, 49.5), (70.33, 47.2))
-    p.rect(72.3, 47.15, 75.82, 48.75, 2, BLACK); put(p, psink, 73.3, 47.2)
-    put(p, ptoilet, 73.25, 50.15, rotate=-90)                                    # tank on the east wall, bowl to the west
-    p.label(71.6, 51.2, 'POWDER', px=14); p.white(71.6, 54.0, 74.8, 55.0); p.label(73.2, 54.4, 'LINEN +\nLUGGAGE', px=14, bg=True)
-    p.white(66.38, 46.55, 69.95, 50.45)
-    p.partition(66.3, 49.5, 66.95, 49.8); p.partition(69.95, 49.5, 70.2, 49.8); p.door((69.95, 49.65), 3.0, 'W', 'N')
     # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
     p.partition(62.3, 38.75, 67.3, 39.05); p.partition(62.0, 35.8, 62.3, 39.05)
     p.white(61.95, 36.05, 62.35, 38.75); p.door((62.15, 36.05), 2.7, 'N', 'W')
-    # ---- guest wing: east wall out 5'-3" to the line of the garage and storage wall (one straight east wall)
-    p.white(82.36, 46.9, 86.8, 66.28)
-    p.wall(86.82, 46.2, 87.54, 67.02); p.wall(82.3, 66.3, 87.54, 67.02)
-    p.white(81.6, 50.45, 82.36, 56.3)                                            # bath opens into the new bay (beam over)
-    p.wall(81.63, 50.2, 82.33, 50.51)
-    p.white(81.3, 50.6, 81.62, 56.0)
-    p.partition(82.33, 56.3, 86.82, 56.6)                                        # bath / closet
-    p.rrect(83.2, 50.7, 86.0, 55.9, r=0.9, w=2, color=BLACK); p.ellipse(83.55, 51.2, 85.65, 55.4, 1, FURN); p.ellipse(84.45, 51.35, 84.75, 51.65, 2, BLACK)
-    p.window(86.82, 51.3, 87.54, 55.3)
-    p.rect(82.4, 46.92, 86.8, 48.6, 2, BLACK); p.label(84.6, 47.76, 'LINEN', px=15)
-    p.white(81.6, 57.3, 82.36, 60.0); p.pocket((81.98, 60.0), (81.98, 57.3))     # bedroom to walk-in closet
-    p.rect(84.8, 56.62, 86.8, 66.28, 2, THIN); p.line([(85.8, 56.65), (85.8, 66.25)], 1, FURN, dash=(14, 8))
-    p.rect(82.36, 64.6, 84.8, 66.28, 2, THIN)
-    p.label(83.6, 61.0, 'WALK-IN CLOSET', px=15, rotate=90)
+    if guest == 'R4':
+        # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
+        p.white(70.56, 47.18, 75.8, 52.5); p.partition(70.5, 52.2, 75.86, 52.5)
+        p.white(70.03, 47.2, 70.56, 49.5); p.pocket((70.33, 49.5), (70.33, 47.2))
+        p.rect(72.3, 47.15, 75.82, 48.75, 2, BLACK); put(p, psink, 73.3, 47.2)
+        put(p, ptoilet, 73.25, 50.15, rotate=-90)                                    # tank on the east wall, bowl to the west
+        p.label(71.6, 51.2, 'POWDER', px=14); p.white(71.6, 54.0, 74.8, 55.0); p.label(73.2, 54.4, 'LINEN +\nLUGGAGE', px=14, bg=True)
+        p.white(66.38, 46.55, 69.95, 50.45)
+        p.partition(66.3, 49.5, 66.95, 49.8); p.partition(69.95, 49.5, 70.2, 49.8); p.door((69.95, 49.65), 3.0, 'W', 'N')
+        # ---- guest wing: east wall out 5'-3" to the line of the garage and storage wall (one straight east wall)
+        p.white(82.36, 46.9, 86.8, 66.28)
+        p.wall(86.82, 46.2, 87.54, 67.02); p.wall(82.3, 66.3, 87.54, 67.02)
+        p.white(81.6, 50.45, 82.36, 56.3)                                            # bath opens into the new bay (beam over)
+        p.wall(81.63, 50.2, 82.33, 50.51)
+        p.white(81.3, 50.6, 81.62, 56.0)
+        p.partition(82.33, 56.3, 86.82, 56.6)                                        # bath / closet
+        p.rrect(83.2, 50.7, 86.0, 55.9, r=0.9, w=2, color=BLACK); p.ellipse(83.55, 51.2, 85.65, 55.4, 1, FURN); p.ellipse(84.45, 51.35, 84.75, 51.65, 2, BLACK)
+        p.window(86.82, 51.3, 87.54, 55.3)
+        p.rect(82.4, 46.92, 86.8, 48.6, 2, BLACK); p.label(84.6, 47.76, 'LINEN', px=15)
+        p.white(81.6, 57.3, 82.36, 60.0); p.pocket((81.98, 60.0), (81.98, 57.3))     # bedroom to walk-in closet
+        p.rect(84.8, 56.62, 86.8, 66.28, 2, THIN); p.line([(85.8, 56.65), (85.8, 66.25)], 1, FURN, dash=(14, 8))
+        p.rect(82.36, 64.6, 84.8, 66.28, 2, THIN)
+        p.label(83.6, 61.0, 'WALK-IN CLOSET', px=15, rotate=90)
+    elif guest == 'A':
+        # ---- A: east wall out 5'-3"; the bedroom widens, one walk-in closet in the southeast bay, FOR's bath untouched
+        # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
+        p.white(70.56, 47.18, 75.8, 52.5); p.partition(70.5, 52.2, 75.86, 52.5)
+        p.white(70.03, 47.2, 70.56, 49.5); p.pocket((70.33, 49.5), (70.33, 47.2))
+        p.rect(72.3, 47.15, 75.82, 48.75, 2, BLACK); put(p, psink, 73.3, 47.2)
+        put(p, ptoilet, 73.25, 50.15, rotate=-90)                                    # tank on the east wall, bowl to the west
+        p.label(71.6, 51.2, 'POWDER', px=14); p.white(71.6, 54.0, 74.8, 55.0); p.label(73.2, 54.4, 'LINEN +\nLUGGAGE', px=14, bg=True)
+        p.white(66.38, 46.55, 69.95, 50.45)
+        p.partition(66.3, 49.5, 66.95, 49.8); p.partition(69.95, 49.5, 70.2, 49.8); p.door((69.95, 49.65), 3.0, 'W', 'N')
+        p.white(70.03, 52.55, 70.58, 56.2); p.white(70.56, 52.55, 75.8, 56.12)       # old closet opens up as an entry alcove
+        p.rect(70.7, 54.7, 75.75, 56.1, 2, THIN); p.label(73.2, 55.4, 'BENCH + HOOKS', px=14)
+        p.white(82.36, 46.9, 86.8, 66.28)
+        p.wall(86.82, 46.2, 87.54, 67.02); p.wall(82.3, 66.3, 87.54, 67.02)
+        p.white(81.6, 56.62, 82.36, 66.28)                                          # bedroom east wall out (beam over)
+        p.white(81.3, 56.66, 81.62, 66.25)
+        p.wall(81.63, 50.4, 82.33, 52.75)                                           # bath window closed
+        p.partition(81.63, 56.3, 86.82, 56.6)
+        p.white(84.45, 56.25, 86.75, 56.65); p.pocket((84.45, 56.45), (86.75, 56.45))
+        p.rect(82.36, 46.95, 84.36, 56.28, 2, THIN); p.line([(83.36, 46.98), (83.36, 56.25)], 1, FURN, dash=(14, 8))
+        p.rect(84.36, 46.95, 86.8, 48.4, 2, THIN)
+        p.label(85.6, 52.0, 'WALK-IN CLOSET', px=15, rotate=90)
+        p.window(83.2, 66.3, 86.2, 67.02); p.label(84.3, 61.5, 'SITTING', px=15)
+    elif guest == 'B':
+        # ---- B: no exterior change; FOR's guest suite stays, the powder room takes the AHU closet by the stair
+        p.white(68.6, 43.25, 74.5, 46.5); p.white(70.3, 46.4, 74.5, 47.3); p.white(70.56, 47.2, 75.8, 48.95)
+        p.partition(70.0, 43.15, 70.3, 47.2); p.partition(74.5, 46.4, 74.8, 48.9); p.partition(70.2, 48.6, 75.9, 48.9)
+        p.white(69.95, 43.5, 70.35, 46.0); p.pocket((70.15, 46.0), (70.15, 43.5))
+        put(p, ptoilet, 71.6, 46.0); p.rect(72.9, 43.3, 74.48, 45.7, 2, BLACK); put(p, psink, 72.95, 43.75, rotate=90)
+        p.label(71.4, 44.7, 'POWDER', px=13); p.label(75.35, 47.85, 'CHASE', px=10, rotate=90)
+        p.rect(83.3, 43.6, 85.6, 45.9, 2, THIN); p.line([(83.3, 43.6), (85.6, 45.9)], 1, FURN); p.line([(83.3, 45.9), (85.6, 43.6)], 1, FURN)
+        p.label(84.45, 44.75, 'AHU', px=13, bg=True)
     return p
 
 
@@ -146,4 +179,5 @@ if __name__ == '__main__':
     m = master_new(RP.second(g)); m.save(os.path.join(OUT, 'm_new.png')); m.routes(**M_NEW).save(os.path.join(OUT, 'm_new_r.png'))
     for name, R in (('G_OLD', G_OLD), ('G_NEW', G_NEW), ('M_OLD', M_OLD), ('M_NEW', M_NEW)):
         print(name, [round(length(pts), 1) for _, pts in R['routes']])
+    for v in 'AB': ground_new(RP.ground(), v).save(os.path.join(OUT, 'g_%s.png' % v))
     print('layouts done')
