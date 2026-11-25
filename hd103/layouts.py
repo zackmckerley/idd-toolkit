@@ -440,6 +440,50 @@ def ground_final():
     p.rect(43.25, 24.3, 45.23, 26.3, 2, M, dash=DASH); p.label(44.24, 25.3, 'DW', px=20, bg=True)
     p.label(41.45, 24.0, 'SCULLERY', rotate=90)
     p.white(41.1, 34.0, 42.7, 34.6); p.label(41.6, 34.3, 'POWDER', px=17)
+    # ==== owner approvals 11.25.26 (FP-2 items 2, 3, 4, 5, 8; FP-3 items 1 and 9)
+    def smear(xs, x0, x1, y0, y1):                                   # carry what crosses column xs straight across x0..x1
+        c = p.im.crop((p.X(xs), p.Y(y1), p.X(xs) + 1, p.Y(y0))); w = p.X(x1) - p.X(x0)
+        p.im.paste(c.resize((w, c.height), Image.NEAREST), (p.X(x0), p.Y(y1))); p._redraw()
+    W = 2.19
+    # ---- 8 scullery: small pantry out
+    p.white(38.2, 25.25, 39.72, 27.92)
+    # ---- 9 west wall 2'-2" west to the 20'-0" setback line; the range wall goes with it, the island follows 1'-6"
+    band = grab(p, 22.2, 17.4, 23.22, 67.3); cnt = grab(p, 23.22, 18.58, 25.6, 35.86); isl = grab(p, 28.9, 24.2, 34.65, 34.1)
+    smear(23.3, 22.2 - W + 1.02, 23.3, 35.86, 67.3); smear(23.3, 22.2 - W + 1.02, 23.3, 17.4, 18.58)
+    p.white(22.2 - W + 1.02, 18.58, 25.62, 35.86)
+    put(p, cnt, 23.22 - W, 18.58); put(p, band, 22.2 - W, 17.4)
+    p.white(23.05, 18.6, 25.66, 20.67)
+    p.line([(23.01, 20.7), (25.66, 20.7)], 2, M); p.line([(23.01, 18.56), (25.66, 18.56)], 2, M); p.line([(23.01, 18.56), (23.01, 20.7)], 2, M)
+    p.white(25.66, 25.4, 26.5, 28.7); p.label(23.85, 27.05, '48" RANGE', px=20, rotate=90)
+    p.white(28.9, 24.2, 34.65, 34.1); put(p, isl, 27.4, 24.2)
+    p.white(29.5, 22.0, 32.5, 22.8); p.label(30.0, 22.4, 'KITCHEN')
+    p.white(23.27, 35.8, 25.6, 35.96)
+    # ---- 9 guest wing and stair east wall 2'-2" east to the garage line; the bath moves with it, the closet takes the width
+    eband = grab(p, 84.46, 39.25, 85.45, 67.3); bath = grab(p, 78.85, 46.68, 84.46, 56.62)
+    smear(84.4, 84.4, 84.46 + W + 0.05, 56.62, 67.3); smear(84.4, 84.4, 84.46 + W + 0.05, 39.25, 46.68)
+    smear(78.7, 78.7, 78.85 + W + 0.05, 46.68, 56.62)
+    put(p, bath, 78.85 + W, 46.68); put(p, eband, 84.46 + W, 39.25)
+    # ---- 2 pool 10'-0" wide on the axis
+    p.white(47.2, 50.35, 60.45, 69.6)
+    p.rect(48.3, 50.5, 59.3, 69.5, 3, BLACK); p.rect(48.8, 51.0, 58.8, 69.0, 3, BLACK)
+    p.line([(48.8, 55.95), (58.8, 55.95)], 2, M, dash=DASH)
+    p.label(53.8, 62.2, 'POOL\n10\'-0" x 18\'-0"', px=18); p.label(53.8, 53.4, 'SUN SHELF', px=15)
+    # ---- 1 canopy on the axis, wing to wing, with a counter at each end wall
+    p.rect(39.05, 47.6, 68.57, 55.6, 2, M, dash=DASH)
+    p.rect(39.05, 47.6, 45.3, 49.6, 2, M); p.label(42.2, 48.6, 'GRILL', px=18)
+    p.rect(62.3, 47.6, 68.57, 49.6, 2, M); p.label(65.4, 48.6, 'BAR', px=18)
+    p.label(43.9, 52.6, 'COVERED\nDINING', px=18); p.label(63.7, 52.6, 'COVERED\nLOUNGE', px=18)
+    p.label(53.8, 49.3, 'CANOPY OVER', px=15, bg=True)
+    # ---- 3 outdoor shower on the guest wing's court wall
+    p.rect(66.5, 62.8, 68.57, 65.2, 2, M); p.ellipse(67.3, 63.75, 67.8, 64.25, 2, M); p.label(64.5, 64.0, 'OUTDOOR\nSHOWER', px=15)
+    # ---- 4 garage: no projecting step, both cars 6" east
+    cars = grab(p, 69.5, 19.0, 86.3, 36.4); p.white(67.9, 32.5, 69.5, 36.3); p.white(69.2, 19.0, 86.6, 36.4); put(p, cars, 70.0, 19.0)
+    # ---- 5 coats and buffet behind flush panels in the two recesses; service yard on the east side
+    for a_, b_, t_ in ((41.17, 45.2, 'BUFFET'), (62.43, 66.46, 'COATS')):
+        p.rect(a_, 45.05, b_, 46.88, 2, M, fill=WHITE)
+        for f_ in (0.25, 0.5, 0.75): p.line([(a_ + (b_ - a_) * f_, 45.05), (a_ + (b_ - a_) * f_, 45.3)], 2, M)
+        p.label((a_ + b_) / 2, 46.05, t_, px=15)
+    p.rect(88.6, 42.0, 93.8, 58.0, 2, M, dash=DASH); p.label(91.2, 50.0, 'SERVICE\nYARD', px=18)
     return p
 
 

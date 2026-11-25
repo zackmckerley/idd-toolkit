@@ -62,12 +62,12 @@ FOR_PNG = '/home/claude/deck/img_p3_11.png'
 import shutil; shutil.copy(FOR_PNG, os.path.join(LAY, 'for_ground.png'))
 for fn_ in ('for_ground.png', 'g_FINAL.png'):                                     # FOR's setback dimension is cut by the crop: leave it off both
     im_ = Image.open(os.path.join(LAY, fn_)).convert('RGB'); from PIL import ImageDraw
-    ImageDraw.Draw(im_).rectangle((int(1115 + 77.5 * P), int(Y0 - 71.2 * P), int(1115 + 81.5 * P), int(Y0 - 67.6 * P)), fill=(255, 255, 255))
+    ImageDraw.Draw(im_).rectangle((int(1115 + 77.5 * P), int(Y0 - 72.5 * P), int(1115 + 81.5 * P), int(Y0 - 67.6 * P)), fill=(255, 255, 255))
     im_.save(os.path.join(LAY, fn_.replace('.png', '_s.png')))
 sh = S(doc); sh.frame2(['FIRST FLOOR', 'ARCHITECT AND OWNER'], 'FP-1', 'NOT TO SCALE')
 sh.text(X, TOP, 'FIRST FLOOR PLAN: ARCHITECT\'S DRAWING AND OWNER\'S LAYOUT', 15, INK, serif=True, raw=True)
 y = sh.para(X, TOP + 18, 'Both plans are drawn at the same size, north up, SW 23rd St at the bottom. The owner\'s layout is drawn on FOR Architecture\'s plan for FOR to redraw; sizes are scaled from the presentation plan.', 1300, 9.6)
-R = (20.6, 15.6, 88.6, 70.9); GAP = 30
+R = (18.6, 15.6, 95.2, 70.9); GAP = 30
 K = (RIGHT - X - GAP) / 2 / (R[2] - R[0]); ph = (R[3] - R[1]) * K
 py = y + 24 + max(0, (FR.y1 - 30 - (y + 24) - ph) / 2)
 assert py + ph < FR.y1 - 10, (py, ph, FR.y1)
