@@ -28,7 +28,7 @@ def put(p, img, x, y, rotate=0, flip=None):
 def stool(p, cx, cy, r=0.68): p.ellipse(cx - r, cy - r, cx + r, cy + r, 2, FURN)
 
 
-def ground_new(p, guest='R4', scullery='THRU'):
+def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
     tbl = grab(p, 28.3, 19.2, 34.6, 30.4); snk = grab(p, 23.2, 38.42, 25.3, 40.85)
     sce = grab(p, 43.22, 20.15, 45.26, 27.08)                                    # FOR's scullery sink and dishwasher run
     ptoilet = grab(p, 42.6, 31.05, 44.1, 33.62); psink = grab(p, 42.62, 27.42, 44.12, 28.92)
@@ -114,9 +114,26 @@ def ground_new(p, guest='R4', scullery='THRU'):
         p.label(38.9, 31.85, 'WINE', px=13, rotate=90); p.label(38.9, 34.33, 'BAR', px=13, rotate=90)
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
     put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
-    # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
-    p.partition(62.3, 38.75, 67.3, 39.05); p.partition(62.0, 35.8, 62.3, 39.05)
-    p.white(61.95, 36.05, 62.35, 38.75); p.door((62.15, 36.05), 2.7, 'N', 'W')
+    if mud == 'M1':
+        # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
+        p.partition(62.3, 38.75, 67.3, 39.05); p.partition(62.0, 35.8, 62.3, 39.05)
+        p.white(61.95, 36.05, 62.35, 38.75); p.door((62.15, 36.05), 2.7, 'N', 'W')
+    else:
+        # ---- mudroom re-planned 11.25.26: a 10 ft room at the garage door, no door swings inside it, exit north to the stair hall;
+        #      the south half of the strip becomes a storage bay open to the garage
+        p.white(62.36, 18.6, 67.17, 38.72); p.white(67.95, 35.05, 69.45, 38.5)
+        p.partition(62.3, 38.75, 67.3, 39.05); p.partition(62.0, 35.8, 62.3, 39.05)
+        p.white(64.5, 38.7, 67.0, 39.1); p.pocket((64.5, 38.9), (67.0, 38.9))
+        p.rect(67.92, 35.2, 70.9, 38.5, 2, THIN); p.door((67.92, 35.3), 3.1, 'N', 'E')          # garage door swings out onto a landing
+        p.partition(62.3, 28.2, 67.2, 28.5)
+        p.rect(62.36, 28.5, 67.17, 30.5, 2, BLACK)
+        for lx in (63.56, 64.76, 65.96): p.line([(lx, 28.5), (lx, 30.5)], 1, THIN)
+        p.label(64.76, 29.5, 'LOCKERS', px=14, bg=True)
+        p.rect(62.36, 30.5, 63.86, 38.4, 2, BLACK); p.label(63.11, 34.4, 'BENCH + HOOKS', px=14, rotate=90)
+        p.label(65.6, 33.3, 'MUD\nROOM', px=16)
+        p.white(67.15, 20.5, 67.95, 27.0); p.line([(67.55, 20.5), (67.55, 27.0)], 1, FURN, dash=(8, 6))
+        p.rect(62.36, 18.62, 63.86, 28.18, 2, THIN); p.label(63.11, 23.4, 'SHELVES', px=13, rotate=90)
+        p.label(65.6, 21.4, 'GARAGE\nSTORAGE', px=14)
     if guest == 'FOR': return p
     if guest == 'R4':
         # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
@@ -226,6 +243,14 @@ G_U = dict(routes=[(GUEST, [(53.7, 13.5), (53.7, 41.3), (53.7, 45.6)]),
                    (SERV, [(37.0, 36.9), (34.6, 35.2), (27.2, 35.2), (26.4, 33.0)]),
                    (SERVE, [(31.0, 34.3), (31.0, 37.8)]), (SERVE, [(38.6, 41.1), (48, 43.6), (51.2, 46.2)])],
            stops=[(1, 55.6, 39.4, GUEST), (2, 45.3, 44.1, GUEST), (3, 46.6, 35.0, GUEST), (4, 57.6, 39.2, SERV), (5, 36.9, 28.0, SERV), (6, 29.0, 36.2, SERV), (7, 46.3, 42.2, SERVE)])
+GM_OLD = dict(routes=[(SERV, [(73.0, 36.6), (67.5, 36.9), (64.6, 37.2), (62.15, 37.4), (57.5, 37.6), (48.0, 37.6)]),
+                      (SERV, [(57.5, 37.6), (66.0, 41.0), (70.5, 41.0)]), (SERV, [(66.0, 41.0), (68.4, 44.0), (68.4, 47.8)]),
+                      (SERVE, [(64.8, 36.0), (64.8, 27.0)])],
+              stops=[(1, 65.6, 35.6, SERV), (2, 60.4, 39.0, SERV), (3, 65.9, 30.0, SERVE)])
+GM_NEW = dict(routes=[(SERV, [(73.0, 36.6), (69.4, 36.9), (65.8, 36.9), (65.8, 40.6)]),
+                      (SERV, [(65.8, 40.6), (57.0, 39.6), (48.0, 37.8)]), (SERV, [(65.8, 40.6), (68.2, 41.0), (70.5, 41.0)]),
+                      (SERV, [(65.8, 40.6), (68.4, 44.0), (68.4, 47.8)]), (SERVE, [(71.5, 24.6), (66.4, 24.6)])],
+              stops=[(1, 71.8, 38.0, SERV), (2, 65.3, 31.6, SERV), (3, 63.6, 41.8, SERV), (4, 65.5, 26.4, SERVE)])
 G_K3 = dict(routes=[r if i != 4 else (SERV, [(37.0, 36.9), (30.0, 36.6), (27.2, 35.6), (26.3, 34.4)]) for i, r in enumerate(G_U['routes'])], stops=G_U['stops'])
 M_OLD = dict(routes=[(SERV, [(33.5, 36.4), (37.1, 36.2), (37.1, 27.4), (44.6, 27.4), (46.2, 26.2)]),
                      (SERV, [(37.1, 27.4), (33.5, 26.6), (30.5, 26.0)]), (GUEST, [(37.1, 32.2), (35.2, 32.2), (33, 32.2)]), (GUEST, [(37.1, 32.2), (40.5, 32.2)])],
@@ -248,4 +273,6 @@ if __name__ == '__main__':
     print('G_U', [round(length(pts), 1) for _, pts in G_U['routes']])
     k = ground_new(RP.ground(), 'FOR', 'K'); k.save(os.path.join(OUT, 'g_K.png')); k.routes(**G_U).save(os.path.join(OUT, 'g_K_r.png'))
     k = ground_new(RP.ground(), 'FOR', 'K3'); k.save(os.path.join(OUT, 'g_K3.png')); k.routes(**G_K3).save(os.path.join(OUT, 'g_K3_r.png'))
+    k.routes(**GM_OLD).save(os.path.join(OUT, 'gm_old_r.png'))
+    m2 = ground_new(RP.ground(), 'FOR', 'K3', 'M2'); m2.save(os.path.join(OUT, 'g_M2.png')); m2.routes(**GM_NEW).save(os.path.join(OUT, 'gm_new_r.png'))
     print('layouts done')
