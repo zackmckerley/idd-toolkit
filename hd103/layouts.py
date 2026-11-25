@@ -15,6 +15,7 @@ import revise_plans as RP
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '/home/claude/rev/lay'
 os.makedirs(OUT, exist_ok=True)
+KN = 35.88                                                # kitchen and scullery north limit: the foyer's south wall line
 GUEST = (25, 95, 200); SERV = (225, 120, 0); SERVE = (20, 140, 70)
 
 
@@ -35,14 +36,14 @@ def ground_new(p):
     p.white(23.2, 18.56, 25.5, 49.0); p.white(29.9, 34.3, 36.0, 44.8); p.white(30.8, 45.4, 34.0, 46.6); p.white(28.3, 19.2, 34.6, 30.4)
     p.white(37.7, 18.56, 45.28, 35.05)
     # ---- scullery: the whole block, a through room (kitchen's south aisle on the west, foyer on the north)
-    p.partition(37.8, 18.56, 38.15, 34.1); p.partition(37.8, 33.8, 45.3, 34.1)
+    p.partition(37.8, 18.56, 38.15, KN); p.partition(37.8, KN - 0.3, 45.3, KN)
     p.white(37.74, 21.0, 38.21, 24.3); p.line([(37.97, 21.0), (37.97, 24.3)], 1, FURN, dash=(8, 6))
-    p.white(40.3, 33.74, 42.8, 34.16); p.door((42.8, 33.95), 2.5, 'W', 'S')              # concealed (jib) door, swings in
-    put(p, sce, 43.22, 20.15); p.rect(43.22, 18.6, 45.26, 20.15, 2, BLACK); p.rect(43.22, 27.08, 45.26, 31.2, 2, BLACK)
-    p.label(44.24, 29.15, 'OVENS', px=15, rotate=90)
+    p.white(40.3, KN - 0.36, 42.8, KN + 0.06); p.door((42.8, KN - 0.15), 2.5, 'W', 'S')              # concealed (jib) door, swings in
+    put(p, sce, 43.22, 20.15); p.rect(43.22, 18.6, 45.26, 20.15, 2, BLACK); p.rect(43.22, 27.08, 45.26, 32.9, 2, BLACK)
+    p.label(44.24, 30.0, 'OVENS + COFFEE', px=15, rotate=90)
     p.rect(38.17, 18.6, 43.22, 20.65, 2, BLACK); p.label(40.7, 19.62, 'FREEZER + TALL PANTRY', px=14)
-    p.rect(38.17, 25.0, 39.17, 33.78, 2, BLACK); p.label(38.67, 29.4, 'PANTRY SHELVES', px=13, rotate=90)
-    p.label(41.2, 27.6, 'SCULLERY', px=17, rotate=90)
+    p.rect(38.17, 25.0, 39.17, KN - 0.32, 2, BLACK); p.label(38.67, 30.2, 'PANTRY SHELVES', px=13, rotate=90)
+    p.label(41.2, 28.2, 'SCULLERY', px=17, rotate=90)
     # ---- kitchen at the street end: range and fridge on the solid pier, sink in the island facing them
     p.rect(23.14, 18.56, 25.2, 33.3, 2, BLACK)
     p.rect(23.14, 25.05, 25.2, 29.05, 2, BLACK)
@@ -51,24 +52,38 @@ def ground_new(p):
     p.label(26.1, 27.05, '48" RANGE + HOOD', px=15, rotate=90)
     p.rect(23.14, 30.3, 25.43, 33.3, 2, BLACK, fill=WHITE); p.label(24.28, 31.8, 'FRIDGE', px=15, rotate=90)
     p.rect(25.2, 18.56, 37.78, 20.7, 2, BLACK); p.label(31.5, 19.63, 'BAR + BREAKFAST COUNTER', px=15)
-    p.rect(29.0, 24.3, 33.0, 32.3, 2, BLACK)
+    p.rect(29.0, 24.3, 33.0, 34.0, 2, BLACK)
     put(p, snk, 29.1, 26.85, flip='h'); p.rect(29.05, 24.6, 31.15, 26.6, 1, THIN, dash=(8, 5)); p.label(30.1, 25.6, 'DW', px=15)
-    p.label(31.0, 31.3, 'ISLAND', px=16); p.label(30.2, 29.75, 'SINK', px=13)
-    for cy in (26.0, 28.3, 30.6): stool(p, 33.75, cy)
+    p.label(31.0, 32.2, 'ISLAND', px=16); p.label(30.2, 29.75, 'SINK', px=13)
+    for cy in (25.7, 28.0, 30.3, 32.6): stool(p, 33.75, cy)
     p.label(31.2, 22.5, 'KITCHEN')
     # ---- dining in the middle, clear of the walk from the foyer to the living room; the long west window is left free
-    put(p, tbl, 26.1, 36.45, rotate=90); p.white(31.1, 38.1, 32.3, 41.1); p.label(31.7, 39.6, 'DINING', bg=True)
+    put(p, tbl, 26.1, 37.95, rotate=90); p.white(31.1, 39.6, 32.3, 42.6); p.label(31.7, 41.1, 'DINING', bg=True)
     # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
     p.white(70.56, 47.18, 75.8, 52.5); p.partition(70.5, 52.2, 75.86, 52.5)
     p.white(70.03, 47.2, 70.56, 49.5); p.pocket((70.33, 49.5), (70.33, 47.2))
     p.rect(72.3, 47.15, 75.82, 48.75, 2, BLACK); put(p, psink, 73.3, 47.2)
     put(p, ptoilet, 73.25, 50.15, rotate=-90)                                    # tank on the east wall, bowl to the west
-    p.label(71.6, 51.2, 'POWDER', px=14); p.label(73.1, 54.5, 'CLOSET', px=16, bg=True)
+    p.label(71.6, 51.2, 'POWDER', px=14); p.white(71.6, 54.0, 74.8, 55.0); p.label(73.2, 54.4, 'LINEN +\nLUGGAGE', px=14, bg=True)
     p.white(66.38, 46.55, 69.95, 50.45)
     p.partition(66.3, 49.5, 66.95, 49.8); p.partition(69.95, 49.5, 70.2, 49.8); p.door((69.95, 49.65), 3.0, 'W', 'N')
     # ---- mudroom closed: the garage door now opens into it, and its own door faces down the foyer's south wall
     p.partition(62.3, 38.75, 67.3, 39.05); p.partition(62.0, 35.8, 62.3, 39.05)
     p.white(61.95, 36.05, 62.35, 38.75); p.door((62.15, 36.05), 2.7, 'N', 'W')
+    # ---- guest wing: east wall out 5'-3" to the line of the garage and storage wall (one straight east wall)
+    p.white(82.36, 46.9, 86.8, 66.28)
+    p.wall(86.82, 46.2, 87.54, 67.02); p.wall(82.3, 66.3, 87.54, 67.02)
+    p.white(81.6, 50.45, 82.36, 56.3)                                            # bath opens into the new bay (beam over)
+    p.wall(81.63, 50.2, 82.33, 50.51)
+    p.white(81.3, 50.6, 81.62, 56.0)
+    p.partition(82.33, 56.3, 86.82, 56.6)                                        # bath / closet
+    p.rrect(83.2, 50.7, 86.0, 55.9, r=0.9, w=2, color=BLACK); p.ellipse(83.55, 51.2, 85.65, 55.4, 1, FURN); p.ellipse(84.45, 51.35, 84.75, 51.65, 2, BLACK)
+    p.window(86.82, 51.3, 87.54, 55.3)
+    p.rect(82.4, 46.92, 86.8, 48.6, 2, BLACK); p.label(84.6, 47.76, 'LINEN', px=15)
+    p.white(81.6, 57.3, 82.36, 60.0); p.pocket((81.98, 60.0), (81.98, 57.3))     # bedroom to walk-in closet
+    p.rect(84.8, 56.62, 86.8, 66.28, 2, THIN); p.line([(85.8, 56.65), (85.8, 66.25)], 1, FURN, dash=(14, 8))
+    p.rect(82.36, 64.6, 84.8, 66.28, 2, THIN)
+    p.label(83.6, 61.0, 'WALK-IN CLOSET', px=15, rotate=90)
     return p
 
 
@@ -111,10 +126,10 @@ G_OLD = dict(routes=[(GUEST, [(53.7, 13.5), (53.7, 41.3), (38.5, 41.3), (38.5, 5
 G_NEW = dict(routes=[(GUEST, [(53.7, 13.5), (53.7, 41.3), (53.7, 45.6)]),
                      (GUEST, [(53.7, 41.3), (43.2, 42.6), (39.6, 46.2), (37.5, 50.5), (34, 53)]),
                      (GUEST, [(53.7, 41.3), (63.5, 42.6), (68.4, 45.6), (68.4, 48.4), (71.6, 48.4)]),
-                     (SERV, [(67.5, 36.9), (60.5, 36.9), (46.5, 36.9), (41.55, 35.4), (41.55, 29.0)]),
-                     (SERV, [(46.5, 36.9), (40.5, 35.3), (35.4, 33.5), (26.6, 33.5)]),
-                     (SERVE, [(41.5, 29.0), (41.5, 22.6), (35.0, 22.6)]), (SERVE, [(34.9, 31.6), (34.9, 36.0)]), (SERVE, [(38.6, 39.6), (48, 43.2), (51.2, 46.2)])],
-             stops=[(1, 55.6, 38.9, GUEST), (2, 45.3, 43.9, GUEST), (3, 66.0, 47.2, GUEST), (4, 57.6, 38.4, SERV), (5, 43.3, 31.6, SERV), (6, 37.0, 31.4, SERV), (7, 46.3, 40.9, SERVE)])
+                     (SERV, [(67.5, 36.9), (60.5, 36.9), (46.5, 36.9), (41.55, 36.9), (41.55, 29.0)]),
+                     (SERV, [(41.55, 36.9), (36.0, 36.9), (34.6, 35.0), (27.2, 35.0), (26.4, 33.0)]),
+                     (SERVE, [(41.5, 29.0), (41.5, 22.6), (35.0, 22.6)]), (SERVE, [(31.0, 34.3), (31.0, 37.8)]), (SERVE, [(38.6, 41.1), (48, 43.6), (51.2, 46.2)])],
+             stops=[(1, 55.6, 38.9, GUEST), (2, 45.3, 43.9, GUEST), (3, 66.0, 47.2, GUEST), (4, 57.6, 38.4, SERV), (5, 43.3, 31.6, SERV), (6, 29.0, 36.0, SERV), (7, 46.3, 42.2, SERVE)])
 M_OLD = dict(routes=[(SERV, [(33.5, 36.4), (37.1, 36.2), (37.1, 27.4), (44.6, 27.4), (46.2, 26.2)]),
                      (SERV, [(37.1, 27.4), (33.5, 26.6), (30.5, 26.0)]), (GUEST, [(37.1, 32.2), (35.2, 32.2), (33, 32.2)]), (GUEST, [(37.1, 32.2), (40.5, 32.2)])],
              stops=[(1, 37.1, 34.0, SERV), (2, 41, 27.4, SERV), (3, 38.6, 31.0, GUEST)])
