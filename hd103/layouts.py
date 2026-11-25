@@ -534,6 +534,38 @@ M_NEW = dict(routes=[(SERV, [(30.5, 36.4), (33.4, 36.3), (33.4, 28.6), (36.75, 2
                      (SERV, [(36.75, 27.0), (40.2, 27.0), (42.6, 28.0), (42.6, 36.5), (45.2, 40.0), (45.4, 43.6), (48.6, 44.8)])],
              stops=[(1, 33.4, 33.0, SERV), (2, 31.2, 26.2, SERV), (3, 40.0, 27.0, SERV), (4, 42.6, 33.3, SERV)])
 
+def second_final(follow):
+    """The owner's second floor after the first floor moves of 11.25.26: stair and junior master wing 3'-0" east and their east
+    wall 2'-2" further (one straight east wall, the W.I.C. by the stair goes); terrace trimmed to the living room below;
+    west wall either held (planter ledge 5'-2") or carried 2'-2" west with the floor below (follow)."""
+    p = master_new(RP.second(RP.ground())); W = 2.19; S = 3.0
+    def smear(xs, x0, x1, y0, y1):
+        c = p.im.crop((p.X(xs), p.Y(y1), p.X(xs) + 1, p.Y(y0))); w = p.X(x1) - p.X(x0)
+        p.im.paste(c.resize((w, c.height), Image.NEAREST), (p.X(x0), p.Y(y1))); p._redraw()
+    # ---- wing 2'-2" wider: bath 2 moves with the east wall, the closet takes the width
+    eb = grab(p, 81.45, 46.87, 82.45, 67.3); b2 = grab(p, 75.4, 46.87, 81.45, 56.62); es = grab(p, 81.45, 39.3, 82.45, 46.87)
+    smear(75.4, 75.4, 75.4 + W + 0.05, 46.87, 56.62); smear(81.2, 81.2, 81.45 + W + 0.05, 56.62, 67.3); smear(81.2, 81.2, 81.45 + W + 0.05, 39.3, 46.87)
+    put(p, b2, 75.4 + W, 46.87); put(p, eb, 81.45 + W, 46.87); put(p, es, 81.45 + W, 39.3)
+    # ---- stair and wing 3'-0" east
+    st = grab(p, 69.6, 39.3, 84.7, 46.87); wg = grab(p, 65.5, 46.87, 84.7, 67.3)
+    p.white(69.6, 39.3, 86.8, 46.87); p.white(65.5, 46.87, 86.8, 67.3)
+    put(p, st, 69.6 + S, 39.3); put(p, wg, 65.5 + S, 46.87)
+    p.wall(65.5, 46.87, 68.62, 57 - 9.43)
+    p.window(86.83, 41.2, 87.56, 45.2)
+    p.white(85.4, 37.75, 85.8, 39.2); p.white(87.58, 38.8, 88.0, 47.8)
+    p.white(84.55, 39.03, 85.45, 39.33); p.white(85.4, 67.06, 86.2, 68.6)
+    # ---- terrace and north planter end at the living room's east wall, 3'-0" further west
+    tb = grab(p, 41.3, 47.62, 42.3, 67.7); p.white(38.25, 47.62, 42.35, 67.7); put(p, tb, 41.3 - S, 47.62)
+    # ---- west side
+    if follow:
+        p.slide(21.9, 21.6, 31.6, 47.62, dx=-W, fill='smear'); p.slide(21.9, 47.62, 26.0, 63.55, dx=-W, fill='smear')
+        p.slide(21.9, 63.55, 25.9, 67.8, dx=-W, fill='tile'); p.slide(21.9, 16.8, 25.0, 21.6, dx=-W, fill='tile')
+    else:
+        p.slide(21.9, 16.8, 23.0, 67.8, dx=-W, fill='tile')
+        put(p, grab(p, 21.3, 30.0, 22.15, 33.8), 21.3, 40.0)                   # the tile carried a second PLANTER label
+    return p
+
+
 def length(pts): return sum(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5 for a, b in zip(pts, pts[1:]))
 
 if __name__ == '__main__':
