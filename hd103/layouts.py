@@ -382,7 +382,64 @@ def ground_final():
     p.white(82.15, 67.04, 83.27, 68.8); p.white(82.45, 65.5, 83.0, 66.28)
     p.window(79.82, 66.3, 83.27, 67.02)
     p.line([(82.2, 67.10), (83.2, 67.10)], 2, BLACK, dash=DASH)
-    p.door((67.2, 23.1), 2.8, 'S', 'W')
+    # ---- garage entry as FOR drew it (owner, 11.25.26): door in the garage wall just south of the foyer line, swinging into a
+    #      vestibule open to the stair hall, step on the garage side; mudroom behind a pocket door; mech room shortened
+    p.white(62.36, 18.54, 67.16, 35.86); p.white(62.36, 35.4, 67.16, 36.15); p.white(67.88, 35.75, 71.05, 38.47)
+    p.wall(67.17, 18.5, 67.86, 38.5); p.wall(61.58, 18.5, 62.34, 35.88)
+    def opening(y0, y1):
+        p.white(67.15, y0, 67.88, y1)
+        for x in (67.19, 67.84): p.line([(x, y0), (x, y1)], 1, THIN, dash=(8, 6))
+        for y in (y0, y1): p.line([(67.17, y), (67.86, y)], 2, BLACK)
+    opening(32.95, 35.88); p.door((67.17, 32.95), 2.93, 'N', 'W')
+    p.rect(67.88, 32.6, 69.4, 36.2, 2, THIN)                                              # step down to the garage slab
+    p.rect(62.33, 32.42, 67.17, 32.72, 2, BLACK, fill=WHITE)                              # mudroom partition, pocket door at the west end
+    p.white(62.5, 32.38, 64.95, 32.76); p.line([(62.5, 32.42), (62.5, 32.72)], 2, BLACK); p.line([(64.95, 32.42), (64.95, 32.72)], 2, BLACK)
+    p.pocket((64.95, 32.57), (62.5, 32.57))
+    M = (40, 40, 40)
+    p.rect(62.4, 23.95, 67.12, 26.1, 2, M)                                                # lockers: tall millwork, four doors
+    for x in (63.58, 64.76, 65.94): p.line([(x, 23.95), (x, 26.1)], 2, M)
+    p.label(64.76, 25.0, 'LOCKERS', px=18, bg=True)
+    p.rect(65.5, 26.5, 67.12, 32.0, 2, M); p.line([(66.45, 26.5), (66.45, 32.0)], 2, M, dash=DASH)   # bench, hook rail and shelf over (dashed)
+    p.label(65.95, 29.25, 'BENCH', px=18, rotate=90)
+    p.label(63.9, 29.3, 'MUD\nROOM')
+    p.rect(62.33, 23.6, 67.17, 23.9, 2, BLACK, fill=WHITE)                                # mech room north partition
+    p.rect(62.45, 21.5, 64.25, 23.5, 3, BLACK); p.line([(62.45, 21.5), (64.25, 23.5)], 1, THIN); p.line([(62.45, 23.5), (64.25, 21.5)], 1, THIN)
+    p.label(63.35, 22.5, 'AHU', px=14, bg=True)
+    p.rect(62.45, 18.7, 63.2, 20.6, 2, BLACK); p.label(63.75, 19.6, 'WH', px=13)
+    p.rect(64.5, 18.66, 66.9, 19.0, 2, BLACK); p.label(65.7, 19.4, 'PANEL', px=12, bg=True)
+    opening(19.3, 21.97); p.door((67.17, 21.97), 2.67, 'S', 'W')
+    p.label(65.75, 22.8, 'MECH. +\nELEC.', px=13)
+    # ---- kitchen, scullery and bar millwork redrawn in FOR's hand (owner, 11.25.26): one thin line at the counter front,
+    #      long dashes for what is overhead or under the counter, tall units as plain boxes, FOR's own stool
+    p.white(23.17, 18.6, 37.74, 35.84)
+    p.rect(23.14, 18.56, 25.2, 30.38, 2, M); p.rect(25.2, 18.56, 37.78, 20.7, 2, M)
+    p.rect(23.14, 25.05, 25.2, 29.05, 2, M, dash=DASH)                                    # hood over
+    p.rrect(23.3, 25.25, 25.05, 28.85, 0.12, 2, M)
+    for bx in (23.75, 24.6):
+        for by in (25.9, 27.05, 28.2): p.ellipse(bx - 0.3, by - 0.3, bx + 0.3, by + 0.3, 2, M)
+    p.label(26.0, 27.05, '48" RANGE', px=20, rotate=90)
+    p.rect(33.6, 18.64, 35.6, 20.62, 2, M, dash=DASH); p.label(34.6, 19.63, 'MW', px=20)
+    p.label(29.4, 19.63, 'BREAKFAST COUNTER', px=20)
+    p.rect(23.14, 30.38, 25.43, 32.88, 2, M, fill=WHITE); p.label(24.28, 31.63, 'FREEZER', px=17, rotate=90)
+    p.rect(23.14, 32.88, 25.43, KN, 2, M, fill=WHITE); p.label(24.28, 34.38, 'FRIDGE', px=19, rotate=90)
+    p.rect(29.0, 24.3, 33.0, 34.0, 2, M); p.line([(31.81, 24.3), (31.81, 34.0)], 2, M, dash=DASH)
+    sink_sym(p, 29.35, 28.15, 30.95, 30.3, 'E')
+    p.rect(29.05, 25.9, 31.15, 27.9, 2, M, dash=DASH); p.label(30.1, 26.9, 'DW', px=20)
+    p.rect(29.05, 30.55, 31.15, 32.05, 2, M, dash=DASH); p.label(30.1, 31.3, 'TRASH', px=15)
+    st = FOR.crop(p.box(35.42, 42.15, 37.3, 43.9))
+    for cy in (25.7, 28.0, 30.3, 32.6): put(p, st, 32.03, cy - 0.875)
+    p.label(31.0, 22.4, 'KITCHEN')
+    p.rect(37.8, 30.32, 39.98, 33.1, 2, M, fill=WHITE); p.rect(37.8, 33.1, 39.98, 35.56, 2, M, fill=WHITE)
+    p.label(38.9, 31.7, 'WINE', px=19, rotate=90); p.label(38.9, 34.33, 'BAR', px=19, rotate=90)
+    p.white(38.19, 18.6, 45.27, 29.97)
+    p.rect(38.17, 18.6, 43.22, 20.65, 2, M); p.label(40.7, 19.62, 'TALL PANTRY', px=19)
+    p.rect(38.17, 27.95, 43.22, 29.98, 2, M); p.label(40.7, 28.97, 'OVENS + COFFEE', px=19)
+    p.rect(38.17, 25.3, 39.67, 27.95, 2, M); p.label(38.92, 26.62, 'PANTRY', px=17, rotate=90)
+    p.rect(43.22, 18.6, 45.26, 29.98, 2, M); p.line([(44.2, 18.6), (44.2, 29.98)], 2, M, dash=DASH)
+    sink_sym(p, 43.5, 21.0, 44.75, 23.4, 'E')
+    p.rect(43.25, 24.3, 45.23, 26.3, 2, M, dash=DASH); p.label(44.24, 25.3, 'DW', px=20, bg=True)
+    p.label(41.45, 24.0, 'SCULLERY', rotate=90)
+    p.white(41.1, 34.0, 42.7, 34.6); p.label(41.6, 34.3, 'POWDER', px=17)
     return p
 
 
