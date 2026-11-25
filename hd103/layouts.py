@@ -134,6 +134,14 @@ def ground_new(p, guest='R4', scullery='THRU', mud='M1'):
         p.white(67.15, 20.5, 67.95, 27.0); p.line([(67.55, 20.5), (67.55, 27.0)], 1, FURN, dash=(8, 6))
         p.rect(62.36, 18.62, 63.86, 28.18, 2, THIN); p.label(63.11, 23.4, 'SHELVES', px=13, rotate=90)
         p.label(65.6, 21.4, 'GARAGE\nSTORAGE', px=14)
+        if mud == 'M3':
+            # ---- the old storage room behind the stair becomes the mechanical room; the air handler closet becomes a coat closet
+            p.white(82.9, 42.4, 85.4, 43.25); p.label(84.0, 42.78, 'MECH.', px=13)
+            p.rect(83.0, 43.3, 85.3, 45.6, 2, THIN); p.line([(83.0, 43.3), (85.3, 45.6)], 1, FURN); p.line([(83.0, 45.6), (85.3, 43.3)], 1, FURN)
+            p.label(84.15, 44.45, 'AHU', px=13, bg=True)
+            p.ellipse(85.5, 41.6, 86.6, 42.7, 2, THIN); p.label(86.05, 42.15, 'WH', px=11)
+            p.white(70.75, 43.55, 74.25, 46.25); p.line([(70.8, 45.3), (74.2, 45.3)], 1, FURN, dash=(14, 8))
+            p.label(72.5, 44.4, 'COATS', px=14)
     if guest == 'FOR': return p
     if guest == 'R4':
         # ---- powder room: out of the kitchen, into the south end of the guest closet, off a vestibule by the stair
@@ -251,6 +259,8 @@ GM_NEW = dict(routes=[(SERV, [(73.0, 36.6), (69.4, 36.9), (65.8, 36.9), (65.8, 4
                       (SERV, [(65.8, 40.6), (57.0, 39.6), (48.0, 37.8)]), (SERV, [(65.8, 40.6), (68.2, 41.0), (70.5, 41.0)]),
                       (SERV, [(65.8, 40.6), (68.4, 44.0), (68.4, 47.8)]), (SERVE, [(71.5, 24.6), (66.4, 24.6)])],
               stops=[(1, 71.8, 38.0, SERV), (2, 65.3, 31.6, SERV), (3, 63.6, 41.8, SERV), (4, 65.5, 26.4, SERVE)])
+GM3 = dict(routes=GM_NEW['routes'] + [(GUEST, [(54.0, 40.5), (62.5, 42.0), (68.6, 44.9)]), (SERVE, [(80.0, 36.5), (84.3, 37.4), (84.3, 40.0)])],
+           stops=GM_NEW['stops'] + [(5, 67.6, 43.2, GUEST), (6, 82.0, 35.4, SERVE)])
 G_K3 = dict(routes=[r if i != 4 else (SERV, [(37.0, 36.9), (30.0, 36.6), (27.2, 35.6), (26.3, 34.4)]) for i, r in enumerate(G_U['routes'])], stops=G_U['stops'])
 M_OLD = dict(routes=[(SERV, [(33.5, 36.4), (37.1, 36.2), (37.1, 27.4), (44.6, 27.4), (46.2, 26.2)]),
                      (SERV, [(37.1, 27.4), (33.5, 26.6), (30.5, 26.0)]), (GUEST, [(37.1, 32.2), (35.2, 32.2), (33, 32.2)]), (GUEST, [(37.1, 32.2), (40.5, 32.2)])],
@@ -275,4 +285,5 @@ if __name__ == '__main__':
     k = ground_new(RP.ground(), 'FOR', 'K3'); k.save(os.path.join(OUT, 'g_K3.png')); k.routes(**G_K3).save(os.path.join(OUT, 'g_K3_r.png'))
     k.routes(**GM_OLD).save(os.path.join(OUT, 'gm_old_r.png'))
     m2 = ground_new(RP.ground(), 'FOR', 'K3', 'M2'); m2.save(os.path.join(OUT, 'g_M2.png')); m2.routes(**GM_NEW).save(os.path.join(OUT, 'gm_new_r.png'))
+    m3 = ground_new(RP.ground(), 'FOR', 'K3', 'M3'); m3.save(os.path.join(OUT, 'g_M3.png')); m3.routes(**GM3).save(os.path.join(OUT, 'gm3_r.png'))
     print('layouts done')
